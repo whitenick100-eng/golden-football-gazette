@@ -8,7 +8,7 @@ from pathlib import Path
 LEAGUE = "1413446022"
 YEAR = 2026
 URL = (f"https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{YEAR}/"
-       f"segments/0/leagues/{LEAGUE}?view=mTeam&view=mMatchup&view=mMatchupScore")
+       f"segments/0/leagues/{LEAGUE}?view=mTeam&view=mMatchup&view=mMatchupScore&view=mScoreboard&view=mBoxscore&matchupPeriodId=11&scoringPeriodId=11")
 OUT = Path("data/league.json")
 OUT.parent.mkdir(exist_ok=True, parents=True)
 
@@ -35,12 +35,12 @@ def refresh():
         if "home" not in g or "away" not in g: continue
         home, away = g["home"], g["away"]
         games.append({"week": g.get("matchupPeriodId"), "winner": g.get("winner", "UNDECIDED"),
-                      "home": {"teamId":home.get("teamId"), "name": names.get(home.get("teamId")), "points": home.get("totalPoints")},
-                      "away": {"teamId":away.get("teamId"), "name": names.get(away.get("teamId")), "points": away.get("totalPoints")}})
+                      "home": {"teamId":home.get("teamId"), "name": names.get(home.get("teamId")), "points": home.get("totalPointsLive",home.get("totalPoints")), "projectedPoints": home.get("totalProjectedPointsLive") if isinstance(home.get("totalProjectedPointsLive"),(int,float)) and home.get("totalProjectedPointsLive")>0 else None},
+                      "away": {"teamId":away.get("teamId"), "name": names.get(away.get("teamId")), "points": away.get("totalPointsLive",away.get("totalPoints")), "projectedPoints": away.get("totalProjectedPointsLive") if isinstance(away.get("totalProjectedPointsLive"),(int,float)) and away.get("totalProjectedPointsLive")>0 else None}})
     return {"leagueId": LEAGUE, "season": YEAR, "source": "ESPN public API",
             "fetchedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "standingsAsOf": data.get("status", {}).get("standingsUpdateDate"),
-            "currentMatchupPeriod": data.get("status", {}).get("currentMatchupPeriod"),
+            "currentMatchupPeriod": data.get("status", {}).get("currentMatchupPeriod"),\n            "requestedWeek": 11,
             "standings": standings, "matchups": games}
 
 try:
