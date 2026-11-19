@@ -21,7 +21,12 @@ for name, file in [("fantasy_league", "data/league.json"), ("nfl_week", "data/nf
     if path.exists():
         obj = json.loads(path.read_text(encoding="utf-8"))
         if obj.get("fetchedAt") and obj.get("status") != "unavailable":
-            sources[name] = obj
+            stamp = dt.datetime.fromisoformat(obj["fetchedAt"].replace("Z", "+00:00"))
+            age = dt.datetime.now(dt.timezone.utc) - stamp
+            if dt.timedelta(0) <= age <= dt.timedelta(hours=48):
+                sources[name] = obj
+            else:
+                print(f"Skipping stale source: {name}")
 if not sources:
     raise SystemExit("No verified data snapshots; refusing to draft unsupported article")
 
