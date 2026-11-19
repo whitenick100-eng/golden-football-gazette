@@ -29,6 +29,12 @@ jobs:
           test -n "$OPENAI_API_KEY" || { echo "Add OPENAI_API_KEY in repository Actions secrets first"; exit 1; }
           python -m py_compile scripts/draft_article.py
           python scripts/qa_gazette.py
+      - name: Retrieve fresh ESPN fantasy and NFL schedule data
+        run: |
+          python scripts/refresh_espn.py
+          python scripts/refresh_nfl.py
+          python scripts/qa_gazette.py
+          python scripts/data_status.py
       - name: Generate unpublished editorial draft
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
