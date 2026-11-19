@@ -40,7 +40,8 @@ def refresh():
     return {"leagueId": LEAGUE, "season": YEAR, "source": "ESPN public API",
             "fetchedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "standingsAsOf": data.get("status", {}).get("standingsUpdateDate"),
-            "currentMatchupPeriod": data.get("status", {}).get("currentMatchupPeriod"),\n            "requestedWeek": 11,
+            "currentMatchupPeriod": data.get("status", {}).get("currentMatchupPeriod"),
+            "requestedWeek": 11,
             "standings": standings, "matchups": games}
 
 try:
