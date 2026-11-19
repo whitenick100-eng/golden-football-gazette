@@ -57,7 +57,8 @@ def validate():
             for g in games:
                 assert valid_time(g.get("date"))
                 assert g.get("home", {}).get("name") and g.get("away", {}).get("name")
-                if not (g.get("venue") or g.get("city")):\n                    print("WARNING: NFL venue unavailable for game", g.get("id"))
+                if not (g.get("venue") or g.get("city")):
+                    print("WARNING: NFL venue unavailable for game", g.get("id"))
                 weather = g.get("weather")
                 if weather:
                     assert weather.get("source") == "Open-Meteo" and weather.get("forecast") is True
