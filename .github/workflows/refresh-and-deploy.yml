@@ -7,17 +7,15 @@ on:
     branches: [main]
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 concurrency:
-  group: pages
+  group: gazette-pages-deployment
   cancel-in-progress: false
 jobs:
-  refresh-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,10 +25,27 @@ jobs:
         run: python scripts/refresh_espn.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload website
+      - name: Upload website artifact
+        id: upload
         uses: actions/upload-pages-artifact@v4
         with:
           path: .
-      - name: Deploy
+      - name: Confirm artifact upload
+        run: echo "Pages artifact upload step completed"
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Allow uploaded artifact to become available
+        run: sleep 20
+      - name: Deploy website to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
+          timeout: 600000
+          error_count: 5
+          reporting_interval: 10000
