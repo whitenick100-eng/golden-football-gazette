@@ -1,0 +1,57 @@
+{
+  "leagueId": 1413446022,
+  "season": 2026,
+  "source": "ESPN fantasy league export (user-provided snapshot)",
+  "teams": [
+    {
+      "id": 1,
+      "name": "Cam, Bam Thank you Ma'am.",
+      "logo": "https://mystique-api.fantasy.espn.com/apis/v1/domains/lm/images/3eff1e20-6829-11f0-a068-0527314d5438"
+    },
+    {
+      "id": 2,
+      "name": "Violet and Daxs mom!",
+      "logo": "https://g.espncdn.com/lm-static/logo-packs/ffl/Xmas-AndrewJanik/XMas_17.svg"
+    },
+    {
+      "id": 3,
+      "name": "Michelle's Magnificent Team",
+      "logo": "https://g.espncdn.com/lm-static/ffl/images/default_logos/20.svg"
+    },
+    {
+      "id": 4,
+      "name": "The Automatons",
+      "logo": "https://mystique-api.fantasy.espn.com/apis/v1/domains/lm/images/eae34220-aa4a-11f1-8ecc-d1c52c68c30a"
+    },
+    {
+      "id": 5,
+      "name": "4th and 10",
+      "logo": "https://mystique-api.fantasy.espn.com/apis/v1/domains/lm/images/485dda30-aa4d-11f1-bcd0-ffc758441db5"
+    },
+    {
+      "id": 6,
+      "name": "Sunday Morning Panic",
+      "logo": "https://g.espncdn.com/lm-static/logo-packs/ffl/CreepShow-ToddDetwiler/CreepShow-09b.svg"
+    },
+    {
+      "id": 7,
+      "name": "Fumbly In My Tumbly",
+      "logo": "https://mystique-api.fantasy.espn.com/apis/v1/domains/lm/images/66a11ff0-637e-11f0-b616-21bcae591782"
+    },
+    {
+      "id": 8,
+      "name": "Jeremy's Scary Team",
+      "logo": "https://g.espncdn.com/lm-static/ffl/images/default_logos/16.svg"
+    },
+    {
+      "id": 9,
+      "name": "HVAC guru",
+      "logo": "https://mystique-api.fantasy.espn.com/apis/v1/domains/lm/images/bc657c10-6f36-11f0-8a47-054519490e25"
+    },
+    {
+      "id": 10,
+      "name": "Football Bi@##!",
+      "logo": "https://g.espncdn.com/lm-static/logo-packs/core/RalphBreaksTheInternet/ralph-05.svg"
+    }
+  ]
+}
