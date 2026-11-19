@@ -21,10 +21,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Check Python syntax and website structure
+        run: |
+          python -m py_compile scripts/*.py
+          python scripts/qa_gazette.py
       - name: Refresh sanitized ESPN snapshot
         run: python scripts/refresh_espn.py
       - name: Refresh weekly NFL schedule and weather
         run: python scripts/refresh_nfl.py
+      - name: Validate refreshed data and report freshness
+        run: |
+          python scripts/qa_gazette.py
+          python scripts/data_status.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website artifact
