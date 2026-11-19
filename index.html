@@ -17,6 +17,33 @@
 <nav aria-label="Site sections"><a href="#headlines">Headlines</a><a href="#standings">Standings</a><a href="#matchups">Week 11 Matchups</a><a href="#waivers">Waiver Wire</a><a href="#trophies">Trophy Watch</a></nav>
 <section id="headlines" class="breaking"><div class="kicker">The lead story · Week 11</div><h2>Perfection has a target. The Golden Toilet has a waiting list.</h2><p>4th and 10 is 10–0, HVAC and Michelle are chasing at 6–4, and last-place Sunday Morning Panic just posted the league's highest Week 10 score. The playoff race is getting personal.</p></section>
 <div class="stamp" role="note">DATA STATUS: Historical ESPN snapshot updated November 18, 2026. This website is a static edition, not a live ESPN feed. Week 11 predictions below are editorial picks, not ESPN projections.</div>
+<section id="espn-live" class="archive" aria-live="polite" style="margin:15px 0">
+<h2 style="color:var(--gold);margin:0 0 8px">ESPN League Data <span style="font:600 .7rem system-ui">· automatic refresh</span></h2>
+<p id="espn-status" class="small">Checking the latest verified ESPN snapshot…</p>
+<div class="table-scroll"><table><thead><tr><th>Week</th><th>Matchup</th><th>Score / status</th></tr></thead><tbody id="espn-games"></tbody></table></div>
+<p class="small">The newspaper article below is an archived editorial edition. Only the ESPN data panel updates automatically. No game is marked final unless ESPN reports a winner.</p>
+</section>
+<script>
+(async function(){
+ const status=document.getElementById('espn-status'),tbody=document.getElementById('espn-games');
+ try{
+  const response=await fetch('data/league.json?ts='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw Error('No published snapshot');
+  const data=await response.json();
+  if(!data.fetchedAt || !Array.isArray(data.matchups))throw Error('No verified snapshot yet');
+  const fetched=new Date(data.fetchedAt);
+  status.textContent='Last successful ESPN retrieval: '+fetched.toLocaleString()+' · Week '+data.currentMatchupPeriod+' · This is a data snapshot, not a live game feed.';
+  const week=data.currentMatchupPeriod;
+  const games=data.matchups.filter(g=>g.week===week);
+  for(const g of games){
+   const tr=document.createElement('tr');
+   const cells=[String(week), (g.away.name||'Away')+' vs '+(g.home.name||'Home'),g.winner && g.winner!=='UNDECIDED' && g.winner!=='UNDECIDED' && g.winner!=='NONE' ? (g.away.points+' – '+g.home.points+' · ESPN winner: '+g.winner) : 'In progress / not verified final'];
+   for(const value of cells){const td=document.createElement('td');td.textContent=value;tr.appendChild(td)}tbody.appendChild(tr);
+  }
+  if(!games.length)status.textContent+=' No games found for the current matchup period.';
+ }catch(e){status.textContent='ESPN refresh not yet available. The newspaper below remains a historical edition; no live results are being claimed.'}
+})();
+</script>
 <main class="paper">
 <article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · The Daily Brief</h2>
 <section class="section"><div class="statgrid"><div class="stat"><strong>10–0</strong><span>4th and 10</span></div><div class="stat"><strong>157.68</strong><span>Panic's Week 10</span></div><div class="stat"><strong>6–4</strong><span>HVAC / Michelle</span></div></div><h3 style="margin-top:17px">The Perfect Ten</h3><p><strong>4th and 10</strong> remains undefeated after beating Michelle 133.98–75.00. Ten opponents have tried. Ten opponents have failed. At this point, the rest of the league is just applying for the privilege of becoming loss number eleven.</p><p><strong>Sunday Morning Panic</strong> shocked Fumbly 157.68–131.12, proving that even the league's basement tenant occasionally remembers how to score. The Golden Toilet committee has requested an emergency meeting.</p><p><strong>HVAC guru</strong> improved to 6–4 by beating the Automatons 146.14–128.42. <strong>Jeremy</strong> defeated Football 144.40–129.78, while <strong>Violet</strong> beat Cam 148.36–115.90.</p></section>
