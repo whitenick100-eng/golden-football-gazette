@@ -67,4 +67,5 @@ if not isinstance(draft,str) or len(draft.strip()) < 250:
 Path("editorial").mkdir(exist_ok=True)
 path = Path("editorial") / f"{today}-{args.type}-DRAFT.md"
 path.write_text("<!-- UNPUBLISHED DRAFT: OWNER APPROVAL REQUIRED -->\n\n"+draft.strip()+"\n",encoding="utf-8")
-print(f"Created review-only draft: {path}")
+Path("editorial/latest.json").write_text(json.dumps({"date":today,"articleType":args.type,"body":draft.strip(),"sourceTimes":{name:obj.get("fetchedAt") for name,obj in sources.items()},"editorialStatus":"owner-approved-on-merge"},indent=2)+"\\n",encoding="utf-8")
+print(f"Created review-only draft: {path}; owner approval via merge is required before homepage displays it")
