@@ -19,7 +19,7 @@
 3. Select the article type. The AI agent writes a Markdown draft using only the current checked-in structured data.
 4. The workflow opens a pull request under `editorial/draft-...` for the owner to review. It does **not** merge or publish the draft.
 5. GitHub repository settings may require enabling **Allow GitHub Actions to create and approve pull requests** (Settings → Actions → General), or the workflow's PR step will fail.
-6. Review all statistics, league references, predictions and dates before merging. The draft remains in `editorial/` and is **not automatically inserted into the live newspaper**. A separately approved integration step is needed to publish article text on the homepage.
+6. Review all statistics, league references, predictions and dates before merging. The draft is stored in `editorial/` and a candidate `editorial/latest.json` is included in the same PR. **Only after you merge** does the website display that approved edition in its "From the Editor" section.
 
 ## Design agent — owner-approved only
 For design work, create a feature branch and pull request; inspect a preview or screenshots, then merge manually. There is intentionally no workflow that lets AI change `index.html` unattended.
