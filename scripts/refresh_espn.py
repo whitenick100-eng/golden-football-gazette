@@ -8,7 +8,7 @@ from pathlib import Path
 LEAGUE = "1413446022"
 YEAR = 2026
 URL = (f"https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{YEAR}/"
-       f"segments/0/leagues/{LEAGUE}?view=mTeam&view=mMatchup&view=mMatchupScore&view=mScoreboard&view=mBoxscore&matchupPeriodId=11&scoringPeriodId=11")
+       f"segments/0/leagues/{LEAGUE}?view=mTeam&view=mMatchup&view=mMatchupScore&view=mScoreboard&matchupPeriodId=11&scoringPeriodId=11")
 OUT = Path("data/league.json")
 OUT.parent.mkdir(exist_ok=True, parents=True)
 
