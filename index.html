@@ -53,6 +53,52 @@ th,td{border-color:#b9a98c}
 .nfl-banner .legal{font:.65rem system-ui,sans-serif;color:#6b5d4b;margin:10px 0 0}
 @media(max-width:700px){.logo-grid{grid-template-columns:repeat(8,minmax(0,1fr))}.logo-grid img{height:32px}}
 @media(max-width:440px){.logo-grid{grid-template-columns:repeat(8,minmax(0,1fr))}.nfl-banner{padding:9px}header{margin-top:10px}}
+
+/* Night-game editorial design: translucent panels over stadium and turf */
+:root{--gold:#ffda8d;--gold2:#b89a59;--cream:#fff9ea;--muted:#e5d9c4;--panel:rgba(10,21,24,.63);--line:rgba(255,222,157,.5)}
+html{background:#061b15}
+body{color:var(--cream);background:linear-gradient(180deg,rgba(1,11,18,.30),rgba(2,15,18,.48) 45%,rgba(1,19,11,.44)),url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=2200&q=85') center center/cover fixed,#0a281b}
+body:before{background:linear-gradient(180deg,rgba(3,9,16,.35) 0%,transparent 28%,rgba(9,53,20,.32) 85%,rgba(16,82,27,.6) 100%);z-index:-1}
+header,.nfl-banner,.breaking,.page,.archive,#espn-live{background:rgba(4,17,21,.54)!important;color:#fff8e8!important;border-color:rgba(255,222,157,.8)!important;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);box-shadow:0 15px 40px #0007}
+header .eyebrow,.nfl-banner .banner-title,.nfl-banner .legal,header .sub,.breaking h2,.breaking p,.page h2,h3,.archive summary,.small,.stat span,.stat strong,th,.match .vs,.pick,.award strong,.stamp,.chip{color:#ffe5b4!important}
+h1{color:#fff4d6;text-shadow:0 3px 20px #000,0 0 3px #000}
+header .sub{background:rgba(5,18,22,.45);border-color:#d2ad66}
+nav a{background:rgba(3,19,25,.68);color:#fff2d4;border-color:#e6c78d}
+nav a:hover,nav a:focus-visible{background:#25473d}
+.breaking h2{color:#fff6e2!important}
+.section,.match,th,td{border-color:rgba(255,230,183,.3)}
+.stat,.award{background:rgba(1,13,17,.36);border-color:rgba(255,230,183,.55)}
+.stamp{background:rgba(3,22,26,.72);border-left:3px solid #f2d49b}
+.foot{color:#f7e8d2}
+.field{background:linear-gradient(90deg,rgba(6,71,23,.75),rgba(6,53,21,.7))}
+.hub-section{margin:18px 0;padding:22px;border:3px double #e6c78d;background:rgba(4,17,21,.62);backdrop-filter:blur(5px);color:#fff8e8}
+.hub-section h2{font-size:clamp(1.4rem,3vw,2.2rem);margin:0 0 7px;color:#ffdfa5;font-variant:small-caps}
+.hub-intro{font:.82rem/1.6 system-ui,sans-serif;color:#ead9b8}
+.games-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px;margin-top:15px}
+.game-card{border:1px solid #c4a46a;background:rgba(3,18,24,.42);padding:13px}
+.game-card .number{font:700 .72rem system-ui,sans-serif;color:#f4d49c}
+.game-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:9px;margin:10px 0}
+.game-side{text-align:center;font:700 .78rem/1.4 system-ui,sans-serif}
+.game-side img{display:block;width:64px;height:64px;object-fit:contain;margin:0 auto 6px;filter:drop-shadow(0 3px 8px #000)}
+.game-side .record{display:block;color:#e6d0a7;font-size:.72rem;margin-top:4px}
+.game-vs{color:#f5d59e;font:700 .7rem system-ui,sans-serif}
+.game-meta{font:.75rem/1.55 system-ui,sans-serif;color:#f0e1ca;text-align:center;border-top:1px solid #9b885c;padding-top:9px}
+.featured-games{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-top:12px}
+.fantasy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+.fantasy-card{display:flex;align-items:center;gap:11px;padding:11px;border:1px solid #b79b67;background:rgba(2,19,22,.4)}
+.fantasy-card img{width:52px;height:52px;object-fit:contain}
+.fantasy-card .team-info{font:700 .8rem/1.45 system-ui,sans-serif}
+.fantasy-card .team-info span{display:block;color:#dfcba6;font-size:.73rem}
+.brackets{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+.bracket-card{border:1px solid #b79b67;padding:12px;background:rgba(3,18,22,.45)}
+.bracket-card h3{margin-bottom:10px}
+.bracket-entry{padding:8px;border-bottom:1px solid #806f53;font:.8rem/1.4 system-ui,sans-serif}
+.bracket-entry:last-child{border:0}
+.trophy-rail{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:20px 0 24px}
+.trophy-rail figure{margin:0;text-align:center;background:rgba(2,18,21,.5);border:2px double #d6b778;padding:12px;width:min(44%,260px)}
+.trophy-rail .trophy-art{font-size:clamp(3.5rem,9vw,7rem);filter:drop-shadow(0 0 12px #f9c34c)}
+.trophy-rail figcaption{font:700 .8rem Georgia,serif;color:#ffe4a3}
+@media(max-width:620px){.brackets{grid-template-columns:1fr}.hub-section{padding:14px}.game-side img{width:54px;height:54px}}
 </style>
 </head>
 <body>
@@ -89,6 +135,31 @@ th,td{border-color:#b9a98c}
  }catch(e){status.textContent='ESPN refresh not yet available. The newspaper below remains a historical edition; no live results are being claimed.'}
 })();
 </script>
+<section id="weekly-nfl" class="hub-section">
+<h2>NFL Week in Review &amp; Preview</h2>
+<p class="hub-intro" id="nfl-status">Retrieving the verified weekly NFL schedule… Games appear in kickoff order, with team records, venue, local Eastern kickoff time, and outdoor weather forecasts where available.</p>
+<div id="featured-games" class="featured-games"></div>
+<div id="nfl-games" class="games-grid"></div>
+</section>
+<section id="fantasy-helmets" class="hub-section">
+<h2>Fantasy League Clubs &amp; Emblems</h2>
+<p class="hub-intro" id="fantasy-logo-status">ESPN team images are displayed when available. A team's original ESPN image may be a custom logo rather than a helmet.</p>
+<div id="fantasy-team-grid" class="fantasy-grid"></div>
+</section>
+<section id="weekly-stars" class="hub-section">
+<h2>Five Leading Fantasy Performers</h2>
+<p class="hub-intro">The five highest-scoring individual NFL players for a completed fantasy week will appear here when verified player-level fantasy points and portraits are available. This feature is not yet connected to a validated player-statistics feed; no unverified ranking will be published.</p>
+<div id="player-stars"></div>
+</section>
+<section id="playoff-picture" class="hub-section">
+<h2>Playoff Picture &amp; Consolation Ladder</h2>
+<p class="hub-intro" id="bracket-status">Standings-based illustration only. Official ESPN playoff seedings, clinches, eliminations, and bracket pairings require verification.</p>
+<div class="brackets"><div class="bracket-card"><h3>Championship Contenders · Top Four</h3><div id="championship-bracket"></div></div><div class="bracket-card"><h3>Consolation / Outside Top Four</h3><div id="consolation-bracket"></div></div></div>
+</section>
+<div class="trophy-rail" aria-label="League trophy awards">
+<figure><div class="trophy-art" role="img" aria-label="Golden football trophy">🏆🏈</div><figcaption>The Golden Football · League Champion</figcaption></figure>
+<figure><div class="trophy-art" role="img" aria-label="Golden toilet trophy">🚽</div><figcaption>The Golden Toilet · Last Place</figcaption></figure>
+</div>
 <main class="paper">
 <article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · League Report</h2>
 <section class="section"><div class="statgrid"><div class="stat"><strong>10–0</strong><span>4th and 10</span></div><div class="stat"><strong>157.68</strong><span>Panic's Week 10</span></div><div class="stat"><strong>6–4</strong><span>HVAC / Michelle</span></div></div><h3 style="margin-top:17px">Unbeaten Through Ten: 4th and 10 Maintains Command</h3><p><strong>4th and 10</strong> remains undefeated after beating Michelle 133.98–75.00. The result extends the club’s unbeaten start to ten games and strengthens its position atop the league standings.</p><p><strong>Sunday Morning Panic</strong> defeated Fumbly In My Tumbly 157.68–131.12, delivering the league’s highest team score of Week 10 despite remaining at the foot of the standings.</p><p><strong>HVAC guru</strong> improved to 6–4 by beating the Automatons 146.14–128.42. <strong>Jeremy</strong> defeated Football 144.40–129.78, while <strong>Violet</strong> beat Cam 148.36–115.90.</p></section>
@@ -119,6 +190,23 @@ const sb=document.getElementById('standings-body');standings.forEach(([team,reco
 const ml=document.getElementById('matchups-list');matchups.forEach((m,i)=>{const d=el('div','match');const title=el('div','teams');title.append(document.createTextNode(`${i+1}. ${m.a} `),el('span','vs','VS'),document.createTextNode(` ${m.b}`));d.append(title,el('p','',m.copy),el('div','pick',`GAZETTE FORECAST: ${m.pick}`));ml.append(d)});
 const wb=document.getElementById('waivers-body');waivers.forEach(([team,week,season])=>{const tr=el('tr');[team,week,season].forEach(v=>tr.append(el('td','',v)));wb.append(tr)});
 </script>
-</body>
+<script>
+(function(){
+const safeUrl=u=>{try{const p=new URL(u);return p.protocol==='https:'?p.href:null}catch{return null}};
+function el(tag,cls,txt){const x=document.createElement(tag);if(cls)x.className=cls;if(txt!==undefined)x.textContent=String(txt);return x}
+function imageLogo(url,alt){const img=el('img');img.alt=alt;img.loading='lazy';const src=safeUrl(url);if(src)img.src=src;else img.style.display='none';img.onerror=()=>{img.style.display='none'};return img}
+function gameCard(g,i){const c=el('article','game-card');c.append(el('div','number','GAME '+String(i+1).padStart(2,'0')+' · '+(g.status||'Scheduled')));
+const row=el('div','game-teams');
+for(const side of ['away','home']){if(side==='home')row.append(el('div','game-vs','AT'));const team=g[side]||{};const t=el('div','game-side');t.append(imageLogo(team.logo,(team.name||'NFL')+' logo'),el('div','',team.name||'Team unavailable'),el('span','record',team.record?'Record: '+team.record:'Record unavailable'));row.append(t)}
+c.append(row);const d=new Date(g.date);const when=Number.isNaN(d.getTime())?'Kickoff not confirmed':d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+const venue=[g.venue,[g.city,g.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ');
+let weather='Weather forecast unavailable';if(g.indoor)weather='Indoor venue';else if(g.weather&&g.weather.forecast)weather='Forecast: '+Math.round(g.weather.temperatureF)+'°F · '+g.weather.precipitationChance+'% precipitation (Open-Meteo)';
+c.append(el('div','game-meta',when+' · '+(venue||'Venue not confirmed')+' · '+weather));return c}
+Promise.allSettled([fetch('data/nfl-week.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()}),fetch('data/league.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()})]).then(([nfl,league])=>{
+if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;document.getElementById('nfl-status').textContent='NFL season '+d.season+' · Week '+d.week+' · Source: ESPN NFL scoreboard · Retrieved '+new Date(d.fetchedAt).toLocaleString();const all=document.getElementById('nfl-games'),feature=document.getElementById('featured-games');d.games.forEach((g,i)=>{all.append(gameCard(g,i));const day=new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long'});if(day==='Sunday'&&new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}).replace(/\D/g,'')>=19 || day==='Monday'){const wrap=el('div');wrap.append(el('h3','',day==='Monday'?'Monday Night Football':'Sunday Night Football'),gameCard(g,i));feature.append(wrap)}})}else document.getElementById('nfl-status').textContent='NFL schedule could not be verified; no fixtures are displayed.';
+if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);const target=document.getElementById(i<4?'championship-bracket':'consolation-bracket');target.append(el('div','bracket-entry',(i+1)+'. '+t.name+' ('+(t.wins??'?')+'-'+(t.losses??'?')+')'))});document.getElementById('bracket-status').textContent='Provisional positions based on ESPN league standings retrieved '+new Date(d.fetchedAt).toLocaleString()+'. These are not confirmed ESPN playoff bracket pairings or mathematical eliminations.'}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';document.getElementById('bracket-status').textContent='ESPN league standings unavailable; bracket not shown.'}
+});
+})();
+</script></body>
 </html>
 

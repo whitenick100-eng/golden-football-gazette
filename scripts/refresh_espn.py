@@ -27,7 +27,7 @@ def refresh():
     for t in teams:
         overall = t.get("record", {}).get("overall", {})
         standings.append({"teamId": t["id"], "name": names[int(t["id"])],
-                          "wins": overall.get("wins"), "losses": overall.get("losses"),
+                          "logo": t.get("logo"), "wins": overall.get("wins"), "losses": overall.get("losses"),
                           "ties": overall.get("ties"), "pointsFor": overall.get("pointsFor")})
     standings.sort(key=lambda t: (-(t["wins"] or 0), t["losses"] or 0, -(t["pointsFor"] or 0)))
     games = []
@@ -35,8 +35,8 @@ def refresh():
         if "home" not in g or "away" not in g: continue
         home, away = g["home"], g["away"]
         games.append({"week": g.get("matchupPeriodId"), "winner": g.get("winner", "UNDECIDED"),
-                      "home": {"name": names.get(home.get("teamId")), "points": home.get("totalPoints")},
-                      "away": {"name": names.get(away.get("teamId")), "points": away.get("totalPoints")}})
+                      "home": {"teamId":home.get("teamId"), "name": names.get(home.get("teamId")), "points": home.get("totalPoints")},
+                      "away": {"teamId":away.get("teamId"), "name": names.get(away.get("teamId")), "points": away.get("totalPoints")}})
     return {"leagueId": LEAGUE, "season": YEAR, "source": "ESPN public API",
             "fetchedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "standingsAsOf": data.get("status", {}).get("standingsUpdateDate"),
