@@ -30,3 +30,10 @@ For design work, create a feature branch and pull request; inspect a preview or 
 - If `OPENAI_API_KEY` is absent, the editorial workflow will stop without changing the site.
 - If a feed is stale, inspect the refresh step; do not change `fetchedAt` just to make it look fresh.
 - GitHub scheduled workflows can run late. Refresh times are approximate.
+
+
+## AI Sportswriter API errors
+- HTTP **429** has more than one cause. A temporary rate limit can resolve with a short, bounded retry. An exhausted credit balance or spending/usage limit **cannot** be fixed by retrying.
+- The editorial agent now classifies structured OpenAI API error codes, retries only apparently temporary rate-limit errors (up to three attempts), and gives a billing/limits instruction for quota errors.
+- Review API billing/credits at https://platform.openai.com/settings/organization/billing/overview and limits at https://platform.openai.com/settings/organization/limits. ChatGPT subscriptions are not the same as API billing. Keep `OPENAI_API_KEY` in GitHub Actions secrets, never in source or logs.
+- After changing billing or limits, run **Draft Gazette Article (approval required)** manually again. It will still create a pull request for owner approval, not publish on its own.
