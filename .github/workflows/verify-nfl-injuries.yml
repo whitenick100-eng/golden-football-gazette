@@ -1,0 +1,51 @@
+name: Verify NFL Injury Desk
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/refresh_nfl_injuries.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_nfl_injuries.py'
+      - '.github/workflows/refresh-and-deploy.yml'
+      - '.github/workflows/verify-nfl-injuries.yml'
+permissions:
+  contents: read
+jobs:
+  verify-nfl-injuries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate syntax and run injury feed tests
+        run: |
+          python -m py_compile scripts/refresh_nfl_injuries.py tests/test_nfl_injuries.py
+          python -m unittest discover -s tests -p 'test_nfl_injuries.py' -v
+      - name: Verify Gazette website components
+        run: python scripts/qa_gazette.py
+      - name: Retrieve current ESPN injury feed
+        run: |
+          python scripts/refresh_nfl_injuries.py
+          python scripts/qa_gazette.py
+          python - <<'PY'
+          import json
+          with open('data/nfl-injuries.json') as f:
+              info=json.load(f)
+          if info.get('status')=='unavailable':
+              print('WARNING: ESPN injury endpoint is unavailable from this runner. Website will show unavailable.')
+          else:
+              print('NFL injury data verified:',info.get('playerCount'),'players across',info.get('teamCount'),'reporting teams')
+          PY
+      - name: Validate embedded browser scripts
+        run: |
+          python - <<'PY'
+          import pathlib,re
+          html=pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',html)
+          code='\n'.join(x for x in scripts if x.strip())
+          pathlib.Path('/tmp/gazette-embedded.js').write_text(code,encoding='utf-8')
+          print('Checking',len(scripts),'embedded scripts')
+          PY
+          node --check /tmp/gazette-embedded.js
