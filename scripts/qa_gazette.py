@@ -116,6 +116,26 @@ def validate():
             assert bracket.get("type") in ("provisional","espn-listed")
             assert len(bracket.get("contenders",[]))+len(bracket.get("outsideCurrentField",[]))==10
             assert bracket.get("playoffTeamCount")==len(bracket["contenders"])
+    # Daily source-backed NFL trade/release/waiver desk.
+    for marker in ('id="nfl-transactions-desk"','id="transaction-items"',
+                   'id="transaction-filter"','id="transaction-freshness"'):
+        assert marker in page, f"Missing daily NFL transactions view: {marker}"
+    assert "data/nfl-transactions.json" in page
+    transactions=read_json("data/nfl-transactions.json")
+    if transactions:
+        if transactions.get("status")=="unavailable":
+            print("WARNING: ESPN NFL transaction records unavailable")
+        else:
+            assert transactions.get("status")=="available"
+            assert transactions.get("source")=="ESPN NFL transactions"
+            assert valid_time(transactions.get("fetchedAt"))
+            assert transactions.get("windowStart") and transactions.get("windowEnd")
+            assert isinstance(transactions.get("moves"),list)
+            assert transactions.get("total")>=len(transactions["moves"])
+            for move in transactions["moves"]:
+                assert move.get("type") in ("Trade","Released","Waived")
+                assert move.get("team") and move.get("description")
+                assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
     print("Gazette structure and available data validation passed")
 
 if __name__ == "__main__":
