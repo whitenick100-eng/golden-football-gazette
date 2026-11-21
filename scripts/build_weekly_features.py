@@ -28,7 +28,7 @@ def source(path, now, league=False):
         time=dt.datetime.fromisoformat(data["fetchedAt"].replace("Z","+00:00"))
         if time.tzinfo is None:return None
         elapsed=(now-time.astimezone(dt.timezone.utc)).total_seconds()/3600
-        if not 0<=elapsed<=FRESH_HOURS:return None
+        if not -0.05<=elapsed<=FRESH_HOURS:return None
         if league and (str(data.get("leagueId"))!="1413446022" or data.get("season")!=2026
                        or len(data.get("standings") or [])!=10):
             return None
