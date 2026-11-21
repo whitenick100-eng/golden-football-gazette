@@ -161,6 +161,40 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .gazette-team-label{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap}
 .league-logo-entry .gazette-logo-holder{flex:0 0 46px}
 #fantasy-team-grid .fantasy-card .gazette-logo-holder{width:52px;height:52px;flex-basis:52px}
+
+/* NFL league-wide injury desk — gold/ink treatment over the stadium */
+.injury-report{margin-top:24px;padding:18px;border-top:2px solid rgba(246,211,144,.8);background:rgba(5,18,25,.34);color:#fff6de}
+.injury-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.injury-title-row h3{font:700 clamp(1.35rem,2.4vw,1.95rem) Georgia,serif;color:#ffe2aa!important;margin:0 0 6px;font-variant:small-caps}
+.injury-subtitle,.injury-disclaimer{font:.78rem/1.55 system-ui,sans-serif;color:#eaddc3}
+.injury-source-links{display:flex;flex-wrap:wrap;gap:8px}
+.injury-source-links a{font:700 .73rem system-ui,sans-serif;color:#ffe2aa;text-decoration:none;border:1px solid #c9ab76;padding:7px 9px;background:rgba(7,23,26,.6)}
+.injury-source-links a:hover,.injury-source-links a:focus-visible{text-decoration:underline}
+.injury-filter-bar{display:grid;grid-template-columns:1fr 1fr minmax(180px,1.3fr);gap:12px;margin:16px 0 11px}
+.injury-filter-bar label{font:700 .72rem/1.7 system-ui,sans-serif;letter-spacing:.03em;color:#f4d8a8;display:flex;flex-direction:column}
+.injury-filter-bar select,.injury-filter-bar input{font:.86rem system-ui,sans-serif;min-width:0;width:100%;box-sizing:border-box;border:1px solid #bd9d69;background:rgba(3,17,24,.92);color:#fff8e4;padding:10px;min-height:40px;border-radius:4px}
+.injury-count{font:700 .81rem system-ui,sans-serif;color:#ffe0a3;margin-bottom:11px}
+.injury-teams{display:grid;gap:10px}
+.injury-club{background:rgba(3,14,20,.55);border:1px solid rgba(220,188,129,.55);border-radius:3px;overflow:hidden}
+.injury-club>summary{cursor:pointer;display:flex;gap:12px;align-items:center;padding:11px 14px;font:700 .9rem Georgia,serif;color:#ffebc9;list-style:none}
+.injury-club>summary::-webkit-details-marker{display:none}
+.injury-club>summary:after{content:'+';font:700 1.3rem system-ui,sans-serif;color:#eecb83;margin-left:auto}
+.injury-club[open]>summary:after{content:'−'}
+.injury-club>summary:focus-visible{outline:2px solid #f3d99c;outline-offset:-3px}
+.injury-club .club-count{font:400 .73rem system-ui,sans-serif;color:#e8d3aa;margin-left:auto}
+.injury-club>summary:after{margin-left:0}
+.injury-grid-scroll{overflow-x:auto}
+.injury-table{border-collapse:collapse;width:100%;font:.77rem/1.4 system-ui,sans-serif;color:#fff5e4}
+.injury-table th{text-align:left;font:.7rem system-ui,sans-serif;color:#ffe2a9!important;border-bottom:1px solid rgba(230,203,153,.48);padding:9px 11px;background:rgba(3,13,17,.68);white-space:nowrap}
+.injury-table td{padding:9px 11px;border-bottom:1px solid rgba(226,202,161,.19);vertical-align:top}
+.injury-table tr:last-child td{border-bottom:0}
+.injury-status-chip{font:700 .67rem system-ui,sans-serif;letter-spacing:.025em;padding:3px 7px;background:rgba(245,214,154,.12);border:1px solid rgba(245,214,154,.48);border-radius:4px;white-space:nowrap;display:inline-block}
+.injury-status-chip[data-severity="out"]{color:#ffd2bf;border-color:#ffab84}
+.injury-status-chip[data-severity="questionable"]{color:#ffe3a5}
+.injury-muted,.injury-empty{color:#d6c8b0;font:.78rem system-ui,sans-serif}
+.injury-empty{padding:15px;border:1px dashed rgba(237,204,151,.35)}
+.injury-disclaimer{margin:13px 0 0}
+@media(max-width:650px){.injury-report{padding:12px 4px}.injury-filter-bar{grid-template-columns:1fr 1fr}.injury-filter-bar label:last-child{grid-column:1/-1}.injury-table{min-width:620px}.injury-club>summary{padding:10px}.injury-title-row{gap:8px}}
 </style>
 </head>
 <body>
@@ -231,6 +265,39 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 <p class="hub-intro" id="nfl-status">Retrieving the verified weekly NFL schedule… Games appear in kickoff order, with team records, venue, local Eastern kickoff time, and outdoor weather forecasts where available.</p>
 <div id="featured-games" class="featured-games"></div>
 <div id="nfl-games" class="games-grid"></div>
+<div id="nfl-injury-report" class="injury-report" aria-label="NFL league-wide injury report">
+  <div class="injury-title-row">
+    <div>
+      <h3>NFL League-Wide Injury Report</h3>
+      <p class="injury-subtitle" id="injury-meta" role="status">Checking ESPN's latest available NFL injury listings…</p>
+    </div>
+    <div class="injury-source-links">
+      <a href="https://www.nfl.com/injuries/" target="_blank" rel="noopener noreferrer">Official NFL report</a>
+      <a href="https://www.espn.com/nfl/injuries" target="_blank" rel="noopener noreferrer">ESPN injuries</a>
+    </div>
+  </div>
+  <div class="injury-filter-bar">
+    <label for="injury-team-filter">NFL team
+      <select id="injury-team-filter"><option value="all">All reporting teams</option></select>
+    </label>
+    <label for="injury-status-filter">Reported status
+      <select id="injury-status-filter">
+        <option value="all">All statuses</option>
+        <option value="out">Out</option>
+        <option value="doubtful">Doubtful</option>
+        <option value="questionable">Questionable</option>
+        <option value="reserve">Reserve / IR</option>
+        <option value="other">Other reported statuses</option>
+      </select>
+    </label>
+    <label for="injury-search">Find player
+      <input id="injury-search" type="search" placeholder="Search player or team" autocomplete="off">
+    </label>
+  </div>
+  <p class="injury-count" id="injury-count" role="status"></p>
+  <div id="injury-teams" class="injury-teams"><p class="injury-empty">No injury report loaded yet.</p></div>
+  <p class="injury-disclaimer">Data source: ESPN's league-wide injury listing. Reported status and practice participation are not the same as an official game designation. Teams with no entries may be on a bye or not represented in this feed; absence does not confirm that a team is injury-free. See the linked official NFL injury report for game-week practice and final game statuses.</p>
+</div>
 </section>
 <section id="fantasy-helmets" class="hub-section">
 <h2>Fantasy League Clubs &amp; Emblems</h2>
@@ -417,6 +484,107 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
   const grid=document.getElementById('gazette-logo-directory');
   if(grid)grid.textContent='The ESPN logo directory is currently unavailable.';
   console.warn('ESPN emblem directory error:',e);
+ }
+})();
+</script><script>
+/* Display only supplied ESPN injury statuses. No fabricated DNP/game designations. */
+(async function(){
+ const meta=document.getElementById('injury-meta');
+ const area=document.getElementById('injury-teams');
+ const count=document.getElementById('injury-count');
+ const teamSelect=document.getElementById('injury-team-filter');
+ const statusSelect=document.getElementById('injury-status-filter');
+ const search=document.getElementById('injury-search');
+ if(!meta||!area||!count||!teamSelect||!statusSelect||!search)return;
+ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
+ const clean=v=>typeof v==='string'?v:'';
+ const category=s=>{
+   const v=clean(s).toLowerCase();
+   if(v==='out')return 'out';
+   if(v==='doubtful')return 'doubtful';
+   if(v==='questionable')return 'questionable';
+   if(v.includes('injured reserve')||v==='ir'||v.includes('reserve/'))return 'reserve';
+   return 'other';
+ };
+ const col=(tr,txt,cls)=>{const td=el('td',txt||'Not reported',cls);tr.append(td);return td};
+ try{
+   const response=await fetch('data/nfl-injuries.json?ts='+Date.now(),{cache:'no-store'});
+   if(!response.ok)throw Error('No injury report file');
+   const data=await response.json();
+   if(data.status==='unavailable'||!Array.isArray(data.teams)||!data.teams.length){
+     throw Error('No verified ESPN injury listing is available');
+   }
+   const stamp=new Date(data.fetchedAt);
+   if(Number.isNaN(stamp.getTime()))throw Error('Injury listing has no verified timestamp');
+   const hoursOld=(Date.now()-stamp.getTime())/3600000;
+   const stale=hoursOld>36;
+   meta.textContent=(stale?'Last verified snapshot (may be outdated)':'Latest retrieved ESPN listing')+
+       ' · '+stamp.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
+       ' · '+data.teamCount+' reporting clubs';
+   for(const team of data.teams){
+     const option=el('option',team.name);option.value=String(team.teamId);teamSelect.append(option);
+   }
+   function render(){
+     area.replaceChildren();
+     const query=search.value.trim().toLocaleLowerCase();
+     const which=teamSelect.value,selected=statusSelect.value;
+     let shown=0,clubs=0;
+     for(const team of data.teams){
+       if(which!=='all'&&which!==String(team.teamId))continue;
+       const players=(team.players||[]).filter(p=>{
+         const status=category(p.gameStatus||p.reportedStatus);
+         return (selected==='all'||selected===status) &&
+           (!query||[p.name,team.name,p.position,p.injury,p.reportedStatus,p.gameStatus]
+                        .filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
+       });
+       if(!players.length)continue;
+       shown+=players.length;clubs++;
+       const details=document.createElement('details');details.className='injury-club';
+       // Auto-expand a selected team or a targeted search, otherwise keep a compact league view.
+       if(which!=='all'||query||selected!=='all'||clubs===1)details.open=true;
+       const summary=document.createElement('summary');
+       summary.append(el('span',team.name),el('span',players.length+' listed','club-count'));
+       details.append(summary);
+       const scroller=el('div',undefined,'injury-grid-scroll');
+       const table=el('table',undefined,'injury-table');
+       const header=el('thead');const headrow=el('tr');
+       for(const h of ['Player','Pos.','Injury','ESPN reported status','Practice status','Injury entry date']){
+         const th=el('th',h);th.scope='col';headrow.append(th);
+       }
+       header.append(headrow);table.append(header);
+       const tbody=el('tbody');
+       for(const p of players){
+         const tr=el('tr');
+         col(tr,clean(p.name));
+         col(tr,clean(p.position),'injury-muted');
+         col(tr,clean(p.injury),'injury-muted');
+         const statusCell=el('td');
+         const reported=clean(p.gameStatus||p.reportedStatus);
+         const chip=el('span',reported||'Not reported','injury-status-chip');
+         chip.dataset.severity=category(reported);statusCell.append(chip);
+         if(p.gameStatus&&p.reportedStatus&&p.gameStatus!==p.reportedStatus){
+           statusCell.append(el('div','Other ESPN status: '+p.reportedStatus,'injury-muted'));
+         }
+         tr.append(statusCell);
+         col(tr,clean(p.practiceStatus),'injury-muted');
+         let date='Not reported';
+         if(p.reportDate){const t=new Date(p.reportDate);if(!Number.isNaN(t.getTime()))date=t.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});}
+         col(tr,date,'injury-muted');tbody.append(tr);
+       }
+       table.append(tbody);scroller.append(table);details.append(scroller);area.append(details);
+     }
+     count.textContent=shown+' injury listing'+(shown===1?'':'s')+' across '+clubs+' reporting team'+(clubs===1?'':'s')+
+        (stale?' · Snapshot may be outdated':'');
+     if(!shown)area.append(el('p','No reported entries match these filters. This does not confirm that any team is injury-free.','injury-empty'));
+   }
+   for(const control of [teamSelect,statusSelect])control.addEventListener('change',render);
+   search.addEventListener('input',render);
+   render();
+ }catch(err){
+   meta.textContent='ESPN injury information is unavailable or could not be verified.';
+   area.replaceChildren(el('p','No current report is displayed. Check the linked official NFL injury report or ESPN injury page for updates.','injury-empty'));
+   count.textContent='';
+   console.warn('NFL injury feed not available:',err.message);
  }
 })();
 </script></body>
