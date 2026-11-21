@@ -104,6 +104,25 @@ def collect_teams():
             print("Unable to read the ESPN league's latest logo fields; using saved team URLs")
     return teams
 
+def approved_override(team_id):
+    """Return a validated user-provided copy of the exact ESPN emblem, if saved.
+
+    Supported manual filenames are assets/espn-logo-overrides/team-<id>.<ext>.
+    They are never invented automatically or overwritten in this source folder.
+    """
+    folder = ROOT / "assets/espn-logo-overrides"
+    for extension in ("png", "jpg", "jpeg", "webp", "gif", "svg"):
+        file = folder / f"team-{team_id}.{extension}"
+        if not file.is_file():
+            continue
+        raw = file.read_bytes()
+        if len(raw) > MAX_BYTES:
+            raise ValueError("Approved logo exceeds the image-size limit")
+        mime = "image/svg+xml" if extension == "svg" else "image/" + extension
+        kind, safe = detect(raw, mime)
+        return kind, safe
+    return None
+
 def build():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     teams = collect_teams()
@@ -112,8 +131,22 @@ def build():
     for id_, t in sorted(teams.items()):
         url = t.get("logo") or ""
         row = {"teamId":id_, "name":t.get("name"), "sourceUrl":url, "localUrl":None, "cached":False}
-        # Preserve source URL if download fails; never assign a different logo.
-        if not allowed(url):
+        # An owner-provided original is the durable solution for ESPN-hosted
+        # private custom emblems that prohibit outside downloads.
+        try:
+            manual = approved_override(id_)
+        except (OSError, ValueError, ET.ParseError) as exc:
+            manual = None
+            print(f"ESPN team {id_}: supplied image invalid ({type(exc).__name__})")
+        if manual:
+            ext, data = manual
+            path = OUTPUT / f"team-{id_}.{ext}"
+            path.write_bytes(data)
+            row["localUrl"] = f"assets/fantasy-logos/{path.name}"
+            row["cached"] = True
+            cached += 1
+            print(f"ESPN team {id_}: using original user-supplied ESPN emblem")
+        elif not allowed(url):
             print(f"ESPN team {id_}: source URL is missing or unrecognized")
         else:
             try:
@@ -125,7 +158,8 @@ def build():
                 cached += 1
                 print(f"ESPN team {id_}: cached {ext} image ({len(data)} bytes)")
             except (OSError, urllib.error.URLError, ValueError, ET.ParseError) as exc:
-                print(f"ESPN team {id_}: logo unavailable ({type(exc).__name__}); original URL preserved")
+                status = f"HTTP {exc.code}" if isinstance(exc, urllib.error.HTTPError) else type(exc).__name__
+                print(f"ESPN team {id_}: logo unavailable ({status}); original URL preserved")
         result["teams"][str(id_)] = row
     (OUTPUT / "manifest.json").write_text(
         json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
