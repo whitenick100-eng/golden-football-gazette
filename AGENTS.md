@@ -13,13 +13,21 @@
 3. **Website QA Agent**: `scripts/qa_gazette.py` — checks required website sections and validates available data. `scripts/data_status.py` reports whether each feed is fresh, stale, unavailable, or invalid.
 4. **Publisher**: `.github/workflows/refresh-and-deploy.yml` — runs the agents, QA, and then publishes to Pages. No editorial or design files are modified by the data agents.
 
-## Editorial agent — manual, approval required
-1. Add a repository Actions secret named `OPENAI_API_KEY` (Settings → Secrets and variables → Actions).
-2. Go to Actions → **Draft Gazette Article (approval required)** → Run workflow.
-3. Select the article type. The AI agent writes a Markdown draft using only the current checked-in structured data.
-4. The workflow opens a pull request under `editorial/draft-...` for the owner to review. It does **not** merge or publish the draft.
-5. GitHub repository settings may require enabling **Allow GitHub Actions to create and approve pull requests** (Settings → Actions → General), or the workflow's PR step will fail.
-6. Review all statistics, league references, predictions and dates before merging. The draft is stored in `editorial/` and a candidate `editorial/latest.json` is included in the same PR. **Only after you merge** does the website display that approved edition in its "From the Editor" section.
+## Daily AI writer — automatic draft, owner approval required
+The workflow is `.github/workflows/draft-article.yml`, displayed in GitHub Actions as **Daily Gazette Writer (approval required)**.
+
+- **Daily:** GitHub schedules a new draft at **8:17 AM America/New_York** (adjusts for daylight saving time). GitHub may start scheduled work late.
+- **Manual:** Open the workflow in Actions → **Run workflow**, choose `auto`, `daily-brief`, `week-preview`, or `weekly-recap`.
+- **Edition selection:** `auto` selects a Tuesday recap, Thursday–Sunday previews, and daily briefs on other days.
+- **Sources:** Each run retrieves its own fresh ESPN fantasy league and NFL schedule/weather snapshots. The writer refuses to invent data if neither source passes checks. Private ESPN leagues may be inaccessible.
+- **AI:** Uses the `OPENAI_API_KEY` repository Actions secret and the configured API model (currently `gpt-4.1-mini`). Billing and rate limits apply **separately from ChatGPT**.
+- **API unavailable:** Temporary 429 rate limits retry at most three times. Billing/credit/quota exhaustion, API errors, or a missing key produce a clearly labeled deterministic **verified-data bulletin** instead of an AI story, provided fresh source data exists. This fallback costs no OpenAI API tokens.
+- **Approval:** Creates an `EDITOR REVIEW: Golden Football Gazette — YYYY-MM-DD` pull request containing an editorial Markdown draft and candidate `editorial/latest.json`. **Never automatically merges or publishes an article.** Only the owner's merge makes the approved article visible on the site.
+- **Repository permission:** In Settings → Actions → General → Workflow permissions, enable **Allow GitHub Actions to create and approve pull requests**. The workflow will fail at the PR step if this is disallowed. It does not actually approve or merge PRs.
+- **Data integrity:** Check every final score, matchup, statistical award, injury, forecast, and playoff statement before approval. There is no automatic player top-five ranking without verified player-level data.
+
+Editor test suite: `python -m unittest discover -s tests -p "test_editorial.py" -v`.
+On editorial pull requests, `.github/workflows/verify-editorial.yml` runs these tests without secrets or paid API calls.
 
 ## Design agent — owner-approved only
 For design work, create a feature branch and pull request; inspect a preview or screenshots, then merge manually. There is intentionally no workflow that lets AI change `index.html` unattended.
@@ -27,6 +35,6 @@ For design work, create a feature branch and pull request; inspect a preview or 
 ## Troubleshooting
 - Run `python -m py_compile scripts/*.py` and `python scripts/qa_gazette.py` locally.
 - Check the **Data freshness summary** in GitHub Actions. A successful deployment does not prove ESPN responded.
-- If `OPENAI_API_KEY` is absent, the editorial workflow will stop without changing the site.
+- If `OPENAI_API_KEY` is absent or returns 429 due to exhausted credits, the writer produces a clearly labeled data-only review draft when at least one fresh feed exists.
 - If a feed is stale, inspect the refresh step; do not change `fetchedAt` just to make it look fresh.
 - GitHub scheduled workflows can run late. Refresh times are approximate.
