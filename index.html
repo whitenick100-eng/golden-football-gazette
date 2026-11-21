@@ -709,14 +709,14 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
      const image=document.createElement('img');image.className='portrait';image.alt=p.name+' official ESPN NFL headshot';image.loading='lazy';
      const missing=txt('div','Portrait unavailable','portrait portrait-fallback');
      image.onerror=()=>image.replaceWith(missing);
-     if(/^https:\/\/a\.espncdn\.com\/i\/headshots\/nfl\/players\/full\/\d+\.png$/.test(p.headshotUrl||''))image.src=p.headshotUrl;
-     else image.replaceWith(missing);
+     const validPortrait=/^https:\/\/a\.espncdn\.com\/i\/headshots\/nfl\/players\/full\/\d+\.png$/.test(p.headshotUrl||'');
+     if(validPortrait)image.src=p.headshotUrl;
      const detail=txt('div');
      detail.append(txt('div','#'+(i+1)+' · '+(p.position||'NFL'),'player-rank'),
                    txt('div',p.name,'player-name'),
                    txt('div',Number(p.points).toFixed(2)+' pts','fantasy-points'),
                    txt('div',p.fantasyTeam||'Fantasy team unavailable','player-team'));
-     card.append(image,detail);
+     card.append(validPortrait?image:missing,detail);
      $('player-stars').append(card);
    });
   }catch(e){
