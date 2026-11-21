@@ -1,57 +1,126 @@
 #!/usr/bin/env python3
-"""Fetch ESPN public league data; publish only sanitized scores/standings.
-Never publish members, player ownership, credentials or full ESPN responses.
+"""Publish only sanitized ESPN fantasy league standings/matchups.
+
+Refresh follows ESPN's *current* scoring period; never fix the feed to Week 11.
+ESPN public league access may be unavailable for private leagues.
 """
-import json, os, urllib.request, datetime
+import datetime as dt
+import json
+import urllib.request
 from pathlib import Path
 
 LEAGUE = "1413446022"
 YEAR = 2026
-URL = (f"https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{YEAR}/"
-       f"segments/0/leagues/{LEAGUE}?view=mTeam&view=mMatchup&view=mMatchupScore&view=mScoreboard&matchupPeriodId=11&scoringPeriodId=11")
+BASE_URL = (
+    f"https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/"
+    f"seasons/{YEAR}/segments/0/leagues/{LEAGUE}"
+)
 OUT = Path("data/league.json")
 OUT.parent.mkdir(exist_ok=True, parents=True)
+HEADERS = {"User-Agent":"Mozilla/5.0 GoldenFootballGazette/1.0","Accept":"application/json"}
+
+def get_json(url):
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=25) as response:
+        return json.load(response)
+
+def merge_schedule(base, current):
+    """Overlay the freshest current-week scores on complete season matchups."""
+    by_id = {g.get("id"): g for g in base if g.get("id") is not None}
+    for game in current:
+        key = game.get("id")
+        if key is not None and key in by_id:
+            old = by_id[key]
+            old.update({k:v for k,v in game.items() if k not in ("home","away")})
+            for side in ("home","away"):
+                if isinstance(game.get(side),dict):
+                    old.setdefault(side,{})
+                    old[side].update(game[side])
+        else:
+            base.append(game)
+    return base
 
 def refresh():
-    request = urllib.request.Request(URL, headers={"User-Agent": "Mozilla/5.0 GoldenFootballGazette/1.0", "Accept": "application/json"})
-    with urllib.request.urlopen(request, timeout=25) as response:
-        data = json.load(response)
-    if str(data.get("id")) != LEAGUE or int(data.get("seasonId", 0)) != YEAR:
-        raise ValueError("Unexpected ESPN league or season")
-    teams = data.get("teams") or []
-    schedule = data.get("schedule") or []
+    first = get_json(BASE_URL + "?view=mTeam&view=mMatchup&view=mMatchupScore")
+    if str(first.get("id")) != LEAGUE or int(first.get("seasonId",0)) != YEAR:
+        raise ValueError("ESPN returned unexpected league or season")
+    teams = first.get("teams") or []
+    schedule = first.get("schedule") or []
     if len(teams) != 10 or not schedule:
-        raise ValueError("Incomplete ESPN league response")
-    names = {int(t["id"]): t.get("name", "Team " + str(t["id"])) for t in teams}
+        raise ValueError("ESPN returned incomplete teams or schedule")
+    status = first.get("status") or {}
+    week = status.get("currentMatchupPeriod") or first.get("scoringPeriodId")
+    try:
+        week = int(week)
+    except (TypeError, ValueError):
+        week = None
+    if week is not None and 1 <= week <= 22:
+        url = (BASE_URL + "?view=mScoreboard&view=mMatchupScore"
+               + f"&matchupPeriodId={week}&scoringPeriodId={week}")
+        try:
+            scoped = get_json(url)
+            if str(scoped.get("id")) == LEAGUE:
+                schedule = merge_schedule(schedule, scoped.get("schedule") or [])
+        except Exception as exc:
+            # The original mMatchupScore schedule remains intact.
+            print("Week-specific ESPN projection lookup unavailable:",
+                  type(exc).__name__)
+
+    names = {int(t["id"]): t.get("name") or f"Team {t['id']}" for t in teams}
     standings = []
     for t in teams:
-        overall = t.get("record", {}).get("overall", {})
-        standings.append({"teamId": t["id"], "name": names[int(t["id"])],
-                          "logo": t.get("logo"), "wins": overall.get("wins"), "losses": overall.get("losses"),
-                          "ties": overall.get("ties"), "pointsFor": overall.get("pointsFor")})
-    standings.sort(key=lambda t: (-(t["wins"] or 0), t["losses"] or 0, -(t["pointsFor"] or 0)))
+        record = (t.get("record") or {}).get("overall") or {}
+        standings.append({
+            "teamId": t["id"],"name": names[int(t["id"])],"logo":t.get("logo"),
+            "wins":record.get("wins"),"losses":record.get("losses"),
+            "ties":record.get("ties"),"pointsFor":record.get("pointsFor"),
+        })
+    standings.sort(key=lambda t: (
+        -(t["wins"] or 0),t["losses"] or 0,-(t["pointsFor"] or 0)
+    ))
     games = []
-    for g in schedule:
-        if "home" not in g or "away" not in g: continue
-        home, away = g["home"], g["away"]
-        games.append({"week": g.get("matchupPeriodId"), "winner": g.get("winner", "UNDECIDED"),
-                      "home": {"teamId":home.get("teamId"), "name": names.get(home.get("teamId")), "points": home.get("totalPointsLive",home.get("totalPoints")), "projectedPoints": home.get("totalProjectedPointsLive") if isinstance(home.get("totalProjectedPointsLive"),(int,float)) and home.get("totalProjectedPointsLive")>0 else None},
-                      "away": {"teamId":away.get("teamId"), "name": names.get(away.get("teamId")), "points": away.get("totalPointsLive",away.get("totalPoints")), "projectedPoints": away.get("totalProjectedPointsLive") if isinstance(away.get("totalProjectedPointsLive"),(int,float)) and away.get("totalProjectedPointsLive")>0 else None}})
-    return {"leagueId": LEAGUE, "season": YEAR, "source": "ESPN public API",
-            "fetchedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "standingsAsOf": data.get("status", {}).get("standingsUpdateDate"),
-            "currentMatchupPeriod": data.get("status", {}).get("currentMatchupPeriod"),
-            "requestedWeek": 11,
-            "standings": standings, "matchups": games}
+    for game in schedule:
+        if not isinstance(game.get("home"), dict) or not isinstance(game.get("away"), dict):
+            continue
+        home, away = game["home"], game["away"]
+        def side(item):
+            projected = item.get("totalProjectedPointsLive")
+            actual = item.get("totalPointsLive")
+            if actual is None:
+                actual = item.get("totalPoints")
+            return {
+                "teamId":item.get("teamId"),
+                "name":names.get(item.get("teamId")),
+                "points":actual,
+                "projectedPoints":projected
+                  if isinstance(projected,(int,float)) and 0 < projected < 1000 else None,
+            }
+        games.append({
+            "week":game.get("matchupPeriodId"),
+            "winner":game.get("winner","UNDECIDED"),
+            "home":side(home),"away":side(away),
+        })
+    return {
+        "leagueId":LEAGUE,"season":YEAR,
+        "source":"ESPN public fantasy API",
+        "fetchedAt":dt.datetime.now(dt.timezone.utc).isoformat(),
+        "standingsAsOf":status.get("standingsUpdateDate"),
+        "currentMatchupPeriod":week,
+        "requestedWeek":week,
+        "standings":standings,
+        "matchups":games,
+    }
 
-try:
-    payload = refresh()
-    OUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    print("ESPN refresh succeeded; sanitized league data written")
-except Exception as exc:
-    print(f"ESPN refresh unavailable: {type(exc).__name__}: {exc}")
-    if OUT.exists():
-        print("Retaining last verified league.json without changing its fetchedAt")
-    else:
-        OUT.write_text(json.dumps({"leagueId": LEAGUE, "season": YEAR,
-            "status": "unavailable", "message": "No verified live ESPN data available"}, indent=2) + "\n")
+if __name__ == "__main__":
+    try:
+        OUT.write_text(json.dumps(refresh(),indent=2)+"\n",encoding="utf-8")
+        print("ESPN fantasy league refresh succeeded")
+    except Exception as exc:
+        print(f"ESPN fantasy refresh unavailable: {type(exc).__name__}: {exc}")
+        if OUT.exists():
+            print("Retaining last verified league snapshot and timestamp")
+        else:
+            OUT.write_text(json.dumps({
+                "leagueId":LEAGUE,"season":YEAR,"status":"unavailable",
+                "message":"No verified live ESPN fantasy data available"
+            },indent=2)+"\n")
