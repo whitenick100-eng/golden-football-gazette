@@ -1,0 +1,62 @@
+name: Verify Gazette Weekly Features
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/refresh_espn.py'
+      - 'scripts/refresh_player_leaders.py'
+      - 'scripts/build_weekly_features.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_weekly_features.py'
+      - '.github/workflows/refresh-and-deploy.yml'
+      - '.github/workflows/verify-weekly-features.yml'
+permissions:
+  contents: read
+jobs:
+  verify-daily-and-weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and test source-backed features
+        run: |
+          python -m py_compile scripts/refresh_espn.py scripts/refresh_player_leaders.py scripts/build_weekly_features.py scripts/qa_gazette.py
+          python -m unittest discover -s tests -p "test_weekly_features.py" -v
+      - name: Fetch verified ESPN standings and player boxscore
+        run: |
+          python scripts/refresh_espn.py
+          python scripts/refresh_player_leaders.py
+          python scripts/build_weekly_features.py
+          python scripts/qa_gazette.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name in ('league','top-performers','weekly-features'):
+              f=Path('data')/(name+'.json')
+              d=json.loads(f.read_text(encoding='utf-8'))
+              if name=='league':
+                  print('League refresh:',d.get('status','available'),
+                        'currentWeek:',d.get('currentMatchupPeriod'),
+                        'playoff settings:',d.get('playoffSettings'))
+              elif name=='top-performers':
+                  print('Player leaders:',d.get('status','available'),
+                        'completedWeek:',d.get('week'),
+                        'count:',len(d.get('players',[])))
+              else:
+                  print('Daily stories:',len(d.get('coverage',[])),
+                        'playoff picture:',d.get('playoffs',{}).get('status'),
+                        'formatVerified:',d.get('playoffs',{}).get('formatVerifiedByESPN'))
+          PY
+      - name: Validate embedded browser code
+        run: |
+          python - <<'PY'
+          import pathlib,re
+          html=pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',html)
+          pathlib.Path('/tmp/gazette.js').write_text('\n'.join(x for x in scripts if x.strip()),encoding='utf-8')
+          print('Checking',len(scripts),'embedded JavaScript blocks')
+          PY
+          node --check /tmp/gazette.js
