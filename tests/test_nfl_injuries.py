@@ -50,6 +50,17 @@ class NFLInjuryFeedTests(unittest.TestCase):
         self.assertIsNone(a[1]["practiceStatus"])
         self.assertEqual(result["teams"][1]["players"][0]["practiceStatus"],"Did Not Participate")
 
+    def test_live_espn_groups_with_direct_team_id_and_displayname(self):
+        raw=sample()
+        raw["injuries"]=[
+            {"id":"1","displayName":"Atlanta Falcons","injuries":raw["injuries"][0]["injuries"]},
+            {"id":"2","displayName":"Buffalo Bills","injuries":raw["injuries"][1]["injuries"]},
+        ]
+        result=feed.normalize(raw,now=self.now,week=12)
+        self.assertEqual(result["teamCount"],2)
+        self.assertEqual(result["playerCount"],3)
+        self.assertEqual(result["teams"][0]["name"],"Atlanta Falcons")
+
     def test_rejects_incomplete_or_wrong_season(self):
         with self.assertRaises(ValueError):
             feed.normalize({"injuries":[]},now=self.now)
