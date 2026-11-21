@@ -296,7 +296,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   </div>
   <p class="injury-count" id="injury-count" role="status"></p>
   <div id="injury-teams" class="injury-teams"><p class="injury-empty">No injury report loaded yet.</p></div>
-  <p class="injury-disclaimer">Data source: ESPN's league-wide injury listing. Reported status and practice participation are not the same as an official game designation. Teams with no entries may be on a bye or not represented in this feed; absence does not confirm that a team is injury-free. See the linked official NFL injury report for game-week practice and final game statuses.</p>
+  <p class="injury-disclaimer">Data source: ESPN's league-wide injury listing. Reported status and practice participation are not the same as an official game designation. ESPN may cap records at 25 per team, and ordinary “Active” entries are omitted. Teams or players not shown are not necessarily injury-free. See the linked official NFL injury report for game-week practice and final game statuses.</p>
 </div>
 </section>
 <section id="fantasy-helmets" class="hub-section">
@@ -520,7 +520,7 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
    const stale=hoursOld>36;
    meta.textContent=(stale?'Last verified snapshot (may be outdated)':'Latest retrieved ESPN listing')+
        ' · '+stamp.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
-       ' · '+data.teamCount+' reporting clubs';
+       ' · '+data.teamCount+' clubs with reported statuses'+(data.possiblePerTeamLimit?' · ESPN may cap listings at 25 per club':'');
    for(const team of data.teams){
      const option=el('option',team.name);option.value=String(team.teamId);teamSelect.append(option);
    }
@@ -573,7 +573,7 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
        }
        table.append(tbody);scroller.append(table);details.append(scroller);area.append(details);
      }
-     count.textContent=shown+' injury listing'+(shown===1?'':'s')+' across '+clubs+' reporting team'+(clubs===1?'':'s')+
+     count.textContent=shown+' reported injury status'+(shown===1?'':'es')+' across '+clubs+' team'+(clubs===1?'':'s')+
         (stale?' · Snapshot may be outdated':'');
      if(!shown)area.append(el('p','No reported entries match these filters. This does not confirm that any team is injury-free.','injury-empty'));
    }
