@@ -1,0 +1,11 @@
+{
+  "date": "2026-11-20",
+  "articleType": "week-preview",
+  "body": "# The Golden Football Gazette — Week Preview\n\n*Friday, November 20, 2026 · Independent fantasy football league newspaper*\n\n\n\n## Today's Verified Football Report\n\n\n\nESPN league 1413446022 lists **4th and 10** at the top of its latest supplied standings (10–0). These standings were retrieved 2026-11-21T01:47:41.362606+00:00. Standings position is not, by itself, proof of a clinched playoff berth.\n\nESPN lists these fantasy matchups for period 11: Sunday Morning Panic against The Automatons; 4th and 10 against Fumbly In My Tumbly ; Jeremy's Scary Team against HVAC guru; Cam, Bam Thank you Ma'am. against Michelle's Magnificent Team; Violet and Daxs mom! against Football Bi@##!. No winner or final result is declared unless the supplied feed confirms it.\n\nThe verified NFL Week 11 schedule includes Arizona Cardinals at Kansas City Chiefs (Sun Nov 22, 1:00 PM ET; Arrowhead Stadium); Baltimore Ravens at Carolina Panthers (Sun Nov 22, 1:00 PM ET; Bank of America Stadium); Miami Dolphins at Buffalo Bills (Sun Nov 22, 1:00 PM ET; Highmark Stadium); New Orleans Saints at Chicago Bears (Sun Nov 22, 1:00 PM ET; Soldier Field); Tampa Bay Buccaneers at Detroit Lions (Sun Nov 22, 1:00 PM ET; Ford Field). Outdoor weather forecasts are subject to change.\n\nThe supplied NFL feed marks these games final: Indianapolis Colts 3, Houston Texans 26.\n\n\n\n## Editor's Verification Checklist\n\n\n\n- Check each ESPN snapshot timestamp and confirm it is current.\n\n- Verify any projected scores, individual player awards and playoff claims separately.\n\n- Confirm team logos, injuries, and forecasts before publishing additional claims.\n\n\n\n### Sources and editorial status\n\n\n\nThis is an **automated verified-data bulletin**, not an AI-generated article. It is a draft and requires the owner's review and GitHub merge before publication.\n\n- ESPN fantasy league: retrieved 2026-11-21T01:47:41.362606+00:00 UTC timestamp.\n\n- ESPN NFL schedule and optional Open-Meteo forecasts: retrieved 2026-11-21T01:47:41.430763+00:00 UTC timestamp.",
+  "generationMethod": "verified-data-fallback-owner-review",
+  "sourceTimes": {
+    "fantasy_league": "2026-11-21T01:47:41.362606+00:00",
+    "nfl_week": "2026-11-21T01:47:41.430763+00:00"
+  },
+  "editorialStatus": "owner-approved-on-merge"
+}
