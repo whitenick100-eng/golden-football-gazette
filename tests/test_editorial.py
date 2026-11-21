@@ -113,5 +113,43 @@ class DailyEditorTests(unittest.TestCase):
         self.assertTrue(list((editor.ROOT/"editorial").glob("*-DRAFT.md")))
 
 
+
+class ESPNRefreshTests(unittest.TestCase):
+    def test_current_period_is_queried_and_projected_scores_overlay_history(self):
+        espn_path = MODULE.parent / "refresh_espn.py"
+        es = importlib.util.spec_from_file_location("gazette_espn", espn_path)
+        espn = importlib.util.module_from_spec(es)
+        es.loader.exec_module(espn)
+        teams = [
+            {"id":i,"name":f"Club {i}",
+             "record":{"overall":{"wins":6,"losses":5,"pointsFor":1000}}}
+            for i in range(1,11)
+        ]
+        base = {
+            "id":1413446022,"seasonId":2026,
+            "status":{"currentMatchupPeriod":12},
+            "teams":teams,
+            "schedule":[{"id":100,"matchupPeriodId":12,"winner":"UNDECIDED",
+                         "home":{"teamId":1,"totalPoints":12},
+                         "away":{"teamId":2,"totalPoints":10}}]
+        }
+        live = {
+            "id":1413446022,
+            "schedule":[{"id":100,"matchupPeriodId":12,
+                         "home":{"teamId":1,"totalProjectedPointsLive":112.5},
+                         "away":{"teamId":2,"totalProjectedPointsLive":109.2}}]
+        }
+        requested = []
+        def fake_get(url):
+            requested.append(url)
+            return json.loads(json.dumps(base if len(requested)==1 else live))
+        with patch.object(espn, "get_json", side_effect=fake_get):
+            data = espn.refresh()
+        self.assertIn("matchupPeriodId=12", requested[1])
+        self.assertIn("scoringPeriodId=12", requested[1])
+        self.assertEqual(data["requestedWeek"], 12)
+        self.assertEqual(data["matchups"][0]["home"]["points"],12)
+        self.assertEqual(data["matchups"][0]["home"]["projectedPoints"],112.5)
+
 if __name__=="__main__":
     unittest.main()
