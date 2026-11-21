@@ -19,7 +19,7 @@ OUT=ROOT/"data/nfl-transactions.json"
 URL="https://site.api.espn.com/apis/site/v2/sports/football/nfl/transactions"
 SOURCE_PAGE="https://www.espn.com/nfl/transactions"
 HEADERS={"User-Agent":"Mozilla/5.0 (compatible; GoldenFootballGazette/1.0)","Accept":"application/json"}
-TRADE=re.compile(r"\b(?:traded?|trades?|trade)\b",re.I)
+TRADE=re.compile(r"\btraded\b|\bacquired\b[^.]{0,80}\b(?:via|in)\s+(?:a\s+)?trade\b",re.I)
 RELEASE=re.compile(r"\b(?:released?|releases?|cut|cuts|contract terminated)\b",re.I)
 WAIVED=re.compile(r"\b(?:waived?)\b",re.I)
 
