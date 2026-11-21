@@ -220,6 +220,72 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .bracket-pairing{background:rgba(15,44,42,.53);border:1px solid rgba(240,200,135,.55);padding:11px;color:#fff5dc;font:.79rem/1.45 system-ui,sans-serif}
 .bracket-pairing .round-label{font:.66rem/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#e6c58d}
 .bracket-disclaimer{margin-top:13px}
+
+/* Phone stadium visibility: Safari/Chrome mobile background and blur repair.
+   A viewport-pinned background avoids document-height cover cropping. */
+@media (max-width: 700px) {
+  html { background: #071320 !important; }
+  body {
+    isolation: isolate;
+    background: transparent !important;
+    background-image: none !important;
+    background-attachment: scroll !important;
+    min-height: 100svh;
+  }
+  body::before {
+    content: "";
+    display: block;
+    position: fixed !important;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    z-index: -1;
+    pointer-events: none;
+    background-image: linear-gradient(180deg,rgba(2,9,20,.08) 0%,rgba(2,10,19,.08) 55%,rgba(2,20,11,.12) 100%),url("assets/stadium-late-fall.webp") !important;
+    background-position: center center !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-attachment: scroll !important;
+    transform: translateZ(0);
+  }
+  .gazette-masthead,.page,.hub-section,.breaking,#espn-live,.nfl-banner,.archive,
+  .league-logos-feature,header {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(4,14,22,.24) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,.23) !important;
+  }
+  .game-card,.coverage-story,.player-leader,.bracket-card,.fantasy-card,.injury-report,
+  .injury-club,.transaction-card { backdrop-filter:none!important; -webkit-backdrop-filter:none!important; }
+  .gazette-masthead h1,.hub-section h2,.page h2 { text-shadow: 0 2px 8px rgba(0,0,0,.92) !important; }
+  .hub-section p,.page p,.game-card,.coverage-story p { text-shadow: 0 1px 3px rgba(0,0,0,.72); }
+}
+@media (max-width: 420px) {
+  body::before { background-position: 52% center !important; }
+  .hub-section,.page { padding: 12px !important; }
+}
+
+
+/* Daily verified NFL trade and roster release wire */
+.transactions-desk{margin-top:25px;border-top:3px double #ebc68d;padding-top:17px}
+.transactions-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.transactions-heading h3{font:700 clamp(1.15rem,2.6vw,1.7rem) Georgia,serif;color:#ffe0aa!important;margin:0 0 6px}
+.transactions-heading a{font:.74rem system-ui,sans-serif;color:#ffe9c7;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
+.transactions-tools{display:flex;flex-wrap:wrap;gap:10px 14px;margin:14px 0 9px}
+.transactions-tools label{min-width:175px;flex:1;font:700 .73rem/1.7 system-ui,sans-serif;color:#ffe0ab}
+.transactions-tools select,.transactions-tools input{display:block;min-width:0;width:100%;box-sizing:border-box;padding:9px;border-radius:4px;border:1px solid rgba(238,206,149,.75);color:#fff7e4;background:rgba(3,21,29,.92);font:.85rem system-ui,sans-serif}
+.transaction-summary{margin:8px 0 12px;color:#f8d596;font:700 .81rem/1.45 system-ui,sans-serif}
+.transaction-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:10px}
+.transaction-card{border:1px solid rgba(228,186,113,.72);background:rgba(3,19,25,.46);padding:11px;display:flex;gap:10px;align-items:flex-start}
+.transaction-card img{width:40px;height:40px;flex:none;object-fit:contain}
+.transaction-card h4{font:700 .92rem Georgia,serif;color:#fff0cf;margin:0 0 5px}
+.transaction-card p{font:.8rem/1.5 Georgia,serif;color:#fff6e5;margin:5px 0}
+.transaction-meta{font:.7rem/1.4 system-ui,sans-serif;color:#edd3a6}
+.transaction-tag{display:inline-block;font:700 .66rem/1.5 system-ui,sans-serif;letter-spacing:.055em;text-transform:uppercase;color:#ffdd95;border:1px solid rgba(241,210,148,.6);padding:2px 6px;margin-right:7px}
+.transaction-note{font:.72rem/1.5 system-ui,sans-serif;color:#e7d3ad;margin:12px 0 0}
+@media(max-width:700px){.transactions-tools{display:grid;grid-template-columns:1fr;gap:10px}.transaction-card{background:rgba(3,14,21,.27)}}
+
 </style>
 </head>
 <body>
@@ -263,6 +329,30 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 <h2>Today's Football Desk · Verified Briefing</h2>
 <p class="hub-intro" id="auto-coverage-meta">Retrieving the newest verified NFL and fantasy-league headlines…</p>
 <div id="auto-coverage-stories" class="coverage-stories" aria-live="polite"></div>
+<div id="nfl-transactions-desk" class="transactions-desk" aria-label="Latest NFL trades and player releases">
+  <div class="transactions-heading">
+    <div><h3>Roster Wire · NFL Trades &amp; Player Releases</h3>
+      <p id="transaction-freshness" class="hub-intro" role="status">Retrieving ESPN's confirmed transactions from all NFL teams…</p>
+    </div>
+    <a href="https://www.espn.com/nfl/transactions" target="_blank" rel="noopener noreferrer">ESPN transaction source</a>
+  </div>
+  <div class="transactions-tools">
+    <label for="transaction-filter">Display
+      <select id="transaction-filter">
+        <option value="all">Trades, releases and waivers</option>
+        <option value="Trade">Trades only</option>
+        <option value="Released">Released only</option>
+        <option value="Waived">Waived only</option>
+      </select>
+    </label>
+    <label for="transaction-team-search">Search NFL team or player
+      <input type="search" id="transaction-team-search" placeholder="e.g., Tennessee Titans" autocomplete="off">
+    </label>
+  </div>
+  <div id="transaction-summary" class="transaction-summary" role="status"></div>
+  <div id="transaction-items" class="transaction-items"><p class="hub-intro">Checking the latest reported roster moves…</p></div>
+  <p class="transaction-note">Only trade, release, and waiver moves explicitly listed in ESPN's NFL transactions feed appear here. A waived player is not necessarily a released player; rumored trades, practice-squad deletions and signings are excluded. Some transactions can appear for both clubs.</p>
+</div>
 <p class="coverage-caveat">Daily fact-based coverage generated from timestamped ESPN data, not AI opinion. The independently written newspaper edition remains subject to editor approval.</p>
 </section>
 <section id="approved-editorial" class="hub-section" aria-live="polite" hidden>
@@ -726,6 +816,64 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
   }
  };
  await Promise.allSettled([loadCoverage(),loadStars()]);
+})();
+</script><script>
+/* NFL Roster Wire: only transaction actions reported in the ESPN NFL feed. */
+(async function(){
+  const area=document.getElementById('transaction-items');
+  const status=document.getElementById('transaction-freshness');
+  const count=document.getElementById('transaction-summary');
+  const filter=document.getElementById('transaction-filter');
+  const search=document.getElementById('transaction-team-search');
+  if(!area||!status||!count||!filter||!search)return;
+  const node=(tag,value,cls)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=String(value);if(cls)n.className=cls;return n};
+  const safeLogo=url=>typeof url==='string' && /^https:\/\/a\.espncdn\.com\//.test(url);
+  try{
+    const r=await fetch('data/nfl-transactions.json?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw Error('No published transactions snapshot');
+    const d=await r.json();
+    if(d.status!=='available'||!Array.isArray(d.moves))throw Error('ESPN transactions unavailable');
+    const when=new Date(d.fetchedAt);if(Number.isNaN(when.getTime()))throw Error('No verification timestamp');
+    const hours=(Date.now()-when.getTime())/3600000;
+    status.textContent=(hours>36?'Last retrieved report; potentially outdated':'Latest verified ESPN roster wire')+
+      ' · Checked '+when.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
+      ' · Records dated '+d.windowStart+' through '+d.windowEnd+(d.coverageComplete?'':' · Source may not cover the entire window');
+    const today=d.windowEnd;
+    const recent=d.moves.filter(m=>m.date===today).length;
+    function draw(){
+      const query=search.value.trim().toLowerCase();
+      const selected=filter.value;
+      const moves=d.moves.filter(m=>(selected==='all'||m.type===selected)&&
+        (!query||[m.team,m.teamAbbr,m.description].join(' ').toLowerCase().includes(query)));
+      area.replaceChildren();
+      count.textContent=recent+' ESPN-listed trade/release/waiver entries dated '+today+
+        ' · '+moves.length+' matching records in the latest eight calendar dates';
+      if(!moves.length){
+        area.append(node('p','No verified trades, releases or waivers match these filters in the available ESPN report.','injury-empty'));
+        return;
+      }
+      for(const m of moves.slice(0,36)){
+        const card=node('article',undefined,'transaction-card');
+        if(safeLogo(m.teamLogo)){
+          const img=node('img');img.loading='lazy';img.alt=m.team+' NFL logo';img.src=m.teamLogo;img.onerror=()=>img.remove();card.append(img);
+        }
+        const body=node('div');
+        body.append(node('h4',m.team));
+        const meta=node('div',undefined,'transaction-meta');
+        meta.append(node('span',m.type,'transaction-tag'),node('span',m.date+' · ESPN NFL transactions'));
+        body.append(meta,node('p',m.description));
+        card.append(body);area.append(card);
+      }
+      if(moves.length>36)area.append(node('p','Showing the first 36 results. Filter by team or action to find more.','hub-intro'));
+    }
+    filter.addEventListener('change',draw);search.addEventListener('input',draw);
+    draw();
+  }catch(e){
+    status.textContent='Verified NFL transaction updates are temporarily unavailable.';
+    count.textContent='';
+    area.replaceChildren(node('p','No confirmed transaction entries can be displayed from the current source. Use the ESPN transactions link to check roster moves.','injury-empty'));
+    console.warn('Transaction feed unavailable:',e);
+  }
 })();
 </script></body>
 </html>

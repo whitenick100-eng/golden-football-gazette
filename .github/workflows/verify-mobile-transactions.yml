@@ -1,0 +1,56 @@
+name: Verify mobile stadium and NFL transactions
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/refresh_nfl_transactions.py'
+      - 'scripts/build_weekly_features.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_nfl_transactions.py'
+      - '.github/workflows/refresh-and-deploy.yml'
+      - '.github/workflows/verify-mobile-transactions.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile code and verify trade/release data rules
+        run: |
+          python -m py_compile scripts/*.py tests/test_nfl_transactions.py
+          python -m unittest discover -s tests -p "test_nfl_transactions.py" -v
+      - name: Validate ESPN's recent NFL transactions and daily newspaper
+        run: |
+          python scripts/refresh_nfl_transactions.py
+          python scripts/build_weekly_features.py
+          python scripts/qa_gazette.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('data/nfl-transactions.json').read_text())
+          print('ESPN transaction status:',d.get('status'))
+          print('Latest moves:',d.get('total'), 'trades:',d.get('trades'),'releases/waivers:',d.get('releases'))
+          print('Source window:',d.get('windowStart'),d.get('windowEnd'),'coverageComplete:',d.get('coverageComplete'))
+          for item in d.get('moves',[])[:6]:
+              print('MOVE:',item['date'],item['type'],item['team'],item['description'])
+          w=json.loads(Path('data/weekly-features.json').read_text())
+          print('Newsroom headlines:',[(x['tag'],x['headline']) for x in w.get('coverage',[])])
+          PY
+      - name: Validate inline browser scripts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          h=Path('index.html').read_text(encoding='utf-8')
+          js=re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',h)
+          Path('/tmp/gazette-mobile-transactions.js').write_text('\n'.join(x for x in js if x.strip()),encoding='utf-8')
+          print('Found',len(js),'inline scripts')
+          assert 'assets/stadium-late-fall.webp' in h
+          assert 'body::before' in h and 'backdrop-filter: none !important' in h
+          PY
+          node --check /tmp/gazette-mobile-transactions.js

@@ -131,8 +131,26 @@ def playoff_picture(league):
 def story(tag, headline, body, source_name):
     return {"tag":tag,"headline":headline,"body":body,"source":source_name}
 
-def report(league,nfl,injuries,leaders,now):
+def report(league,nfl,injuries,leaders,now,transactions=None):
     items=[]
+    if transactions and transactions.get("status")=="available":
+        # Prioritize newly confirmed roster moves in Today's Football Desk.
+        moves=transactions.get("moves") or []
+        trades=[m for m in moves if m.get("type")=="Trade"]
+        departures=[m for m in moves if m.get("type") in ("Released","Waived")]
+        for kind,headline,subset in (
+            ("NFL Trades","NFL transaction wire · confirmed trades",trades),
+            ("NFL Releases","NFL transaction wire · releases and waivers",departures),
+        ):
+            if not subset:continue
+            mentions=[
+                f"{m['team']}: {m['description']} ({m['date']})"
+                for m in subset[:4]
+            ]
+            items.append(story(kind,headline,
+                "ESPN's roster wire reports: "+"; ".join(mentions)+
+                ". These are dated ESPN transaction descriptions, not rumors.",
+                "ESPN NFL transactions"))
     if league:
         ordered=league["standings"]
         first=ordered[0]
@@ -226,11 +244,14 @@ def generate(now=None):
     nfl=source("nfl-week.json",now)
     injuries=source("nfl-injuries.json",now)
     leaders=source("top-performers.json",now)
+    transactions=source("nfl-transactions.json",now)
+    if transactions and not isinstance(transactions.get("moves"),list):
+        transactions=None
     if leaders and not (isinstance(leaders.get("players"),list) and len(leaders["players"])==5):
         leaders=None
     if league and leaders and leaders.get("season")!=league.get("season"):
         leaders=None
-    stories=report(league,nfl,injuries,leaders,now)
+    stories=report(league,nfl,injuries,leaders,now,transactions)
     return {
         "status":"available" if stories else "unavailable",
         "generatedAt":now.isoformat(),
@@ -243,6 +264,7 @@ def generate(now=None):
             "espnNFL":nfl.get("fetchedAt") if nfl else None,
             "espnInjuries":injuries.get("fetchedAt") if injuries else None,
             "espnPlayerBoxscore":leaders.get("fetchedAt") if leaders else None,
+            "espnTransactions":transactions.get("fetchedAt") if transactions else None,
         },
     }
 
