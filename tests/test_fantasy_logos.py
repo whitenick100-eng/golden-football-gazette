@@ -53,5 +53,23 @@ class LogoCacheTests(unittest.TestCase):
                 self.assertEqual(manifest["teams"]["2"]["name"],source["teams"][1]["name"])
                 self.assertTrue((root/"assets/fantasy-logos/manifest.json").exists())
 
+
+    def test_owner_provided_original_can_be_cached(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            folder=root/"assets/espn-logo-overrides"
+            folder.mkdir(parents=True)
+            (folder/"team-1.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"data")
+            inp=root/"assets/espn-team-logos.json"
+            inp.write_text((PATH.parent.parent/"assets/espn-team-logos.json").read_text())
+            with (patch.object(logos,"ROOT",root),
+                  patch.object(logos,"INPUT",inp),
+                  patch.object(logos,"OUTPUT",root/"assets/fantasy-logos"),
+                  patch.object(logos,"download",side_effect=ValueError("access denied")) as fetch):
+                manifest=logos.build()
+            self.assertTrue(manifest["teams"]["1"]["cached"])
+            self.assertEqual(manifest["teams"]["1"]["localUrl"],"assets/fantasy-logos/team-1.png")
+            self.assertEqual(fetch.call_count,9)
+
 if __name__=="__main__":
     unittest.main()
