@@ -48,9 +48,10 @@ def normalize(payload, now=None, week=None):
     for group in raw:
         if not isinstance(group, dict):
             continue
-        team = group.get("team") or {}
-        if not isinstance(team, dict):
-            continue
+        # ESPN's live NFL feed puts id/displayName directly on each group;
+        # some documented examples instead nest these fields in "team".
+        nested_team = group.get("team")
+        team = nested_team if isinstance(nested_team, dict) and nested_team else group
         team_id = str(team.get("id") or "").strip()
         team_name = label(team.get("displayName") or team.get("name"))
         if not team_id or not team_name:
