@@ -98,6 +98,19 @@ class PlayoffCoverageTests(unittest.TestCase):
         self.assertEqual(b["championshipPairings"][0]["awaySeed"],4)
         self.assertIn("NOT necessarily eliminated",b["caveat"])
 
+    def test_espn_total_points_scored_seeding_overrides_win_loss_order(self):
+        d=league()
+        d["playoffSettings"]["playoffSeedingRule"]="TOTAL_POINTS_SCORED"
+        # Club 10 has fewer wins but clearly leads the total-points seeding.
+        for t in d["standings"]:
+            if t["teamId"]==10:
+                t["pointsFor"]=1800
+        bracket=features.playoff_picture(d)
+        self.assertTrue(bracket["seedingOrderFromSettings"])
+        self.assertEqual(bracket["contenders"][0]["name"],"Fantasy Club 10")
+        self.assertEqual(bracket["championshipPairings"][0]["homeSeed"],1)
+        self.assertEqual(bracket["championshipPairings"][0]["home"],"Fantasy Club 10")
+
     def test_actual_espn_winners_bracket_replaces_projections(self):
         d=league()
         g=d["matchups"][-1]
