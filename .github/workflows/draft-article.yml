@@ -1,56 +1,75 @@
-name: Draft Gazette Article (approval required)
+name: Daily Gazette Writer (approval required)
 on:
+  schedule:
+    - cron: '17 8 * * *'
+      timezone: "America/New_York"
   workflow_dispatch:
     inputs:
       article_type:
-        description: Article format
+        description: Edition format (auto selects an appropriate daily edition)
         required: true
-        default: daily-brief
+        default: auto
         type: choice
         options:
+          - auto
           - daily-brief
           - week-preview
           - weekly-recap
 permissions:
   contents: write
   pull-requests: write
+concurrency:
+  group: golden-gazette-editorial
+  cancel-in-progress: false
 jobs:
   editorial-draft:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Check editorial agent prerequisites
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Check newspaper source and Python code
         run: |
-          test -n "$OPENAI_API_KEY" || { echo "Add OPENAI_API_KEY in repository Actions secrets first"; exit 1; }
-          python -m py_compile scripts/draft_article.py
+          python -m py_compile scripts/*.py
+          python -m unittest discover -s tests -p "test_editorial.py" -v
           python scripts/qa_gazette.py
-      - name: Retrieve fresh ESPN fantasy and NFL schedule data
+      - name: Retrieve verified ESPN and NFL source data
         run: |
           python scripts/refresh_espn.py
           python scripts/refresh_nfl.py
           python scripts/qa_gazette.py
           python scripts/data_status.py
-      - name: Generate unpublished editorial draft
+      - name: Write daily review-only edition
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GAZETTE_OPENAI_MODEL: gpt-4.1-mini
-        run: python scripts/draft_article.py --type "${{ inputs.article_type }}"
-      - name: Create approval-only pull request
+          ARTICLE_TYPE: ${{ github.event.inputs.article_type || 'auto' }}
+        run: python scripts/draft_article.py --type "$ARTICLE_TYPE"
+      - name: Prepare newspaper article for owner's approval
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTICLE_TYPE: ${{ inputs.article_type }}
+          ARTICLE_TYPE: ${{ github.event.inputs.article_type || 'auto' }}
+          RUN_NUMBER: ${{ github.run_id }}
         run: |
           set -euo pipefail
-          branch="editorial/draft-${{ github.run_id }}-${{ github.run_attempt }}"
+          DATE_ET="$(TZ=America/New_York date +%Y-%m-%d)"
+          BRANCH="editorial/daily-$DATE_ET-$RUN_NUMBER"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$branch"
+          git checkout -b "$BRANCH"
           git add editorial/
-          git commit -m "Draft Gazette ${ARTICLE_TYPE} for editor approval"
-          git push origin "$branch"
-          gh pr create --base main --head "$branch" --title "EDITOR REVIEW: Gazette ${ARTICLE_TYPE} draft" --body "AI-generated **unpublished** article. Review every score, team name, date and projection. This PR does not change the live website. Merge only after editorial approval; a separate approved website integration is needed to display the article."
+          if git diff --cached --quiet; then
+            echo "No new editorial draft available; nothing to submit."
+            exit 0
+          fi
+          git commit -m "Daily Gazette editorial draft for $DATE_ET"
+          git push origin "$BRANCH"
+          echo "Creating a PR for the owner's approval; no automatic publishing."
+          if ! gh pr create --base main --head "$BRANCH" \
+            --title "EDITOR REVIEW: Golden Football Gazette — $DATE_ET" \
+            --body "Daily draft produced from timestamped, verified ESPN/NFL data. The article may be AI-written or a clearly labeled verified-data fallback if API credits/rate limits prevent AI writing. **Not published.** Review scores, dates, quotes, and editorial tone. Merge this PR only after approval; the live Gazette displays editorial/latest.json after merge."; then
+            echo "::error::GitHub couldn't open the editorial PR. Under Settings > Actions > General, enable 'Allow GitHub Actions to create and approve pull requests' and ensure Workflow permissions permit write access. Branch: $BRANCH"
+            exit 1
+          fi
