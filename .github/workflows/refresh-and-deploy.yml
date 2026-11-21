@@ -31,6 +31,10 @@ jobs:
         run: python scripts/refresh_nfl.py
       - name: Refresh league-wide ESPN NFL injury report
         run: python scripts/refresh_nfl_injuries.py
+      - name: Refresh completed-week ESPN fantasy player leaders
+        run: python scripts/refresh_player_leaders.py
+      - name: Generate daily verified football stories and playoff picture
+        run: python scripts/build_weekly_features.py
       - name: Cache actual ESPN fantasy logos for Pages
         run: |
           python scripts/cache_fantasy_logos.py
