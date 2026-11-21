@@ -220,6 +220,52 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .bracket-pairing{background:rgba(15,44,42,.53);border:1px solid rgba(240,200,135,.55);padding:11px;color:#fff5dc;font:.79rem/1.45 system-ui,sans-serif}
 .bracket-pairing .round-label{font:.66rem/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#e6c58d}
 .bracket-disclaimer{margin-top:13px}
+
+/* Phone stadium visibility: Safari/Chrome mobile background and blur repair.
+   A viewport-pinned background avoids document-height cover cropping. */
+@media (max-width: 700px) {
+  html { background: #071320 !important; }
+  body {
+    isolation: isolate;
+    background: transparent !important;
+    background-image: none !important;
+    background-attachment: scroll !important;
+    min-height: 100svh;
+  }
+  body::before {
+    content: "";
+    display: block;
+    position: fixed !important;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    z-index: -1;
+    pointer-events: none;
+    background-image: linear-gradient(180deg,rgba(2,9,20,.08) 0%,rgba(2,10,19,.08) 55%,rgba(2,20,11,.12) 100%),url("assets/stadium-late-fall.webp") !important;
+    background-position: center center !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-attachment: scroll !important;
+    transform: translateZ(0);
+  }
+  .gazette-masthead,.page,.hub-section,.breaking,#espn-live,.nfl-banner,.archive,
+  .league-logos-feature,header {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(4,14,22,.24) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,.23) !important;
+  }
+  .game-card,.coverage-story,.player-leader,.bracket-card,.fantasy-card,.injury-report,
+  .injury-club,.transaction-card { backdrop-filter:none!important; -webkit-backdrop-filter:none!important; }
+  .gazette-masthead h1,.hub-section h2,.page h2 { text-shadow: 0 2px 8px rgba(0,0,0,.92) !important; }
+  .hub-section p,.page p,.game-card,.coverage-story p { text-shadow: 0 1px 3px rgba(0,0,0,.72); }
+}
+@media (max-width: 420px) {
+  body::before { background-position: 52% center !important; }
+  .hub-section,.page { padding: 12px !important; }
+}
+
 </style>
 </head>
 <body>
