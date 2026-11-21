@@ -1,0 +1,37 @@
+name: Verify ESPN Fantasy Emblems
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/cache_fantasy_logos.py'
+      - 'tests/test_fantasy_logos.py'
+      - 'assets/espn-team-logos.json'
+      - '.github/workflows/refresh-and-deploy.yml'
+      - '.github/workflows/verify-fantasy-logos.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-emblems:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and run logo tests
+        run: |
+          python -m py_compile scripts/cache_fantasy_logos.py tests/test_fantasy_logos.py
+          python -m unittest discover -s tests -p "test_fantasy_logos.py" -v
+      - name: Test ESPN image download and local cache
+        run: python scripts/cache_fantasy_logos.py
+      - name: Show exact team logo coverage
+        run: |
+          python - <<'PY'
+          import json
+          with open("assets/fantasy-logos/manifest.json",encoding="utf-8") as f:
+              data=json.load(f)["teams"]
+          for n,team in sorted(data.items(), key=lambda x:int(x[0])):
+              print(f"ESPN team {n}: {'LOCAL IMAGE' if team['cached'] else 'REMOTE ONLY'} - {team['name']}")
+          print("Locally cached:",sum(row["cached"] for row in data.values()),"/",len(data))
+          PY
