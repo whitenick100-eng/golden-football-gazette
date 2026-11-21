@@ -39,6 +39,9 @@ jobs:
         run: |
           python scripts/refresh_espn.py
           python scripts/refresh_nfl.py
+          python scripts/refresh_nfl_injuries.py
+          python scripts/refresh_player_leaders.py
+          python scripts/build_weekly_features.py
           python scripts/qa_gazette.py
           python scripts/data_status.py
       - name: Write daily review-only edition
