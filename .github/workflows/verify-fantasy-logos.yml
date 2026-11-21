@@ -6,6 +6,7 @@ on:
       - 'scripts/cache_fantasy_logos.py'
       - 'tests/test_fantasy_logos.py'
       - 'assets/espn-team-logos.json'
+      - 'assets/espn-logo-overrides/**'
       - '.github/workflows/refresh-and-deploy.yml'
       - '.github/workflows/verify-fantasy-logos.yml'
   workflow_dispatch:
@@ -34,4 +35,6 @@ jobs:
           for n,team in sorted(data.items(), key=lambda x:int(x[0])):
               print(f"ESPN team {n}: {'LOCAL IMAGE' if team['cached'] else 'REMOTE ONLY'} - {team['name']}")
           print("Locally cached:",sum(row["cached"] for row in data.values()),"/",len(data))
+          for team_id in (1,4,5,7,9):
+              assert data[str(team_id)]["cached"], f"Owner-supplied team {team_id} logo was not packaged"
           PY
