@@ -51,11 +51,32 @@ def playoff_picture(league):
     current=league.get("currentMatchupPeriod")
     regular=settings.get("regularSeasonMatchupPeriods")
     seed_rule=settings.get("playoffSeedingRule")
+    # ESPN settings may seed by cumulative fantasy points rather than wins.
+    # Respect that configured rule; do NOT reuse the wins-sorted standings
+    # for a TOTAL_POINTS_SCORED playoff field.
+    sorted_teams=list(standings)
+    seeding_verified=True
+    if seed_rule=="TOTAL_POINTS_SCORED":
+        if all(isinstance(t.get("pointsFor"),(int,float)) for t in standings):
+            sorted_teams.sort(key=lambda t:(-t["pointsFor"],-(t.get("wins") or 0),t["name"]))
+        else:
+            seeding_verified=False
+    elif seed_rule=="WINNING_PCT":
+        sorted_teams.sort(key=lambda t:(
+            -(t.get("wins",0)/max(1,(t.get("wins",0)+t.get("losses",0)+t.get("ties",0)))),
+            -(t.get("pointsFor") or 0),t["name"]))
+    elif seed_rule=="H2H_RECORD":
+        sorted_teams.sort(key=lambda t:(-(t.get("wins") or 0),t.get("losses") or 0,
+                                       -(t.get("pointsFor") or 0),t["name"]))
+    else:
+        # Official ESPN seeding rule absent or unhandled. Sorting is purely
+        # a standings snapshot, not verified playoff seeding.
+        seeding_verified=False
     ordered=[{
         "seed":i+1,"teamId":t["teamId"],"name":t["name"],
         "record":record(t),"logo":t.get("logo"),
         "pointsFor":t.get("pointsFor"),
-    } for i,t in enumerate(standings)]
+    } for i,t in enumerate(sorted_teams)]
     known=[x for x in league.get("matchups",[]) if
            isinstance(x.get("week"),int) and
            (current is None or x["week"]==current) and
@@ -94,6 +115,7 @@ def playoff_picture(league):
         "currentWeek":current,"regularSeasonWeeks":regular,
         "playoffTeamCount":count,
         "formatVerifiedByESPN":verified,"seedingRule":seed_rule,
+        "seedingOrderFromSettings":seeding_verified and verified,
         "contenders":ordered[:count],
         "outsideCurrentField":ordered[count:],
         "championshipPairings":championship,"consolationPairings":consolation,
@@ -101,7 +123,7 @@ def playoff_picture(league):
             "ESPN-reported postseason pairings, not a mathematical clinch or elimination analysis."
             if pairing_kind=="espn-listed" else
             "These seedings are provisional standings positions; bracket pairings are an "
-            "illustration only, not the official ESPN schedule. Teams outside the current "
+            "illustration only, not the official ESPN schedule. ESPN tiebreakers may change exact seed order. Teams outside the current "
             "field are NOT necessarily eliminated. Check ESPN for clinches and tiebreakers."
         ),
     }
