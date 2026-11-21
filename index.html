@@ -357,7 +357,7 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
   }
   function decorateStandings(){
     for(const td of document.querySelectorAll('#standings-body tr td:nth-child(2)')){
-      if(td.dataset.logoDecorated)return;
+      if(td.dataset.logoDecorated)continue;
       const team=find(td.textContent);
       if(!team)continue;
       td.prepend(badge(team,true));td.dataset.logoDecorated='true';
