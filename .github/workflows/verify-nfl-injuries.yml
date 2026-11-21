@@ -37,6 +37,12 @@ jobs:
               print('WARNING: ESPN injury endpoint is unavailable from this runner. Website will show unavailable.')
           else:
               print('NFL injury data verified:',info.get('playerCount'),'players across',info.get('teamCount'),'reporting teams')
+              from collections import Counter
+              dates=[p['reportDate'] for t in info['teams'] for p in t['players'] if p.get('reportDate')]
+              counts=Counter((p.get('reportedStatus') or 'Not specified') for t in info['teams'] for p in t['players'])
+              print('Injury entry date range:',min(dates) if dates else 'none','to',max(dates) if dates else 'none')
+              print('ESPN status totals:',counts.most_common(10))
+              print('Injury entries per team range:',min(len(t['players']) for t in info['teams']),max(len(t['players']) for t in info['teams']))
           PY
       - name: Validate embedded browser scripts
         run: |
