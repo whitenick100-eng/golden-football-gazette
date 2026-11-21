@@ -152,6 +152,15 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .team-logo-initials{display:inline-grid;place-items:center;width:32px;height:32px;background:#5c452b;color:#fff8dc;border-radius:4px;font:700 .72rem system-ui,sans-serif;margin-right:6px}
 @media(max-width:1000px){.league-logo-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:630px){.league-logo-list{grid-template-columns:repeat(2,minmax(0,1fr))}.league-logo-entry span{font-size:.7rem}body{background-attachment:scroll!important;background-position:center top!important}.league-logo-entry{min-height:58px;padding:5px}}
+
+/* 2026 ESPN fantasy emblem rendering: cached originals with explicit missing-image state */
+.gazette-logo-holder{display:inline-flex;flex:0 0 46px;width:46px;height:46px;align-items:center;justify-content:center;vertical-align:middle;overflow:hidden;margin-right:7px}
+.gazette-logo-holder.gazette-logo-small{width:32px;height:32px;flex-basis:32px;margin-right:5px}
+.gazette-logo-holder img.gazette-team-logo{display:block!important;width:100%!important;height:100%!important;max-width:100%;object-fit:contain!important;margin:0!important}
+.gazette-logo-unavailable{display:inline-grid;place-items:center;border:1px dashed #c4a26c;background:rgba(2,16,21,.65);color:#f3ddaf;width:100%;height:100%;font:700 .85rem system-ui}
+.gazette-team-label{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap}
+.league-logo-entry .gazette-logo-holder{flex:0 0 46px}
+#fantasy-team-grid .fantasy-card .gazette-logo-holder{width:52px;height:52px;flex-basis:52px}
 </style>
 </head>
 <body>
@@ -282,93 +291,133 @@ let weather='Weather forecast unavailable';if(g.indoor)weather='Indoor venue';el
 c.append(el('div','game-meta',when+' · '+(venue||'Venue not confirmed')+' · '+weather));return c}
 Promise.allSettled([fetch('data/nfl-week.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()}),fetch('data/league.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()})]).then(([nfl,league])=>{
 if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;document.getElementById('nfl-status').textContent='NFL season '+d.season+' · Week '+d.week+' · Source: ESPN NFL scoreboard · Retrieved '+new Date(d.fetchedAt).toLocaleString();const all=document.getElementById('nfl-games'),feature=document.getElementById('featured-games');d.games.forEach((g,i)=>{all.append(gameCard(g,i));const day=new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long'});if(day==='Sunday'&&new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}).replace(/\D/g,'')>=19 || day==='Monday'){const wrap=el('div');wrap.append(el('h3','',day==='Monday'?'Monday Night Football':'Sunday Night Football'),gameCard(g,i));feature.append(wrap)}})}else document.getElementById('nfl-status').textContent='NFL schedule could not be verified; no fixtures are displayed.';
-if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);const target=document.getElementById(i<4?'championship-bracket':'consolation-bracket');target.append(el('div','bracket-entry',(i+1)+'. '+t.name+' ('+(t.wins??'?')+'-'+(t.losses??'?')+')'))});document.getElementById('bracket-status').textContent='Provisional positions based on ESPN league standings retrieved '+new Date(d.fetchedAt).toLocaleString()+'. These are not confirmed ESPN playoff bracket pairings or mathematical eliminations.'}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';document.getElementById('bracket-status').textContent='ESPN league standings unavailable; bracket not shown.'}
+if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.dataset.espnTeamId=String(t.teamId??'');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);const target=document.getElementById(i<4?'championship-bracket':'consolation-bracket');target.append(el('div','bracket-entry',(i+1)+'. '+t.name+' ('+(t.wins??'?')+'-'+(t.losses??'?')+')'))});document.getElementById('bracket-status').textContent='Provisional positions based on ESPN league standings retrieved '+new Date(d.fetchedAt).toLocaleString()+'. These are not confirmed ESPN playoff bracket pairings or mathematical eliminations.'}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';document.getElementById('bracket-status').textContent='ESPN league standings unavailable; bracket not shown.'}
 });
 })();
 </script><script>
-/* Licensed by each owner; source URLs are exact values in the league's ESPN 2026 export. */
+/* ESPN team images: use cached originals, current ESPN logo URLs, then label missing images. */
 (async function(){
-const normalize=s=>String(s||'').replace(/\s*\(\d+\s*[–-]\s*\d+\)\s*/g,' ').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-function badge(team,small=false){
- const url=team.logo;
- const img=document.createElement('img');
- img.className='gazette-team-logo';
- img.alt=team.name+' ESPN fantasy logo';
- img.loading='lazy';
- img.referrerPolicy='no-referrer';
- img.onerror=function(){this.remove();};
- if(/^https:\/\/(mystique-api\.fantasy\.espn\.com|g\.espncdn\.com)\//.test(url)) img.src=url;
- if(small)img.style.width=img.style.height='30px';
- return img;
-}
-try{
- const response=await fetch('assets/espn-team-logos.json',{cache:'no-cache'});
- if(!response.ok)throw new Error('Emblem roster unavailable');
- const data=await response.json();
- if(!Array.isArray(data.teams)||data.teams.length!==10)throw Error('Invalid ESPN emblem roster');
- const map=new Map(data.teams.map(team=>[normalize(team.name),team]));
- const find=s=>{const name=normalize(s);return map.get(name)||data.teams.find(t=>name.startsWith(normalize(t.name)))};
- const grid=document.getElementById('gazette-logo-directory');grid.textContent='';
- data.teams.forEach(team=>{
-  const row=document.createElement('div');row.className='league-logo-entry';
-  row.append(badge(team));
-  const name=document.createElement('span');name.textContent=team.name;row.append(name);grid.append(row);
- });
- function decorateStandings(){
-  document.querySelectorAll('#standings-body tr td:nth-child(2)').forEach(td=>{
-   if(td.dataset.logoDecorated)return;
-   const team=find(td.textContent);if(!team)return;
-   td.prepend(badge(team,true));td.dataset.logoDecorated='true';
+ const normalize=s=>String(s||'').replace(/\s*\(\d+\s*[–-]\s*\d+\)\s*/g,' ').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const validESPN=u=>/^https:\/\/(mystique-api\.fantasy\.espn\.com|g\.espncdn\.com|a\.espncdn\.com)\//.test(String(u||''));
+ const validLocal=u=>/^assets\/fantasy-logos\/team-\d+\.(?:svg|png|jpg|webp|gif)$/.test(String(u||''));
+ const getJSON=async url=>{const r=await fetch(url,{cache:'no-cache'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()};
+ try{
+  const base=await getJSON('assets/espn-team-logos.json');
+  if(!Array.isArray(base.teams)||base.teams.length!==10)throw Error('Expected exactly ten ESPN fantasy team emblems');
+  let manifest=null;
+  try{manifest=await getJSON('assets/fantasy-logos/manifest.json')}catch(e){console.info('Local ESPN emblem cache unavailable; checking original URLs')}
+  const teams=base.teams.map(t=>{
+    const entry=manifest?.teams?.[String(t.id)];
+    return {...t,name:entry?.name||t.name,logo:validESPN(entry?.sourceUrl)?entry.sourceUrl:t.logo,
+      localLogo:validLocal(entry?.localUrl)?entry.localUrl:null};
   });
+  const byID=new Map(teams.map(t=>[String(t.id),t]));
+  const byName=new Map(teams.map(t=>[normalize(t.name),t]));
+  function find(name){
+    const key=normalize(name);
+    return byName.get(key)||teams.find(t=>key.startsWith(normalize(t.name))||normalize(t.name).startsWith(key));
+  }
+  function badge(team,small=false){
+    const holder=document.createElement('span');
+    holder.className='gazette-logo-holder'+(small?' gazette-logo-small':'');
+    holder.title=team.name+' — official ESPN fantasy emblem';
+    const img=document.createElement('img');
+    img.className='gazette-team-logo';
+    img.loading='lazy';
+    img.alt=team.name+' ESPN emblem';
+    const original=validESPN(team.logo)?team.logo:null;
+    const cached=validLocal(team.localLogo)?team.localLogo:null;
+    const label=()=>{
+      const missing=document.createElement('span');
+      missing.className='gazette-logo-unavailable';
+      missing.setAttribute('aria-label','ESPN emblem unavailable for '+team.name);
+      missing.title='ESPN emblem could not be loaded';
+      missing.textContent='—';
+      img.replaceWith(missing);
+      holder.title='ESPN emblem unavailable for '+team.name;
+    };
+    img.onerror=()=>{
+      if(cached && img.src.endsWith(cached) && original){img.src=original;return}
+      label();
+    };
+    holder.append(img);
+    if(cached)img.src=cached;
+    else if(original)img.src=original;
+    else label();
+    return holder;
+  }
+  const grid=document.getElementById('gazette-logo-directory');
+  if(grid){
+    grid.textContent='';
+    for(const team of teams){
+      const row=document.createElement('div');row.className='league-logo-entry';
+      const name=document.createElement('span');name.textContent=team.name;
+      row.append(badge(team),name);grid.append(row);
+    }
+  }
+  function decorateStandings(){
+    for(const td of document.querySelectorAll('#standings-body tr td:nth-child(2)')){
+      if(td.dataset.logoDecorated)return;
+      const team=find(td.textContent);
+      if(!team)continue;
+      td.prepend(badge(team,true));td.dataset.logoDecorated='true';
+    }
+  }
+  function decorateMatchups(){
+    for(const title of document.querySelectorAll('#matchups-list .match .teams')){
+      if(title.dataset.logoDecorated)continue;
+      const txt=[...title.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE);
+      if(txt.length<2)continue;
+      const away=txt[0].textContent.replace(/^\d+\.\s*/,'').trim(),home=txt[txt.length-1].textContent.trim();
+      const left=find(away),right=find(home);
+      if(!left&&!right)continue;
+      const leftSpan=document.createElement('span'),rightSpan=document.createElement('span');
+      leftSpan.className=rightSpan.className='gazette-team-label';
+      if(left)leftSpan.append(badge(left,true));
+      leftSpan.append(document.createTextNode(away));
+      if(right)rightSpan.append(badge(right,true));
+      rightSpan.append(document.createTextNode(home));
+      const vs=document.createElement('span');vs.className='vs';vs.textContent='VS';
+      title.replaceChildren(leftSpan,vs,rightSpan);title.dataset.logoDecorated='true';
+    }
+  }
+  function decorateFantasyCards(){
+    for(const card of document.querySelectorAll('#fantasy-team-grid .fantasy-card')){
+      if(card.dataset.logoDecorated)continue;
+      const team=byID.get(card.dataset.espnTeamId)||find(card.querySelector('.team-info')?.firstChild?.textContent||'');
+      if(!team)continue;
+      const prior=card.querySelector('img');
+      if(prior)prior.replaceWith(badge(team));
+      else card.prepend(badge(team));
+      card.dataset.logoDecorated='true';
+    }
+  }
+  function decorateESPNRows(){
+    for(const td of document.querySelectorAll('#espn-games tr td:nth-child(2)')){
+      if(td.dataset.logoDecorated)continue;
+      const sep=td.textContent.split(/\s+vs\s+/i);if(sep.length!==2)continue;
+      const left=find(sep[0]),right=find(sep[1]);
+      if(!left&&!right)continue;
+      const wrap=document.createElement('span');wrap.className='gazette-team-label';
+      if(left)wrap.append(badge(left,true));
+      wrap.append(document.createTextNode(sep[0]+' vs '));
+      if(right)wrap.append(badge(right,true));
+      wrap.append(document.createTextNode(sep[1]));
+      td.replaceChildren(wrap);td.dataset.logoDecorated='true';
+    }
+  }
+  function decorate(){decorateStandings();decorateMatchups();decorateFantasyCards();decorateESPNRows()}
+  decorate();
+  const observer=new MutationObserver(decorate);
+  for(const id of ['fantasy-team-grid','espn-games','standings-body','matchups-list']){
+    const target=document.getElementById(id);
+    if(target)observer.observe(target,{childList:true,subtree:true});
+  }
+ }catch(e){
+  const grid=document.getElementById('gazette-logo-directory');
+  if(grid)grid.textContent='The ESPN logo directory is currently unavailable.';
+  console.warn('ESPN emblem directory error:',e);
  }
- function decorateMatchups(){
-  document.querySelectorAll('#matchups-list .match .teams').forEach(title=>{
-   if(title.dataset.logoDecorated)return;
-   const txt=Array.from(title.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE);
-   if(txt.length<2)return;
-   const away=txt[0].textContent.replace(/^\d+\.\s*/,'').trim();
-   const home=txt[txt.length-1].textContent.trim();
-   const awayTeam=find(away),homeTeam=find(home);
-   if(!awayTeam&&!homeTeam)return;
-   const before=document.createElement('span');before.className='gazette-team-label';
-   if(awayTeam)before.append(badge(awayTeam,true));
-   const beforeTxt=document.createElement('span');beforeTxt.className='team-name-text';beforeTxt.textContent=away;before.append(beforeTxt);
-   const after=document.createElement('span');after.className='gazette-team-label';
-   if(homeTeam)after.append(badge(homeTeam,true));
-   const afterTxt=document.createElement('span');afterTxt.className='team-name-text';afterTxt.textContent=home;after.append(afterTxt);
-   const vs=document.createElement('span');vs.className='vs';vs.textContent=' VS ';
-   title.replaceChildren(before,vs,after);title.dataset.logoDecorated='true';
-  });
- }
- function decorateFantasyCards(){
-  document.querySelectorAll('#fantasy-team-grid .fantasy-card').forEach(card=>{
-    if(card.dataset.logoDecorated)return;
-    const team=find(card.querySelector('.team-info')?.firstChild?.textContent||'');
-    if(!team)return;
-    const prior=card.querySelector('img');if(prior)prior.replaceWith(badge(team));else card.prepend(badge(team));
-    card.dataset.logoDecorated='true';
-  });
- }
- function decorateESPNRows(){
-  document.querySelectorAll('#espn-games tr td:nth-child(2)').forEach(td=>{
-   if(td.dataset.logoDecorated)return;
-   const sep=td.textContent.split(/\s+vs\s+/i);if(sep.length!==2)return;
-   const wrap=document.createElement('span');wrap.className='gazette-team-label';
-   const away=find(sep[0]),home=find(sep[1]);
-   if(away)wrap.append(badge(away,true));
-   wrap.append(document.createTextNode(sep[0]+' vs '));
-   if(home)wrap.append(badge(home,true));
-   wrap.append(document.createTextNode(sep[1]));
-   td.replaceChildren(wrap);td.dataset.logoDecorated='true';
-  });
- }
- function decorate(){decorateStandings();decorateMatchups();decorateFantasyCards();decorateESPNRows();}
- decorate();
- const observer=new MutationObserver(decorate);
- for(const id of ['fantasy-team-grid','espn-games','standings-body','matchups-list']){
-   const target=document.getElementById(id);if(target)observer.observe(target,{childList:true,subtree:true});
- }
-}catch(err){const grid=document.getElementById('gazette-logo-directory');if(grid)grid.textContent='ESPN fantasy emblems are temporarily unavailable.';console.warn('ESPN crest display unavailable:',err);}
 })();
 </script></body>
 </html>
