@@ -643,8 +643,11 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
    }
    const b=d.playoffs||{};
    if(b.status!=='available')throw Error('No verified playoff settings/standings');
-   $('bracket-status').textContent=b.title+' · '+(b.currentWeek?'NFL fantasy Week '+b.currentWeek+' · ':'')+'ESPN retrieved '+date(b.fetchedAt)+
-     (b.formatVerifiedByESPN?' · '+b.playoffTeamCount+' ESPN-confirmed playoff places':' · 4 owner-reported playoff places; ESPN settings not verified');
+   const seedingLabel=b.seedingRule==='TOTAL_POINTS_SCORED'?' · seeds ranked by total fantasy points':
+      b.seedingRule==='WINNING_PCT'?' · seeds ranked by winning percentage':
+      b.seedingRule==='H2H_RECORD'?' · seeds ranked by win-loss record':' · provisional seed order';
+   $('bracket-status').textContent=b.title+' · '+(b.currentWeek?'Fantasy Week '+b.currentWeek+' · ':'')+'ESPN retrieved '+date(b.fetchedAt)+
+     (b.formatVerifiedByESPN?' · '+b.playoffTeamCount+' ESPN-confirmed playoff places'+seedingLabel:' · 4 owner-reported playoff places; ESPN settings not verified');
    $('bracket-disclaimer').textContent=b.caveat||'Provisional seed positions only.';
    const pairs=(id,values)=>{
      $(id).replaceChildren();
@@ -656,12 +659,21 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
        $(id).append(box);
      }
    };
+   let emblemManifest={};
+   try{emblemManifest=(await data('assets/fantasy-logos/manifest.json')).teams||{}}catch(e){/* Keep valid team names visible. */}
    const listing=(id,values)=>{
      $(id).replaceChildren();
      for(const t of values||[]){
        const row=txt('div',undefined,'bracket-entry');
        row.append(txt('span','#'+t.seed,'seed'));
-       // Fantasy team IDs are used by the separately verified ESPN emblem overlay.
+       const image=emblemManifest[String(t.teamId)];
+       const logoURL=image?.localUrl||image?.sourceUrl||t.logo;
+       if((typeof logoURL==='string')&&
+         (/^assets\/fantasy-logos\/team-\d+\.(?:png|jpg|svg|gif|webp)$/.test(logoURL)||
+          /^https:\/\/(?:g\.espncdn\.com|mystique-api\.fantasy\.espn\.com)\//.test(logoURL))){
+         const img=document.createElement('img');img.className='logo';img.alt=t.name+' ESPN emblem';
+         img.loading='lazy';img.onerror=()=>img.remove();img.src=logoURL;row.append(img);
+       }
        const club=txt('span',t.name);club.dataset.espnTeamId=String(t.teamId);
        row.append(club,txt('span',t.record,'entry-record'));
        $(id).append(row);
