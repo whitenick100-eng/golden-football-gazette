@@ -66,6 +66,23 @@ def refresh():
             print("Week-specific ESPN projection lookup unavailable:",
                   type(exc).__name__)
 
+    # Playoff configuration comes from ESPN league settings, not a guessed
+    # four-team bracket. Keep only public competition configuration.
+    playoff_settings = {}
+    try:
+        config = get_json(BASE_URL + "?view=mSettings")
+        rule = ((config.get("settings") or {}).get("scheduleSettings") or {})
+        spots = rule.get("playoffTeamCount")
+        regular_weeks = rule.get("matchupPeriodCount")
+        if isinstance(spots, int) and 2 <= spots <= len(teams):
+            playoff_settings["playoffTeamCount"] = spots
+        if isinstance(regular_weeks, int) and 1 <= regular_weeks <= 18:
+            playoff_settings["regularSeasonMatchupPeriods"] = regular_weeks
+        if isinstance(rule.get("playoffSeedingRule"), str):
+            playoff_settings["playoffSeedingRule"] = rule["playoffSeedingRule"][:60]
+        playoff_settings["source"] = "ESPN league mSettings"
+    except Exception as exc:
+        print("ESPN playoff settings unavailable:", type(exc).__name__)
     names = {int(t["id"]): t.get("name") or f"Team {t['id']}" for t in teams}
     standings = []
     for t in teams:
@@ -96,7 +113,9 @@ def refresh():
                   if isinstance(projected,(int,float)) and 0 < projected < 1000 else None,
             }
         games.append({
+            "id": game.get("id"),
             "week":game.get("matchupPeriodId"),
+            "playoffTierType":game.get("playoffTierType") or "NONE",
             "winner":game.get("winner","UNDECIDED"),
             "home":side(home),"away":side(away),
         })
@@ -108,6 +127,7 @@ def refresh():
         "currentMatchupPeriod":week,
         "requestedWeek":week,
         "standings":standings,
+        "playoffSettings": playoff_settings,
         "matchups":games,
     }
 

@@ -86,6 +86,38 @@ def verified_sources(now):
             print(f"Data check: verified {name}, timestamp {raw['fetchedAt']}")
         except (ValueError, TypeError, KeyError, AttributeError, json.JSONDecodeError) as exc:
             print(f"Data check: rejected invalid {name}: {type(exc).__name__}")
+    # Verified daily items and completed-week fantasy stars may also inform
+    # the AI editor's unpublished article, but never override source facts.
+    extra = ROOT / "data/weekly-features.json"
+    if extra.is_file():
+        try:
+            obj = json.loads(extra.read_text(encoding="utf-8"))
+            stamp = dt.datetime.fromisoformat(obj["generatedAt"].replace("Z", "+00:00"))
+            age = now - stamp.astimezone(dt.timezone.utc)
+            if dt.timedelta(minutes=-3) <= age <= MAX_AGE and obj.get("status") == "available":
+                sources["weekly_features"] = {
+                    "source":"Gazette fact-based briefing from ESPN source snapshots",
+                    "fetchedAt":obj["generatedAt"],
+                    "coverage":obj.get("coverage",[])[:6],
+                    "playoffs":obj.get("playoffs"),
+                }
+        except (OSError,ValueError,TypeError,KeyError,AttributeError):
+            print("Unverified daily feature snapshot not included in editorial input")
+    players_file = ROOT / "data/top-performers.json"
+    if players_file.is_file():
+        try:
+            obj = json.loads(players_file.read_text(encoding="utf-8"))
+            stamp=dt.datetime.fromisoformat(obj["fetchedAt"].replace("Z","+00:00"))
+            age=now-stamp.astimezone(dt.timezone.utc)
+            if (dt.timedelta(minutes=-3)<=age<=MAX_AGE and len(obj.get("players",[]))==5
+                and obj.get("leagueId")==1413446022 and obj.get("season")==2026):
+                sources["top_rostered_players"] = {
+                    "source":"ESPN actual fantasy mBoxscore for rostered athletes",
+                    "fetchedAt":obj["fetchedAt"], "week":obj["week"],
+                    "scope":obj["scope"], "players":obj["players"],
+                }
+        except (OSError,ValueError,TypeError,KeyError,AttributeError):
+            print("Unverified player awards not included in editorial input")
     return sources
 
 def verified_bulletin(sources, article_type, local_now):
@@ -151,6 +183,24 @@ def verified_bulletin(sources, article_type, local_now):
                 results.append(f"{away.get('name')} {away['score']}, {home.get('name')} {home['score']}")
             if results:
                 lines.append("The supplied NFL feed marks these games final: " + "; ".join(results) + ".")
+    leaders=sources.get("top_rostered_players")
+    if leaders:
+        top=leaders["players"]
+        lines.append(
+            f"ESPN reports the five highest-scoring rostered players for completed Week {leaders['week']}: "
+            + "; ".join(f"{p['name']} ({p['points']:.2f})" for p in top)
+            + ". This list includes bench players and excludes NFL free agents not rostered in this league."
+        )
+    bracket=(sources.get("weekly_features") or {}).get("playoffs") or {}
+    if bracket.get("status")=="available":
+        spots=bracket.get("playoffTeamCount")
+        field=bracket.get("contenders") or []
+        if spots and field:
+            lines.append(
+                "The current standings-based championship field contains "
+                + ", ".join(t["name"] for t in field)
+                + ". These are provisional positions, not confirmed clinches or eliminations."
+            )
     lines += [
         "",
         "## Editor's Verification Checklist",
@@ -255,8 +305,10 @@ def main():
             "newspaper article with a headline, dateline, 3–5 concise paragraphs, and an "
             "Editor's Verification Checklist. Use ONLY facts expressly contained in the "
             "supplied structured data. Separate ESPN fantasy league facts from NFL games. "
-            "Never invent final results, player points, rankings, claims about playoffs, "
-            "injuries, weather, quotes, trophies, or fantasy ownership. Label previews and "
+            "Never invent final results, player points, rankings, playoff clinches, "
+            "injuries, weather, quotes, trophies, or fantasy ownership. "
+            "Use only ESPN-verified completed-week player scores and label provisional brackets. "
+            "Label previews and "
             "forecasts as such; do not label games final unless explicitly verified. "
             "Avoid recycled or stale history. Include the exact source names and fetchedAt "
             "timestamps in a brief source note. No misleading claims. "

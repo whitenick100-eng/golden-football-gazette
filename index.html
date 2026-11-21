@@ -195,6 +195,31 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .injury-empty{padding:15px;border:1px dashed rgba(237,204,151,.35)}
 .injury-disclaimer{margin:13px 0 0}
 @media(max-width:650px){.injury-report{padding:12px 4px}.injury-filter-bar{grid-template-columns:1fr 1fr}.injury-filter-bar label:last-child{grid-column:1/-1}.injury-table{min-width:620px}.injury-club>summary{padding:10px}.injury-title-row{gap:8px}}
+
+/* Daily factual front page and ESPN weekly bracket */
+.coverage-stories{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:13px;margin-top:15px}
+.coverage-story{border-top:3px double #e1ba77;border-bottom:1px solid rgba(242,211,158,.32);background:rgba(2,15,20,.38);padding:13px 15px}
+.coverage-story .coverage-kicker{text-transform:uppercase;font:700 .68rem/1.4 system-ui,sans-serif;color:#f5cd84;letter-spacing:.075em}
+.coverage-story h3{font:700 1.2rem/1.35 Georgia,serif;color:#fff0c9!important;margin:7px 0 10px}
+.coverage-story p{font:.87rem/1.6 Georgia,serif;color:#fff9e8;margin:0}
+.coverage-story .source{margin-top:9px;font:.69rem/1.4 system-ui,sans-serif;color:#d8c9a9}
+.coverage-caveat{font:.74rem/1.5 system-ui,sans-serif;color:#ead4b1;margin-top:11px}
+.player-leader-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-top:14px}
+.player-leader{display:flex;align-items:center;gap:11px;min-height:116px;padding:11px;background:rgba(4,15,20,.46);border:1px solid #bb965c}
+.player-leader .portrait{height:85px;width:75px;object-fit:cover;object-position:center top;flex:0 0 75px;background:rgba(13,38,40,.6);border:1px solid #d6b474;border-radius:3px}
+.player-leader .portrait-fallback{display:grid;place-items:center;font:700 .7rem system-ui,sans-serif;color:#f7dba9}
+.player-leader .player-rank{font:700 .68rem/1.35 system-ui,sans-serif;color:#ebc88e}
+.player-leader .player-name{font:700 1rem/1.23 Georgia,serif;color:#fff2d1;margin:4px 0}
+.player-leader .fantasy-points{font:700 1.13rem/1.3 system-ui,sans-serif;color:#ffda84;font-variant-numeric:tabular-nums}
+.player-leader .player-team{font:.71rem/1.4 system-ui,sans-serif;color:#e9d5af}
+.bracket-entry{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid rgba(229,195,137,.27);font:.79rem/1.4 system-ui,sans-serif}
+.bracket-entry .seed{font-weight:700;color:#f6d694;min-width:26px}
+.bracket-entry .logo{width:27px;height:27px;object-fit:contain}
+.bracket-entry .entry-record{margin-left:auto;color:#e4d6b6;white-space:nowrap}
+.bracket-pairings{margin-top:13px;display:grid;gap:8px}
+.bracket-pairing{background:rgba(15,44,42,.53);border:1px solid rgba(240,200,135,.55);padding:11px;color:#fff5dc;font:.79rem/1.45 system-ui,sans-serif}
+.bracket-pairing .round-label{font:.66rem/1.4 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#e6c58d}
+.bracket-disclaimer{margin-top:13px}
 </style>
 </head>
 <body>
@@ -219,21 +244,27 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   const data=await response.json();
   if(!data.fetchedAt || !Array.isArray(data.matchups))throw Error('No verified snapshot yet');
   const fetched=new Date(data.fetchedAt);
-  status.textContent='Week 11 · Last ESPN retrieval: '+fetched.toLocaleString()+' · Projections are shown only when ESPN supplies them; otherwise actual points or an unavailable label appear.';
+  status.textContent='Current ESPN matchup week '+data.currentMatchupPeriod+' · Last ESPN retrieval: '+fetched.toLocaleString()+' · Projections are shown only when ESPN supplies them; otherwise actual points or an unavailable label appear.';
   const week=data.currentMatchupPeriod;
-  const games=data.matchups.filter(g=>Number(g.week)===11);
+  const games=data.matchups.filter(g=>Number(g.week)===Number(week));
   for(const g of games){
    const tr=document.createElement('tr');
    const final=['HOME','AWAY','TIE'].includes(g.winner);
    const fmt=v=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(2):null;
    const formatSide=s=>{const projected=fmt(s.projectedPoints),actual=fmt(s.points);return final?(actual?actual+' final':'Final score unavailable'):(projected?projected+' projected'+(actual?' · '+actual+' scored':''):(actual&&Number(s.points)>0?actual+' scored · projection unavailable':'ESPN projection unavailable'))};
-   const cells=['11',(g.away.name||'Away')+' vs '+(g.home.name||'Home'),(g.away.name||'Away')+': '+formatSide(g.away)+' | '+(g.home.name||'Home')+': '+formatSide(g.home)];
+   const cells=[String(week),(g.away.name||'Away')+' vs '+(g.home.name||'Home'),(g.away.name||'Away')+': '+formatSide(g.away)+' | '+(g.home.name||'Home')+': '+formatSide(g.home)];
    for(const value of cells){const td=document.createElement('td');td.textContent=value;tr.appendChild(td)}tbody.appendChild(tr);
   }
   if(!games.length)status.textContent+=' No games found for the current matchup period.';
  }catch(e){status.textContent='ESPN refresh not yet available. The newspaper below remains a historical edition; no live results are being claimed.'}
 })();
 </script>
+<section id="auto-coverage" class="hub-section" aria-label="Automatically updated verified sports coverage">
+<h2>Today's Football Desk · Verified Briefing</h2>
+<p class="hub-intro" id="auto-coverage-meta">Retrieving the newest verified NFL and fantasy-league headlines…</p>
+<div id="auto-coverage-stories" class="coverage-stories" aria-live="polite"></div>
+<p class="coverage-caveat">Daily fact-based coverage generated from timestamped ESPN data, not AI opinion. The independently written newspaper edition remains subject to editor approval.</p>
+</section>
 <section id="approved-editorial" class="hub-section" aria-live="polite" hidden>
 <h2>From the Editor · Approved Edition</h2>
 <p class="hub-intro" id="approved-editorial-meta"></p>
@@ -306,13 +337,17 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 </section>
 <section id="weekly-stars" class="hub-section">
 <h2>Five Leading Fantasy Performers</h2>
-<p class="hub-intro">The five highest-scoring individual NFL players for a completed fantasy week will appear here when verified player-level fantasy points and portraits are available. This feature is not yet connected to a validated player-statistics feed; no unverified ranking will be published.</p>
-<div id="player-stars"></div>
+<p class="hub-intro" id="player-star-meta">Checking ESPN's completed-week player scores for your league's rostered players, including bench players…</p>
+<div id="player-stars" class="player-leader-grid" aria-live="polite"></div>
 </section>
 <section id="playoff-picture" class="hub-section">
 <h2>Playoff Picture &amp; Consolation Ladder</h2>
-<p class="hub-intro" id="bracket-status">Standings-based illustration only. Official ESPN playoff seedings, clinches, eliminations, and bracket pairings require verification.</p>
-<div class="brackets"><div class="bracket-card"><h3>Championship Contenders · Top Four</h3><div id="championship-bracket"></div></div><div class="bracket-card"><h3>Consolation / Outside Top Four</h3><div id="consolation-bracket"></div></div></div>
+<p class="hub-intro" id="bracket-status">Retrieving ESPN playoff settings and the latest league standings…</p>
+<div class="brackets">
+  <div class="bracket-card"><h3 id="championship-title">Championship Bracket · Current Field</h3><div id="championship-bracket"></div><div id="championship-pairings" class="bracket-pairings"></div></div>
+  <div class="bracket-card"><h3 id="consolation-title">Consolation Ladder · Outside Current Field</h3><div id="consolation-bracket"></div><div id="consolation-pairings" class="bracket-pairings"></div></div>
+</div>
+<p class="hub-intro bracket-disclaimer" id="bracket-disclaimer">Until official playoff pairings are published, these are provisional seed positions. A team outside the current field is not necessarily eliminated.</p>
 </section>
 <main class="paper">
 <article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · League Report</h2>
@@ -358,7 +393,7 @@ let weather='Weather forecast unavailable';if(g.indoor)weather='Indoor venue';el
 c.append(el('div','game-meta',when+' · '+(venue||'Venue not confirmed')+' · '+weather));return c}
 Promise.allSettled([fetch('data/nfl-week.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()}),fetch('data/league.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()})]).then(([nfl,league])=>{
 if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;document.getElementById('nfl-status').textContent='NFL season '+d.season+' · Week '+d.week+' · Source: ESPN NFL scoreboard · Retrieved '+new Date(d.fetchedAt).toLocaleString();const all=document.getElementById('nfl-games'),feature=document.getElementById('featured-games');d.games.forEach((g,i)=>{all.append(gameCard(g,i));const day=new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long'});if(day==='Sunday'&&new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}).replace(/\D/g,'')>=19 || day==='Monday'){const wrap=el('div');wrap.append(el('h3','',day==='Monday'?'Monday Night Football':'Sunday Night Football'),gameCard(g,i));feature.append(wrap)}})}else document.getElementById('nfl-status').textContent='NFL schedule could not be verified; no fixtures are displayed.';
-if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.dataset.espnTeamId=String(t.teamId??'');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);const target=document.getElementById(i<4?'championship-bracket':'consolation-bracket');target.append(el('div','bracket-entry',(i+1)+'. '+t.name+' ('+(t.wins??'?')+'-'+(t.losses??'?')+')'))});document.getElementById('bracket-status').textContent='Provisional positions based on ESPN league standings retrieved '+new Date(d.fetchedAt).toLocaleString()+'. These are not confirmed ESPN playoff bracket pairings or mathematical eliminations.'}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';document.getElementById('bracket-status').textContent='ESPN league standings unavailable; bracket not shown.'}
+if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.dataset.espnTeamId=String(t.teamId??'');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);});}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';}
 });
 })();
 </script><script>
@@ -586,6 +621,111 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
    count.textContent='';
    console.warn('NFL injury feed not available:',err.message);
  }
+})();
+</script><script>
+/* Daily fact-based stories + verified ESPN fantasy player scores and brackets. */
+(async function(){
+ const $=id=>document.getElementById(id);
+ const txt=(tag,value,klass)=>{const e=document.createElement(tag);e.textContent=value===null||value===undefined?'':String(value);if(klass)e.className=klass;return e};
+ const date=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'time not verified':d.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})};
+ const data=async path=>{const r=await fetch(path+'?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Unable to load '+path);return r.json()};
+ const fail=(id,message)=>{$(id).replaceChildren(txt('p',message,'injury-empty'))};
+ const loadCoverage=async()=>{
+  try{
+   const d=await data('data/weekly-features.json');
+   if(d.status!=='available'||!Array.isArray(d.coverage)||!d.coverage.length)throw Error('No verified brief');
+   $('auto-coverage-meta').textContent='Edition '+d.editionDateEastern+' · Updated '+date(d.generatedAt)+' · '+d.coverage.length+' source-based reports';
+   $('auto-coverage-stories').replaceChildren();
+   for(const s of d.coverage){
+     const c=txt('article',undefined,'coverage-story');
+     c.append(txt('div',s.tag,'coverage-kicker'),txt('h3',s.headline),txt('p',s.body),txt('div','Source: '+s.source,'source'));
+     $('auto-coverage-stories').append(c);
+   }
+   const b=d.playoffs||{};
+   if(b.status!=='available')throw Error('No verified playoff settings/standings');
+   const seedingLabel=b.seedingRule==='TOTAL_POINTS_SCORED'?' · seeds ranked by total fantasy points':
+      b.seedingRule==='WINNING_PCT'?' · seeds ranked by winning percentage':
+      b.seedingRule==='H2H_RECORD'?' · seeds ranked by win-loss record':' · provisional seed order';
+   $('bracket-status').textContent=b.title+' · '+(b.currentWeek?'Fantasy Week '+b.currentWeek+' · ':'')+'ESPN retrieved '+date(b.fetchedAt)+
+     (b.formatVerifiedByESPN?' · '+b.playoffTeamCount+' ESPN-confirmed playoff places'+seedingLabel:' · 4 owner-reported playoff places; ESPN settings not verified');
+   $('bracket-disclaimer').textContent=b.caveat||'Provisional seed positions only.';
+   const pairs=(id,values)=>{
+     $(id).replaceChildren();
+     for(const p of values||[]){
+       const box=txt('div',undefined,'bracket-pairing');
+       const name=(p.homeSeed?'#'+p.homeSeed+' ':'')+(p.home||'TBD')+'  vs  '+(p.awaySeed?'#'+p.awaySeed+' ':'')+(p.away||'TBD');
+       box.append(txt('div',b.type==='espn-listed'?'ESPN postseason matchup':'Illustrative semifinal matchup','round-label'),
+         txt('div',name));
+       $(id).append(box);
+     }
+   };
+   let emblemManifest={};
+   try{emblemManifest=(await data('assets/fantasy-logos/manifest.json')).teams||{}}catch(e){/* Keep valid team names visible. */}
+   const listing=(id,values)=>{
+     $(id).replaceChildren();
+     for(const t of values||[]){
+       const row=txt('div',undefined,'bracket-entry');
+       row.append(txt('span','#'+t.seed,'seed'));
+       const image=emblemManifest[String(t.teamId)];
+       const logoURL=image?.localUrl||image?.sourceUrl||t.logo;
+       if((typeof logoURL==='string')&&
+         (/^assets\/fantasy-logos\/team-\d+\.(?:png|jpg|svg|gif|webp)$/.test(logoURL)||
+          /^https:\/\/(?:g\.espncdn\.com|mystique-api\.fantasy\.espn\.com)\//.test(logoURL))){
+         const img=document.createElement('img');img.className='logo';img.alt=t.name+' ESPN emblem';
+         img.loading='lazy';img.onerror=()=>img.remove();img.src=logoURL;row.append(img);
+       }
+       const club=txt('span',t.name);club.dataset.espnTeamId=String(t.teamId);
+       row.append(club,txt('span',t.record,'entry-record'));
+       $(id).append(row);
+     }
+   };
+   listing('championship-bracket',b.contenders);
+   listing('consolation-bracket',b.outsideCurrentField);
+   pairs('championship-pairings',b.championshipPairings);
+   pairs('consolation-pairings',b.consolationPairings);
+   $('championship-title').textContent=b.type==='espn-listed'?'ESPN Championship Matchups':'Championship Field · Current Seeds';
+   $('consolation-title').textContent=b.type==='espn-listed'?'ESPN Consolation Matchups':'Consolation Ladder · Below Current Cutoff';
+  }catch(e){
+   if(!$('auto-coverage-stories').children.length){
+    $('auto-coverage-meta').textContent='Daily source-verified brief unavailable; approved editorial and historical edition remain visible.';
+    fail('auto-coverage-stories','No current verified articles can be published.');
+   }
+   $('bracket-status').textContent='Weekly playoff picture unavailable without recent ESPN standings.';
+   fail('championship-bracket','No verified playoff seedings.');
+   fail('consolation-bracket','No verified consolation positions.');
+   console.warn('Verified coverage/standings unavailable:',e);
+  }
+ };
+ const loadStars=async()=>{
+  try{
+   const d=await data('data/top-performers.json');
+   if(d.status==='unavailable'||!Array.isArray(d.players)||d.players.length!==5)throw Error('No verified completed-week player scores');
+   const age=(Date.now()-new Date(d.fetchedAt).getTime())/3600000;
+   if(!Number.isFinite(age)||age<0||age>48)throw Error('Player scores have an outdated verification timestamp');
+   $('player-star-meta').textContent='Week '+d.week+' · Top five verified ESPN fantasy scores among rostered players (including benches) · Updated '+date(d.fetchedAt)+'. Players not rostered in this league are excluded.';
+   $('player-stars').replaceChildren();
+   d.players.forEach((p,i)=>{
+     const card=txt('article',undefined,'player-leader');
+     const image=document.createElement('img');image.className='portrait';image.alt=p.name+' official ESPN NFL headshot';image.loading='lazy';
+     const missing=txt('div','Portrait unavailable','portrait portrait-fallback');
+     image.onerror=()=>image.replaceWith(missing);
+     const validPortrait=/^https:\/\/a\.espncdn\.com\/i\/headshots\/nfl\/players\/full\/\d+\.png$/.test(p.headshotUrl||'');
+     if(validPortrait)image.src=p.headshotUrl;
+     const detail=txt('div');
+     detail.append(txt('div','#'+(i+1)+' · '+(p.position||'NFL'),'player-rank'),
+                   txt('div',p.name,'player-name'),
+                   txt('div',Number(p.points).toFixed(2)+' pts','fantasy-points'),
+                   txt('div',p.fantasyTeam||'Fantasy team unavailable','player-team'));
+     card.append(validPortrait?image:missing,detail);
+     $('player-stars').append(card);
+   });
+  }catch(e){
+   $('player-star-meta').textContent='Awaiting five verified player scores from a completed ESPN fantasy matchup week. No estimated player points will be shown.';
+   fail('player-stars','Top-five player scoring is unavailable until ESPN supplies completed-week box scores.');
+   console.warn('Player leaderboard unavailable:',e);
+  }
+ };
+ await Promise.allSettled([loadCoverage(),loadStars()]);
 })();
 </script></body>
 </html>
