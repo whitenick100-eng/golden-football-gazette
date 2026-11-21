@@ -61,6 +61,18 @@ class NFLInjuryFeedTests(unittest.TestCase):
         self.assertEqual(result["playerCount"],3)
         self.assertEqual(result["teams"][0]["name"],"Atlanta Falcons")
 
+    def test_ordinary_active_roster_records_are_not_labeled_injured(self):
+        raw=sample()
+        raw["injuries"][0]["injuries"].append(
+            {"athlete":{"displayName":"Healthy Roster Player"},
+             "status":"Active","type":{"name":"Unknown"}})
+        result=feed.normalize(raw,now=self.now)
+        self.assertEqual(result["playerCount"],3)
+        self.assertEqual(result["excludedActiveCount"],1)
+        self.assertEqual(result["sourceEntryCount"],4)
+        self.assertNotIn("Healthy Roster Player",
+            [p["name"] for t in result["teams"] for p in t["players"]])
+
     def test_rejects_incomplete_or_wrong_season(self):
         with self.assertRaises(ValueError):
             feed.normalize({"injuries":[]},now=self.now)
