@@ -45,6 +45,9 @@ def normalize(payload, now=None, week=None):
     if year is not None and int(year) != now.year:
         raise ValueError("ESPN returned a different NFL season")
     groups = {}
+    excluded_active = 0
+    source_entries = 0
+    group_sizes = []
     for group in raw:
         if not isinstance(group, dict):
             continue
@@ -60,6 +63,8 @@ def normalize(payload, now=None, week=None):
         raw_players = group.get("injuries")
         if not isinstance(raw_players, list):
             continue
+        group_sizes.append(len(raw_players))
+        source_entries += len(raw_players)
         dest = groups.setdefault(team_id, {
             "teamId": team_id, "name":team_name, "abbreviation":abbrev,
             "players":[],
@@ -76,6 +81,11 @@ def normalize(payload, now=None, week=None):
             position = label(athlete.get("position"))
             injury = label(entry.get("type") or entry.get("injury"))
             reported = label(entry.get("status"))
+            # ESPN includes ordinary roster 'Active' statuses in its large
+            # injuries endpoint. Never present these as injury designations.
+            if reported.casefold() in {"active", "healthy", "available"}:
+                excluded_active += 1
+                continue
             game_status = label(entry.get("gameStatus"))
             practice = label(entry.get("practiceStatus") or entry.get("practice"))
             date = entry.get("date")
@@ -118,8 +128,11 @@ def normalize(payload, now=None, week=None):
         "fetchedAt":now.isoformat(),
         "source":"ESPN NFL injury listing",
         "sourceUrl":SOURCE_PAGE, "officialNflReportUrl":OFFICIAL_REPORT,
-        "coverageNote":"ESPN injury listings are not necessarily the official NFL practice/game-status reports. Only teams and players actually returned are shown. Teams not listed are not necessarily injury-free.",
+        "coverageNote":"ESPN injury listings are not necessarily official NFL game designations. Ordinary Active roster records are excluded. ESPN may limit the entries returned for each team; absence does not prove a player is healthy. Consult NFL.com for complete official practice and game reports.",
         "teamCount":len(teams), "playerCount":total,
+        "sourceEntryCount":source_entries, "excludedActiveCount":excluded_active,
+        "sourceTeamGroupCount":len(group_sizes),
+        "possiblePerTeamLimit":25 if group_sizes and all(n == 25 for n in group_sizes) else None,
         "teams":teams,
     }
 
@@ -148,7 +161,7 @@ def main():
     try:
         data = normalize(fetch(), week=current_week())
         OUT.write_text(json.dumps(data,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-        print(f"ESPN NFL injury listing updated: {data['playerCount']} players across {data['teamCount']} teams")
+        print(f"ESPN NFL injury listing updated: {data['playerCount']} non-active status entries across {data['teamCount']} teams ({data['excludedActiveCount']} Active records excluded)")
     except Exception as exc:
         print(f"ESPN NFL injury listing unavailable ({type(exc).__name__}): {exc}")
         if OUT.is_file():
