@@ -60,6 +60,8 @@ function gameStatus(game){
     if(game.period>=1)return 'Q'+game.period+(game.clock?' · '+game.clock:'');
     return game.detail||'LIVE';
   }
+  const detail=game.detail.toLowerCase();
+  if(detail.includes('postpon')||detail.includes('cancel'))return game.detail.toUpperCase();
   return 'SCHEDULED';
 }
 
@@ -124,7 +126,7 @@ function updateOne(card,item,verified){
    if(item.state===LIVE&&verified)status.classList.add('is-live');
  }
  const stamp=card.querySelector('[data-score-verification]');
- if(stamp)stamp.textContent=verified?'ESPN live scoreboard':'Last published ESPN snapshot';
+ if(stamp)stamp.textContent=verified?'ESPN live scoreboard · last successful update':'Last published ESPN snapshot';
  if(link&&/^[0-9]+$/.test(item.id))link.href='https://www.espn.com/nfl/game/_/gameId/'+item.id;
 }
 function paint(verified){
@@ -174,7 +176,7 @@ async function refresh(){
      ' · ESPN refreshed '+formatTime(lastSuccess)+
      ' · Automatic refresh when page is open');
  }catch(err){
-   paint(false);
+   paint(!!lastSuccess);
    const message=lastSuccess
        ?'Live scoreboard temporarily unreachable · Last successful ESPN check '+formatTime(lastSuccess)
        :'Live scoreboard unavailable · Showing the last published ESPN snapshot';
