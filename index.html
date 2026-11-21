@@ -286,6 +286,25 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .transaction-note{font:.72rem/1.5 system-ui,sans-serif;color:#e7d3ad;margin:12px 0 0}
 @media(max-width:700px){.transactions-tools{display:grid;grid-template-columns:1fr;gap:10px}.transaction-card{background:rgba(3,14,21,.27)}}
 
+
+/* NFL live scoreboard, displayed beneath each matchup and updated in the browser */
+.nfl-live-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 13px;margin:12px 0 5px;border:1px solid rgba(246,211,144,.7);background:rgba(5,22,23,.48)}
+#live-score-status{color:#f9e6bf;font:700 .77rem/1.5 system-ui,sans-serif}
+.refresh-nfl-scores{appearance:none;border:1px solid #eac788;background:rgba(15,42,40,.86);color:#fff4d9;font:700 .76rem system-ui,sans-serif;padding:9px 12px;cursor:pointer;border-radius:4px}
+.refresh-nfl-scores:hover,.refresh-nfl-scores:focus-visible{background:#345f51;outline-offset:3px}
+.game-scoreline{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:9px 13px;border-top:1px solid rgba(237,210,155,.44);border-bottom:1px solid rgba(237,210,155,.44);padding:10px 4px;margin:10px 0}
+.score-figures{display:inline-flex;align-items:center;gap:14px}
+.score-figure{display:flex;align-items:center;gap:6px;font:800 .9rem/1.3 system-ui,sans-serif;color:#fff7df}
+.score-club{font-size:.7rem;color:#e8ca95;min-width:25px}
+.score-value{font-variant-numeric:tabular-nums;font-size:1.3rem;line-height:1;color:#fff9df}
+.score-phase{font:800 .7rem/1.25 system-ui,sans-serif;letter-spacing:.055em;color:#ffe4a4;border:1px solid rgba(233,197,130,.7);padding:5px 8px;border-radius:3px;white-space:nowrap}
+.score-phase-post{color:#e1e8e3;background:rgba(37,60,48,.6)}
+.score-phase-in{color:#ffcf9c;background:rgba(97,31,26,.65);border-color:#f3aa77}
+.score-phase.is-live::before{content:"● ";color:#ff7e61;animation:score-pulse 1.9s ease-in-out infinite}
+@keyframes score-pulse{50%{opacity:.3}}
+.score-source{font:.67rem/1.35 system-ui,sans-serif;color:#dbc69e}
+.gamecast-link{color:#ffe2a8;font:700 .7rem/1.3 system-ui,sans-serif;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:650px){.nfl-live-toolbar{align-items:stretch}.game-scoreline{gap:7px}.score-source{width:100%;text-align:center}.gamecast-link{margin-left:auto}.score-value{font-size:1.15rem}}
 </style>
 </head>
 <body>
@@ -384,6 +403,10 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 <section id="weekly-nfl" class="hub-section">
 <h2>NFL Week in Review &amp; Preview</h2>
 <p class="hub-intro" id="nfl-status">Retrieving the verified weekly NFL schedule… Games appear in kickoff order, with team records, venue, local Eastern kickoff time, and outdoor weather forecasts where available.</p>
+<div class="nfl-live-toolbar" aria-label="Live NFL scoreboard updates">
+  <span id="live-score-status" role="status" aria-live="polite">Loading the latest ESPN scores…</span>
+  <button type="button" id="refresh-nfl-scores" class="refresh-nfl-scores" aria-label="Refresh current NFL scores">↻ Refresh scores</button>
+</div>
 <div id="featured-games" class="featured-games"></div>
 <div id="nfl-games" class="games-grid"></div>
 <div id="nfl-injury-report" class="injury-report" aria-label="NFL league-wide injury report">
@@ -469,20 +492,43 @@ const sb=document.getElementById('standings-body');standings.forEach(([team,reco
 const ml=document.getElementById('matchups-list');matchups.forEach((m,i)=>{const d=el('div','match');const title=el('div','teams');title.append(document.createTextNode(`${i+1}. ${m.a} `),el('span','vs','VS'),document.createTextNode(` ${m.b}`));d.append(title,el('p','',m.copy),el('div','pick',`GAZETTE FORECAST: ${m.pick}`));ml.append(d)});
 const wb=document.getElementById('waivers-body');waivers.forEach(([team,week,season])=>{const tr=el('tr');[team,week,season].forEach(v=>tr.append(el('td','',v)));wb.append(tr)});
 </script>
+<script src="assets/live-nfl-scores.js"></script>
 <script>
 (function(){
 const safeUrl=u=>{try{const p=new URL(u);return p.protocol==='https:'?p.href:null}catch{return null}};
 function el(tag,cls,txt){const x=document.createElement(tag);if(cls)x.className=cls;if(txt!==undefined)x.textContent=String(txt);return x}
 function imageLogo(url,alt){const img=el('img');img.alt=alt;img.loading='lazy';const src=safeUrl(url);if(src)img.src=src;else img.style.display='none';img.onerror=()=>{img.style.display='none'};return img}
-function gameCard(g,i){const c=el('article','game-card');c.append(el('div','number','GAME '+String(i+1).padStart(2,'0')+' · '+(g.status||'Scheduled')));
+function gameCard(g,i){const c=el('article','game-card');c.dataset.nflGameId=String(g.id);
+c.append(el('div','number','GAME '+String(i+1).padStart(2,'0')+' · '+(g.status||'Scheduled')));
 const row=el('div','game-teams');
 for(const side of ['away','home']){if(side==='home')row.append(el('div','game-vs','AT'));const team=g[side]||{};const t=el('div','game-side');t.append(imageLogo(team.logo,(team.name||'NFL')+' logo'),el('div','',team.name||'Team unavailable'),el('span','record',team.record?'Record: '+team.record:'Record unavailable'));row.append(t)}
-c.append(row);const d=new Date(g.date);const when=Number.isNaN(d.getTime())?'Kickoff not confirmed':d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+c.append(row);
+const scoreBox=el('div','game-scoreline');
+const sides=el('div','score-figures');
+for(const side of ['away','home']){
+ const group=el('span','score-figure');
+ group.append(el('span','score-club',g[side]?.abbr||side.toUpperCase()));
+ const value=el('strong','score-value','—');value.dataset.scoreSide=side;group.append(value);
+ sides.append(group);
+}
+scoreBox.append(sides);
+const phase=el('span','score-phase score-phase-pre','SCHEDULED');phase.dataset.nflPhase='true';
+scoreBox.append(phase);
+const source=el('span','score-source','Last published ESPN snapshot');source.dataset.scoreVerification='true';
+scoreBox.append(source);
+if(/^[0-9]+$/.test(String(g.id))){
+ const gamecast=el('a','gamecast-link','ESPN Gamecast');
+ gamecast.dataset.gamecastLink='true';
+ gamecast.href='https://www.espn.com/nfl/game/_/gameId/'+String(g.id);
+ gamecast.target='_blank';gamecast.rel='noopener noreferrer';scoreBox.append(gamecast);
+}
+c.append(scoreBox);
+const d=new Date(g.date);const when=Number.isNaN(d.getTime())?'Kickoff not confirmed':d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
 const venue=[g.venue,[g.city,g.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ');
 let weather='Weather forecast unavailable';if(g.indoor)weather='Indoor venue';else if(g.weather&&g.weather.forecast)weather='Forecast: '+Math.round(g.weather.temperatureF)+'°F · '+g.weather.precipitationChance+'% precipitation (Open-Meteo)';
 c.append(el('div','game-meta',when+' · '+(venue||'Venue not confirmed')+' · '+weather));return c}
 Promise.allSettled([fetch('data/nfl-week.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()}),fetch('data/league.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()})]).then(([nfl,league])=>{
-if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;document.getElementById('nfl-status').textContent='NFL season '+d.season+' · Week '+d.week+' · Source: ESPN NFL scoreboard · Retrieved '+new Date(d.fetchedAt).toLocaleString();const all=document.getElementById('nfl-games'),feature=document.getElementById('featured-games');d.games.forEach((g,i)=>{all.append(gameCard(g,i));const day=new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long'});if(day==='Sunday'&&new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}).replace(/\D/g,'')>=19 || day==='Monday'){const wrap=el('div');wrap.append(el('h3','',day==='Monday'?'Monday Night Football':'Sunday Night Football'),gameCard(g,i));feature.append(wrap)}})}else document.getElementById('nfl-status').textContent='NFL schedule could not be verified; no fixtures are displayed.';
+if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;document.getElementById('nfl-status').textContent='NFL season '+d.season+' · Week '+d.week+' · Source: ESPN NFL scoreboard · Retrieved '+new Date(d.fetchedAt).toLocaleString();const all=document.getElementById('nfl-games'),feature=document.getElementById('featured-games');d.games.forEach((g,i)=>{all.append(gameCard(g,i));const day=new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long'});if(day==='Sunday'&&new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}).replace(/\D/g,'')>=19 || day==='Monday'){const wrap=el('div');wrap.append(el('h3','',day==='Monday'?'Monday Night Football':'Sunday Night Football'),gameCard(g,i));feature.append(wrap)}});window.GazetteNFL?.start(d)}else {document.getElementById('nfl-status').textContent='NFL schedule could not be verified; no fixtures are displayed.';document.getElementById('live-score-status').textContent='No verified schedule loaded; scores cannot be matched.';}
 if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.dataset.espnTeamId=String(t.teamId??'');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);});}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';}
 });
 })();
