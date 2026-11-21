@@ -29,6 +29,8 @@ jobs:
         run: python scripts/refresh_espn.py
       - name: Refresh weekly NFL schedule and weather
         run: python scripts/refresh_nfl.py
+      - name: Refresh league-wide ESPN NFL injury report
+        run: python scripts/refresh_nfl_injuries.py
       - name: Cache actual ESPN fantasy logos for Pages
         run: |
           python scripts/cache_fantasy_logos.py

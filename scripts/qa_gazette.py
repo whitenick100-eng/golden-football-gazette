@@ -64,6 +64,25 @@ def validate():
                     assert weather.get("source") == "Open-Meteo" and weather.get("forecast") is True
                     assert -100 <= weather["temperatureF"] <= 150
                     assert 0 <= weather["precipitationChance"] <= 100
+    injuries = read_json("data/nfl-injuries.json")
+    if injuries:
+        if injuries.get("status") == "unavailable":
+            print("WARNING: NFL league injury feed unavailable; official report links remain visible")
+        else:
+            assert valid_time(injuries.get("fetchedAt")), "Injury report missing timestamp"
+            assert injuries.get("season") == datetime.now(timezone.utc).year, "Injury season mismatch"
+            assert injuries.get("source") == "ESPN NFL injury listing"
+            assert isinstance(injuries.get("teams"), list) and injuries["teams"]
+            assert injuries.get("teamCount") == len(injuries["teams"])
+            assert injuries.get("playerCount") == sum(len(t["players"]) for t in injuries["teams"])
+            for team in injuries["teams"]:
+                assert team.get("teamId") and team.get("name")
+                assert isinstance(team.get("players"), list) and team["players"]
+                for player in team["players"]:
+                    assert isinstance(player.get("name"), str) and player["name"]
+                    assert "reportedStatus" in player and "practiceStatus" in player
+    assert 'id="nfl-injury-report"' in page and 'id="injury-teams"' in page
+    assert "data/nfl-injuries.json" in page
     print("Gazette structure and available data validation passed")
 
 if __name__ == "__main__":
