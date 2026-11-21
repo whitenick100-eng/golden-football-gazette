@@ -1,0 +1,25 @@
+name: Verify Gazette Editorial Code
+on:
+  pull_request:
+    paths:
+      - 'scripts/draft_article.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/**'
+      - '.github/workflows/draft-article.yml'
+      - '.github/workflows/verify-editorial.yml'
+permissions:
+  contents: read
+jobs:
+  editorial-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python scripts
+        run: python -m py_compile scripts/*.py tests/test_editorial.py
+      - name: Test daily writer without secrets or network
+        run: python -m unittest discover -s tests -p "test_editorial.py" -v
+      - name: Check website sections
+        run: python scripts/qa_gazette.py
