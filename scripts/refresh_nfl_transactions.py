@@ -12,6 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT=Path(__file__).resolve().parent.parent
 OUT=ROOT/"data/nfl-transactions.json"
@@ -84,7 +85,7 @@ def fetch(page=1, limit=100):
 
 def build(now=None,fetcher=fetch):
     now=now or dt.datetime.now(dt.timezone.utc)
-    today=now.date()
+    today=now.astimezone(ZoneInfo('America/New_York')).date()
     cutoff=today-dt.timedelta(days=7)
     moves=[]
     seen=set()
