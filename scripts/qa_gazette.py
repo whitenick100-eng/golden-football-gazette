@@ -136,6 +136,14 @@ def validate():
                 assert move.get("type") in ("Trade","Released","Waived")
                 assert move.get("team") and move.get("description")
                 assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
+    # In-browser, auto-refreshed NFL scores supplement the daily static snapshot.
+    assert 'id="live-score-status"' in page and 'id="refresh-nfl-scores"' in page
+    assert 'data-nfl-game-id' in page or 'dataset.nflGameId' in page
+    assert 'assets/live-nfl-scores.js' in page
+    assert (ROOT/"assets/live-nfl-scores.js").is_file()
+    script=(ROOT/"assets/live-nfl-scores.js").read_text(encoding="utf-8")
+    assert "site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard" in script
+    assert "setTimeout" in script and "ESPN Gamecast" in page
     print("Gazette structure and available data validation passed")
 
 if __name__ == "__main__":

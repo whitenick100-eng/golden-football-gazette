@@ -1,0 +1,66 @@
+name: Verify live NFL scoreboard and final scores
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/live-nfl-scores.js'
+      - 'scripts/refresh_nfl.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_live_nfl_scores.js'
+      - '.github/workflows/verify-live-nfl-scores.yml'
+permissions:
+  contents: read
+jobs:
+  nfl-live-score-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate live score scripts and test fixture scoring
+        run: |
+          node --check assets/live-nfl-scores.js
+          node tests/test_live_nfl_scores.js
+          python -m py_compile scripts/refresh_nfl.py scripts/qa_gazette.py
+          python scripts/qa_gazette.py
+      - name: Verify browser-accessible ESPN scoreboard and game-ID mapping
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          url="https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=12&limit=100"
+          req=urllib.request.Request(url,headers={
+            "Origin":"https://whitenick100-eng.github.io",
+            "Accept":"application/json",
+            "User-Agent":"Mozilla/5.0 GoldenFootballGazette-Test/1.0",
+          })
+          with urllib.request.urlopen(req, timeout=25) as res:
+            allowed=res.headers.get("Access-Control-Allow-Origin","")
+            data=json.load(res)
+          print("ESPN Cross-Origin header:",allowed)
+          if allowed not in ("*","https://whitenick100-eng.github.io"):
+            raise SystemExit("ESPN does not currently authorize cross-origin requests from GitHub Pages")
+          events=data.get("events") or []
+          if not events:raise SystemExit("ESPN returned no matching NFL scoreboard games")
+          states={}
+          for e in events:
+            s=(e.get("status") or {}).get("type") or {}
+            st=s.get("state")
+            states[st]=states.get(st,0)+1
+            if not e.get("id") or len((e.get("competitions") or [{}])[0].get("competitors") or [])<2:
+              raise SystemExit("ESPN game missing matching ID or team data")
+          print("Verified",len(events),"NFL events, score states:",states)
+          print("No kickoff required to verify connectivity; simulated LIVE/FINAL cases tested separately.")
+          PY
+      - name: Validate all Gazette inline browser scripts
+        run: |
+          python - <<'PY'
+          import pathlib,re
+          html=pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',html)
+          content='\n'.join(s for s in scripts if s.strip())
+          pathlib.Path('/tmp/all-gazette-inline.js').write_text(content,encoding='utf-8')
+          print("Validated",len(scripts),"inline scripts")
+          PY
+          node --check /tmp/all-gazette-inline.js

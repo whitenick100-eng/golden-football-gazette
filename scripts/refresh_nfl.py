@@ -31,6 +31,11 @@ def build():
     games = []
     for e in events:
         comp = (e.get("competitions") or [{}])[0]
+        status = e.get("status") or {}
+        status_type = status.get("type") or {}
+        state = status_type.get("state") if status_type.get("state") in ("pre","in","post") else "pre"
+        if status_type.get("completed"):
+            state = "post"
         sides = {}
         for c in comp.get("competitors", []):
             team = c.get("team", {})
@@ -38,15 +43,19 @@ def build():
             sides[c.get("homeAway")] = {
                 "name": team.get("displayName"), "abbr": team.get("abbreviation"),
                 "record": record, "logo": team.get("logo"),
-                "score": c.get("score") if e.get("status", {}).get("type", {}).get("completed") else None
+                "score": c.get("score") if state in ("in","post") else None
             }
         if not sides.get("home") or not sides.get("away"): continue
         venue = comp.get("venue") or {}
         address = venue.get("address") or {}
         games.append({
             "id": str(e.get("id")), "date": e.get("date"),
-            "status": e.get("status", {}).get("type", {}).get("description"),
-            "completed": bool(e.get("status", {}).get("type", {}).get("completed")),
+            "status": status_type.get("description"),
+            "statusType": state,
+            "period": status.get("period") if isinstance(status.get("period"), int) else 0,
+            "displayClock": status.get("displayClock") if isinstance(status.get("displayClock"), str) else "",
+            "shortDetail": status_type.get("shortDetail") if isinstance(status_type.get("shortDetail"), str) else "",
+            "completed": bool(status_type.get("completed")),
             "home": sides["home"], "away": sides["away"],
             "venue": venue.get("fullName"), "city": address.get("city"),
             "state": address.get("state"), "indoor": bool(venue.get("indoor")),
