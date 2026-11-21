@@ -83,6 +83,39 @@ def validate():
                     assert "reportedStatus" in player and "practiceStatus" in player
     assert 'id="nfl-injury-report"' in page and 'id="injury-teams"' in page
     assert "data/nfl-injuries.json" in page
+    for marker in ('id="auto-coverage"', 'id="auto-coverage-stories"',
+                   'id="player-stars"', 'id="player-star-meta"',
+                   'id="championship-pairings"', 'id="consolation-pairings"'):
+        assert marker in page, f"Missing automated newsroom element: {marker}"
+    assert "data/weekly-features.json" in page and "data/top-performers.json" in page
+    leaders=read_json("data/top-performers.json")
+    if leaders:
+        if leaders.get("status") == "unavailable":
+            print("WARNING: ESPN completed-week player leaderboard unavailable")
+        else:
+            assert leaders.get("leagueId")==1413446022 and leaders.get("season")==2026
+            assert valid_time(leaders.get("fetchedAt"))
+            assert isinstance(leaders.get("week"),int) and 1<=leaders["week"]<=22
+            players=leaders.get("players")
+            assert isinstance(players,list) and len(players)==5
+            assert len({p["playerId"] for p in players})==5
+            for p in players:
+                assert p.get("name") and isinstance(p.get("playerId"),int)
+                assert isinstance(p.get("points"),(int,float)) and 0<=p["points"]<250
+                assert p.get("headshotUrl","").startswith("https://a.espncdn.com/i/headshots/nfl/players/full/")
+    weekly=read_json("data/weekly-features.json")
+    if weekly:
+        assert valid_time(weekly.get("generatedAt"))
+        assert weekly.get("status") in ("available","unavailable")
+        assert isinstance(weekly.get("coverage"),list)
+        for story in weekly["coverage"]:
+            assert all(isinstance(story.get(k),str) and story[k] for k in ("headline","body","source","tag"))
+        bracket=weekly.get("playoffs")
+        assert isinstance(bracket,dict)
+        if bracket.get("status")=="available":
+            assert bracket.get("type") in ("provisional","espn-listed")
+            assert len(bracket.get("contenders",[]))+len(bracket.get("outsideCurrentField",[]))==10
+            assert bracket.get("playoffTeamCount")==len(bracket["contenders"])
     print("Gazette structure and available data validation passed")
 
 if __name__ == "__main__":
