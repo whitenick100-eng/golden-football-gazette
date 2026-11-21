@@ -96,6 +96,20 @@ def normalize(payload, now=None, week=None):
         team["players"].sort(key=lambda p:(status_rank(p["gameStatus"] or p["reportedStatus"]),
                                           p["name"].lower()))
     if not teams:
+        # Schema-only diagnostics; never log player names or private fields.
+        print("ESPN injury response keys:", sorted(payload.keys())[:25])
+        print("ESPN injury group count:",len(raw))
+        for index, group in enumerate(raw[:3]):
+            if not isinstance(group, dict):
+                print("Group",index,"type:",type(group).__name__)
+                continue
+            print("Group",index,"keys:",sorted(group.keys())[:20],
+                  "team kind:",type(group.get("team")).__name__,
+                  "injuries kind:",type(group.get("injuries")).__name__,
+                  "injuries length:",len(group.get("injuries")) if isinstance(group.get("injuries"),list) else "n/a")
+            first=(group.get("injuries") or [None])[0] if isinstance(group.get("injuries"),list) else None
+            if isinstance(first,dict):
+                print("Group",index,"first entry keys:",sorted(first.keys())[:25])
         raise ValueError("No attributable NFL injury entries in ESPN response")
     total = sum(len(team["players"]) for team in teams)
     return {
