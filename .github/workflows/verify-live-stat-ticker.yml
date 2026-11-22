@@ -4,9 +4,11 @@ on:
     paths:
       - 'index.html'
       - 'assets/nfl-player-ticker.js'
-      - 'scripts/refresh_nfl_transactions.py'
+      - 'scripts/build_public_site.py'
+      - 'scripts/qa_public_site.py'
       - 'scripts/qa_gazette.py'
       - 'tests/test_nfl_player_ticker.js'
+      - 'tests/test_public_security.py'
       - '.github/workflows/verify-live-stat-ticker.yml'
 permissions:
   contents: read
@@ -19,59 +21,82 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/setup-python@v5
-        with: 
+        with:
           python-version: '3.12'
-      - name: Probe ESPN NFL scoreboard player leaders schema and CORS
+      - name: Verify season and live game statistics never get confused
+        run: |
+          node --check assets/nfl-player-ticker.js
+          node tests/test_nfl_player_ticker.js
+          python scripts/qa_gazette.py
+      - name: Verify live ESPN stat API CORS and player box-score schema
         run: |
           python - <<'PY'
           import json,urllib.request
-          url='https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=12&limit=100'
-          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Origin':'https://whitenick100-eng.github.io','Accept':'application/json'})
-          with urllib.request.urlopen(req,timeout=25) as res:
-            data=json.load(res)
-            print('SCOREBOARD CORS',res.headers.get('Access-Control-Allow-Origin'))
-          print('EVENTS',len(data.get('events',[])))
-          for event in (data.get('events') or [])[:4]:
-            comp=(event.get('competitions') or [{}])[0]
-            print('GAME',event.get('id'),'STATE',(event.get('status') or {}).get('type',{}).get('state'),'COMP KEYS',list(comp))
-            leaders=comp.get('leaders') or []
-            print('LEADERS',type(leaders).__name__,len(leaders))
-            for group in leaders[:6]:
-              print('LEADER GROUP',json.dumps(group,ensure_ascii=False)[:1450])
-            if comp.get('competitors'):
-              p=(comp['competitors'][0].get('leaders') or [])
-              print('TEAM LEADERS',type(p).__name__,len(p))
-              for group in p[:2]:print('TEAM SAMPLE',json.dumps(group)[:800])
+          headers={'Origin':'https://whitenick100-eng.github.io','User-Agent':'Mozilla/5.0'}
+          base='https://site.api.espn.com/apis/site/v2/sports/football/nfl/'
+          def request(url):
+            req=urllib.request.Request(url,headers=headers)
+            with urllib.request.urlopen(req,timeout=23) as resp:
+              cors=resp.headers.get('Access-Control-Allow-Origin')
+              if cors not in ('*','https://whitenick100-eng.github.io'):
+                raise SystemExit('ESPN CORS would block browser access')
+              return json.load(resp)
+          scores=request(base+'scoreboard?dates=2026&seasontype=2&week=12&limit=100')
+          assert scores.get('events'), 'ESPN scoreboard empty'
+          source=[g for g in scores['events'] if g.get('status',{}).get('type',{}).get('state') in ('in','post')]
+          if not source:
+            previous=request(base+'scoreboard?dates=2026&seasontype=2&week=11&limit=100')
+            source=[g for g in previous['events'] if g.get('status',{}).get('type',{}).get('state')=='post']
+          if not source:
+            raise SystemExit('No ESPN active/completed game available to verify the boxscore')
+          event=source[0]
+          detail=request(base+'summary?event='+str(event['id']))
+          teams=(detail.get('boxscore') or {}).get('players') or []
+          if len(teams)<2:raise SystemExit('ESPN game summary omitted player boxscore')
+          position_types={s.get('name') for team in teams for s in team.get('statistics',[])}
+          assert {'passing','rushing','receiving'}.issubset(position_types),position_types
+          print('Verified ESPN scoreboard events:',len(scores['events']))
+          print('Verified player boxscore source event:',event['id'])
+          print('Verified per-game stat categories:',sorted(position_types))
+          print('ESPN browser CORS confirmed')
           PY
-      - name: Probe ESPN live game summary player boxscores
+      - name: Check current published Roster Wire activation
         run: |
           python - <<'PY'
-          import urllib.request,json
-          headers={'User-Agent':'Mozilla/5.0','Origin':'https://whitenick100-eng.github.io'}
-          base='https://site.api.espn.com/apis/site/v2/sports/football/nfl/'
-          req=urllib.request.Request(base+'scoreboard?dates=2026&seasontype=2&week=12&limit=100',headers=headers)
-          with urllib.request.urlopen(req,timeout=20) as r:
-            doc=json.load(r)
-          live=[e for e in doc.get('events',[]) if (e.get('status') or {}).get('type',{}).get('state') in ('in','post')]
-          if not live:
-            past=urllib.request.Request(base+'scoreboard?dates=2026&seasontype=2&week=11&limit=100',headers=headers)
-            with urllib.request.urlopen(past,timeout=20) as r: data=json.load(r)
-            live=[e for e in data.get('events',[]) if (e.get('status') or {}).get('type',{}).get('state') in ('in','post')]
-            print('USING PRIOR COMPLETED WEEK',len(live))
-          print('LIVE/FINAL',len(live))
-          for event in live[:2]:
-            url=base+'summary?event='+str(event['id'])
-            with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=22) as response:
-              detail=json.load(response)
-              print('SUMMARY CORS',response.headers.get('Access-Control-Allow-Origin'))
-            print('GAME',event.get('id'),(event.get('status') or {}).get('type',{}).get('state'), 'TOP KEYS',list(detail))
-            box=(detail.get('boxscore') or {})
-            print('BOX KEYS',list(box),'PLAYER GROUPS',len(box.get('players') or []))
-            for team in (box.get('players') or [])[:1]:
-              print('TEAM KEYS',list(team),'STAT TYPES',len(team.get('statistics') or []))
-              for kind in (team.get('statistics') or [])[:5]:
-                print('STAT KEYS',list(kind))
-                print('STAT SAMPLE',json.dumps({k:kind.get(k) for k in ('name','label','labels','keys')},ensure_ascii=False)[:1200])
-                for athlete in (kind.get('athletes') or [])[:2]:
-                  print('ATHLETE',json.dumps(athlete,ensure_ascii=False)[:1200])
+          import json,urllib.request
+          site='https://whitenick100-eng.github.io/golden-football-gazette/data/nfl-transactions.json'
+          try:
+            req=urllib.request.Request(site,headers={'User-Agent':'Mozilla/5.0'})
+            with urllib.request.urlopen(req,timeout=20) as response:
+              d=json.load(response)
+            print('PRODUCTION ROSTER WIRE',json.dumps({
+              'status':d.get('status'),'curated':d.get('keyOnly'),
+              'verifiedAt':d.get('fetchedAt'),'featuredMoves':d.get('total'),
+              'allESPNMovesChecked':d.get('allESPNMovesChecked'),
+            }))
+          except Exception as e:
+            # Production is only advisory until this PR deploys successfully.
+            print('PRODUCTION ROSTER WIRE UNVERIFIED',type(e).__name__,str(e)[:180])
           PY
+      - name: Validate security-scanned Pages bundle and inline browser syntax
+        run: |
+          python -m unittest discover -s tests -p 'test_public_security.py' -v
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+            def __init__(self):
+              super().__init__(convert_charrefs=False);self.active=False;self.body=[];self.parts=[]
+            def handle_starttag(self,tag,attrs):
+              if tag=='script' and 'src' not in dict(attrs):self.active=True;self.parts=[]
+            def handle_data(self,txt):
+              if self.active:self.parts.append(txt)
+            def handle_endtag(self,tag):
+              if tag=='script' and self.active:self.body.append(''.join(self.parts));self.active=False
+          p=P();p.feed(Path('index.html').read_text(encoding='utf-8'))
+          Path('/tmp/gazette-ticker-inline.js').write_text('\n'.join(p.body),encoding='utf-8')
+          print('Parsed',len(p.body),'inline browser scripts')
+          PY
+          node --check /tmp/gazette-ticker-inline.js
