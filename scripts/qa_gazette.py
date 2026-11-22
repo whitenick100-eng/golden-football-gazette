@@ -72,15 +72,23 @@ def validate():
             assert valid_time(injuries.get("fetchedAt")), "Injury report missing timestamp"
             assert injuries.get("season") == datetime.now(timezone.utc).year, "Injury season mismatch"
             assert injuries.get("source") == "ESPN NFL injury listing"
-            assert isinstance(injuries.get("teams"), list) and injuries["teams"]
+            assert isinstance(injuries.get("teams"), list)  # A true zero is possible
             assert injuries.get("teamCount") == len(injuries["teams"])
             assert injuries.get("playerCount") == sum(len(t["players"]) for t in injuries["teams"])
+            assert injuries.get("filter") == "major-availability-only"
+            assert set(injuries.get("positions",[])) == {"QB","RB","WR","TE","K"}
             for team in injuries["teams"]:
                 assert team.get("teamId") and team.get("name")
                 assert isinstance(team.get("players"), list) and team["players"]
                 for player in team["players"]:
                     assert isinstance(player.get("name"), str) and player["name"]
                     assert "reportedStatus" in player and "practiceStatus" in player
+                    assert player.get("position") in {"QB","RB","WR","TE","K"}, "Non-target NFL player displayed"
+                    from_major = (player.get("gameStatus") or "").casefold()
+                    from_report = (player.get("reportedStatus") or "").casefold()
+                    assert any(k in (from_major+" "+from_report) for k in
+                        ("out","questionable","doubtful","injured reserve","reserve/injured",
+                         "reserve injured","ir","pup","physically unable to perform"))
     assert 'id="nfl-injury-report"' in page and 'id="injury-teams"' in page
     assert "data/nfl-injuries.json" in page
     for marker in ('id="auto-coverage"', 'id="auto-coverage-stories"',
