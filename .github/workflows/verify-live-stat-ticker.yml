@@ -43,3 +43,30 @@ jobs:
               print('TEAM LEADERS',type(p).__name__,len(p))
               for group in p[:2]:print('TEAM SAMPLE',json.dumps(group)[:800])
           PY
+      - name: Probe ESPN live game summary player boxscores
+        run: |
+          python - <<'PY'
+          import urllib.request,json
+          headers={'User-Agent':'Mozilla/5.0','Origin':'https://whitenick100-eng.github.io'}
+          base='https://site.api.espn.com/apis/site/v2/sports/football/nfl/'
+          req=urllib.request.Request(base+'scoreboard?dates=2026&seasontype=2&week=12&limit=100',headers=headers)
+          with urllib.request.urlopen(req,timeout=20) as r:
+            doc=json.load(r)
+          live=[e for e in doc.get('events',[]) if (e.get('status') or {}).get('type',{}).get('state') in ('in','post')]
+          print('LIVE/FINAL',len(live))
+          for event in live[:2]:
+            url=base+'summary?event='+str(event['id'])
+            with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=22) as response:
+              detail=json.load(response)
+              print('SUMMARY CORS',response.headers.get('Access-Control-Allow-Origin'))
+            print('GAME',event.get('id'),(event.get('status') or {}).get('type',{}).get('state'), 'TOP KEYS',list(detail))
+            box=(detail.get('boxscore') or {})
+            print('BOX KEYS',list(box),'PLAYER GROUPS',len(box.get('players') or []))
+            for team in (box.get('players') or [])[:1]:
+              print('TEAM KEYS',list(team),'STAT TYPES',len(team.get('statistics') or []))
+              for kind in (team.get('statistics') or [])[:5]:
+                print('STAT KEYS',list(kind))
+                print('STAT SAMPLE',json.dumps({k:kind.get(k) for k in ('name','label','labels','keys')},ensure_ascii=False)[:1200])
+                for athlete in (kind.get('athletes') or [])[:2]:
+                  print('ATHLETE',json.dumps(athlete,ensure_ascii=False)[:1200])
+          PY
