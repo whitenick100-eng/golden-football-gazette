@@ -77,13 +77,22 @@ def valid(name, data, now=None):
                 raise ValueError("missing/duplicate fantasy team ids")
             if not isinstance(games, list) or len(games) < 5:
                 raise ValueError("incomplete season matchup coverage")
+            identified = 0
             for game in games:
                 if not isinstance(game, dict) or not isinstance(game.get("home"), dict) or not isinstance(game.get("away"), dict):
                     raise ValueError("malformed fantasy game")
-                if game["home"].get("teamId") is None or game["away"].get("teamId") is None:
-                    raise ValueError("unidentified fantasy opponents")
                 if game.get("winner") not in ("HOME", "AWAY", "TIE", "UNDECIDED", None):
                     raise ValueError("invalid matchup winner")
+                home_id, away_id = game["home"].get("teamId"), game["away"].get("teamId")
+                # ESPN future playoff bracket slots can be unassigned; this is
+                # not corruption. Require five fully identified games elsewhere.
+                if home_id is None or away_id is None:
+                    continue
+                if home_id not in ids or away_id not in ids or home_id == away_id:
+                    raise ValueError("fantasy game references nonexistent/duplicate opponent")
+                identified += 1
+            if identified < 5:
+                raise ValueError("not enough fully identified fantasy games")
             if not isinstance(data.get("currentMatchupPeriod"), int) or not 1 <= data["currentMatchupPeriod"] <= 22:
                 raise ValueError("invalid fantasy week")
         elif name == "nfl-week.json":
