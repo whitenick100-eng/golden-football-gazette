@@ -38,6 +38,14 @@ jobs:
               if "depthcharts" in u:
                 for k,v in list(d.items())[:10]:
                   print("ROOT",k, "type",type(v).__name__,"length",len(v) if isinstance(v,(list,dict)) else None)
+                actual=d.get('depthchart')
+                if isinstance(actual,list):
+                  print("ESPN DEPTH ROOT",len(actual),"sections")
+                  for entry in actual[:3]:
+                    print("DEPTH SECTION KEYS",list(entry.keys()), "NAME",entry.get("name"),"TYPE",entry.get("type"),flush=True)
+                    print("DEPTH SECTION SAMPLE",json.dumps(entry,ensure_ascii=False)[:3200],flush=True)
+                if isinstance(actual,dict):
+                  print("DEPTH ROOT KEYS",list(actual.keys())[:15],"SAMPLE",str(next(iter(actual.values())))[:2500])
                 chart=d.get('depthcharts') or d.get('depthCharts') or d.get('items')
                 if isinstance(chart,list):
                   print("DEPTHCHART RECORDS",len(chart))
@@ -53,6 +61,7 @@ jobs:
                     "entries",len(g.get('injuries') or []))
                   for p in (g.get('injuries') or [])[:2]:
                     a=p.get('athlete') or {}
+                    print("INJURY ATHLETE LINKS",a.get('links'),"HEADSHOT",bool(a.get("headshot")),"NOTES",str(a.get("notes"))[:350])
                     print("INJURY SAMPLE",list(p),list(a)[:20], 'athleteID',a.get('id'),
                       'position',a.get('position'), 'status',p.get('status'))
             except Exception as e:
