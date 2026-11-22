@@ -585,6 +585,24 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .gazette-page-one-sidebar[hidden]{display:none!important}
 .gazette-page-one-sidebar img{display:block;width:100%;height:auto;object-fit:contain}
 @media(max-width:530px){.gazette-page-one-sidebar{float:none;width:100%;margin:0 0 15px 0}}
+/* Exact ESPN fantasy emblems are shared between league records and matchup cards. */
+.gazette-record-identity{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.gazette-record-identity .gazette-logo-holder{flex:0 0 52px;width:52px;height:52px;display:grid;place-items:center}
+.gazette-record-identity .gazette-team-logo{width:50px;height:50px;object-fit:contain}
+#espn-games .gazette-logo-holder{width:60px;height:60px;display:grid;place-items:center}
+#espn-games .gazette-logo-holder .gazette-team-logo{width:58px;height:58px;object-fit:contain}
+.gazette-logo-initials{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid #bba67f;color:#ffe4a1;font:800 .8rem system-ui,sans-serif}
+.gazette-record-name{min-width:0;overflow-wrap:anywhere}
+.injury-selected-team{border:1px solid rgba(223,188,118,.55);border-radius:5px;background:rgba(15,34,32,.75);padding:12px}
+.injury-selected-heading{margin:0 0 12px;color:#ffe5a5;font:800 .9rem/1.4 system-ui,sans-serif}
+#injury-team-filter{min-width:180px;max-width:100%}
+#injury-count{background:rgba(10,33,35,.7);border:1px solid #d2ac66;border-radius:4px;padding:12px;line-height:1.55}
+@media(max-width:540px){
+ .gazette-record-identity{align-items:flex-start;flex-direction:column;gap:7px}
+ .gazette-record-identity .gazette-logo-holder{height:46px}
+ .gazette-record-identity .gazette-team-logo{height:44px;width:44px}
+}
+
 /* Compact NFL watch desks and Gridiron Giggles record directory. */
 .gazette-records-feature{margin:12px 0 18px}
 .gazette-records-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:10px}
@@ -709,7 +727,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   <button type="button" id="injury-refresh" class="refresh-nfl-scores" aria-label="Recheck the latest published ESPN injury report">↻ Recheck injury reports</button>
   <div class="injury-filter-bar">
     <label for="injury-team-filter">NFL team
-      <select id="injury-team-filter"><option value="all">All affected teams</option></select>
+      <select id="injury-team-filter" aria-label="Choose an NFL team to review"><option value="">Select an NFL team…</option></select>
     </label>
     <label for="injury-position-filter">Starting position
       <select id="injury-position-filter"><option value="all">QB, RB, WR, TE &amp; K</option>
@@ -718,7 +736,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
         <option value="K">Kicker</option>
       </select>
     </label>
-    <label for="injury-status-filter">Unavailable status
+    <label for="injury-status-filter">Reported status
       <select id="injury-status-filter"><option value="all">OUT / Questionable / Doubtful / IR</option>
         <option value="out">Reported OUT</option>
         <option value="reserve">Injured Reserve / PUP</option>
@@ -729,8 +747,8 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
       <input id="injury-search" type="search" placeholder="Search NFL player" autocomplete="off">
     </label>
   </div>
-  <p class="injury-count" id="injury-count" role="status"></p>
-  <div id="injury-teams" class="injury-teams"><p class="injury-empty">Verifying confirmed absences from ESPN…</p></div>
+  <p class="injury-count" id="injury-count" role="status">Checking the number of NFL teams and starters currently reported OUT…</p>
+  <div id="injury-teams" class="injury-teams" aria-live="polite"><p class="injury-empty">Choose one NFL team above to review its players.</p></div>
   <p class="injury-disclaimer">Only ESPN-listed first-string QB, RB, WR, TE and K appear. OUT, Questionable, and Doubtful require recent dated ESPN reports; IR/PUP is listed separately. A questionable designation is not the same as being ruled out. ESPN feeds can lag official game-day inactives; verify with NFL.com.</p>
 </div>
 <div id="nfl-transactions-desk" class="transactions-desk" aria-label="Significant NFL player transactions">
@@ -863,57 +881,79 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
  const valid=p=>p&&p.depthRank===1&&positions.has(p.position)&&statuses.has(p.outType)&&typeof p.name==='string';
  const formatDate=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'Not reported':d.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'})};
  let snapshot=null,busy=false;
+ function reportTeams(){
+   return (snapshot?.teams||[]).map(t=>({...t,players:(t.players||[]).filter(valid)}))
+    .filter(t=>t.players.length).sort((a,b)=>a.name.localeCompare(b.name));
+ }
+ function populateTeams(){
+   const current=teamSelect.value;
+   teamSelect.replaceChildren();
+   const placeholder=el('option','Select an NFL team to review…');
+   placeholder.value='';teamSelect.append(placeholder);
+   for(const team of reportTeams()){
+    const option=el('option',team.name+' ('+team.players.length+')');
+    option.value=String(team.teamId);
+    teamSelect.append(option);
+   }
+   teamSelect.value=[...teamSelect.options].some(o=>o.value===current)?current:'';
+ }
  function render(){
   if(!snapshot)return;
-  const previous=new Set([...area.querySelectorAll('details[open]')].map(e=>e.dataset.teamId));
-  const teams=snapshot.teams.map(t=>({...t,players:(t.players||[]).filter(valid)})).filter(t=>t.players.length);
-  const current=teamSelect.value;
-  teamSelect.replaceChildren();
-  const all=el('option','All affected teams');all.value='all';teamSelect.append(all);
-  for(const t of teams){const option=el('option',t.name);option.value=String(t.teamId);teamSelect.append(option)}
-  teamSelect.value=[...teamSelect.options].some(o=>o.value===current)?current:'all';
-  area.replaceChildren();let clubs=0,visible=0;
-  const counts={out:0,reserve:0,questionable:0,doubtful:0};
-  for(const t of teams){
-   if(teamSelect.value!=='all'&&teamSelect.value!==String(t.teamId))continue;
-   const q=search.value.trim().toLowerCase();
-   const filtered=t.players.filter(p=>(posSelect.value==='all'||p.position===posSelect.value)&&
-     (statusSelect.value==='all'||p.outType===statusSelect.value)&&
-     (!q||[p.name,p.position,t.name,p.injury,p.reportedStatus].filter(Boolean).join(' ').toLowerCase().includes(q)));
-   if(!filtered.length)continue;
-   clubs++;visible+=filtered.length;for(const p of filtered)counts[p.outType]++;
-   const details=el('details',undefined,'injury-club');
-   details.dataset.teamId=String(t.teamId);details.open=previous.has(String(t.teamId));
-   const head=el('summary');
-   head.append(el('strong',t.name),el('span',filtered.length+' reported starter'+(filtered.length===1?'':'s'),'club-count'));
-   details.append(head);
-   const wrap=el('div',undefined,'injury-grid-scroll');
-   const table=el('table',undefined,'injury-table');
-   const thead=el('thead'),tr=el('tr');
-   for(const label of ['Player','Position','Status','Injury / reason','Report date']){const th=el('th',label);th.scope='col';tr.append(th)}
-   thead.append(tr);table.append(thead);
-   const body=el('tbody');
-   for(const p of filtered){
-    const row=el('tr'),name=el('td');
-    if(typeof p.playerUrl==='string'&&/^https:\/\/www\.espn\.com\/nfl\/player\/_\/id\/\d+$/.test(p.playerUrl)){
-     const a=el('a',p.name,'starter-link');a.href=p.playerUrl;a.target='_blank';a.rel='noopener noreferrer';name.append(a);
-    }else name.textContent=p.name;
-    name.append(el('span','1st string · '+(p.starterSlot||p.position),'starter-depth-note'));
-    row.append(name,el('td',p.position));
-    const status=el('td');
-    const chip=el('span',p.reportedStatus||(p.outType==='reserve'?'IR / PUP':p.outType.toUpperCase()),'injury-status-chip');
-    chip.dataset.severity=p.outType;status.append(chip);
-    row.append(status,el('td',p.injury||'Reason not reported','injury-muted'),
-       el('td',p.reportDate?formatDate(p.reportDate):'Not reported','injury-muted'));
-    body.append(row);
-   }
-   table.append(body);wrap.append(table);details.append(wrap);area.append(details);
+  const teams=reportTeams();
+  const outTeams=teams.filter(t=>t.players.some(p=>p.outType==='out')).length;
+  const totals={out:0,questionable:0,doubtful:0,reserve:0};
+  for(const t of teams)for(const p of t.players)totals[p.outType]++;
+  count.textContent=outTeams+' NFL team'+(outTeams===1?'':'s')+' with starters OUT · '+
+   totals.out+' players OUT · '+totals.questionable+' Questionable · '+
+   totals.doubtful+' Doubtful · '+totals.reserve+' IR/PUP · '+
+   teams.length+' teams with a reported status'+
+   (snapshot.coverageComplete?'':' · Partial ESPN coverage');
+  area.replaceChildren();
+  if(!teamSelect.value){
+   area.append(el('p','Select an NFL team from the box above to review its players. No team details are expanded by default.','injury-empty'));
+   return;
   }
-  count.textContent=visible+' reported first-string starter'+(visible===1?'':'s')+
-   ' · '+counts.out+' OUT · '+counts.questionable+' Questionable · '+counts.doubtful+
-   ' Doubtful · '+counts.reserve+' IR/PUP · '+clubs+' affected teams'+
-   (snapshot.coverageComplete?'':' · Partial ESPN depth-chart coverage');
-  if(!visible)area.append(el('p','No matching first-string injury designations were verified. Check the official NFL report before kickoff.','injury-empty'));
+  const team=teams.find(t=>String(t.teamId)===teamSelect.value);
+  if(!team){
+   area.append(el('p','This team has no verified starting-player injury designations in the current report.','injury-empty'));
+   return;
+  }
+  const query=search.value.trim().toLowerCase();
+  const players=team.players.filter(p=>
+   (posSelect.value==='all'||posSelect.value===p.position)&&
+   (statusSelect.value==='all'||statusSelect.value===p.outType)&&
+   (!query||[p.name,p.position,p.injury,p.reportedStatus,team.name]
+     .filter(Boolean).join(' ').toLowerCase().includes(query)));
+  const panel=el('section',undefined,'injury-selected-team');
+  panel.append(el('h4',team.name+' · '+players.length+' displayed of '+team.players.length+' reported starters','injury-selected-heading'));
+  if(!players.length){
+   panel.append(el('p','No players on this team match the selected position, status or search.','injury-empty'));
+   area.append(panel);return;
+  }
+  const wrap=el('div',undefined,'injury-grid-scroll');
+  const table=el('table',undefined,'injury-table');
+  const thead=el('thead'),heading=el('tr');
+  for(const title of ['Player','Position','Status','Injury / reason','Report date']){
+    const th=el('th',title);th.scope='col';heading.append(th);
+  }
+  thead.append(heading);table.append(thead);
+  const body=el('tbody');
+  for(const p of players){
+   const row=el('tr'),name=el('td');
+   if(typeof p.playerUrl==='string'&&/^https:\/\/www\.espn\.com\/nfl\/player\/_\/id\/\d+$/.test(p.playerUrl)){
+    const link=el('a',p.name,'starter-link');
+    link.href=p.playerUrl;link.target='_blank';link.rel='noopener noreferrer';name.append(link);
+   }else name.textContent=p.name;
+   name.append(el('span','1st string · '+(p.starterSlot||p.position),'starter-depth-note'));
+   row.append(name,el('td',p.position));
+   const state=el('td');
+   const chip=el('span',p.reportedStatus||(p.outType==='reserve'?'IR / PUP':p.outType.toUpperCase()),'injury-status-chip');
+   chip.dataset.severity=p.outType;state.append(chip);
+   row.append(state,el('td',p.injury||'Reason not reported','injury-muted'),
+     el('td',p.reportDate?formatDate(p.reportDate):'Not reported','injury-muted'));
+   body.append(row);
+  }
+  table.append(body);wrap.append(table);panel.append(wrap);area.append(panel);
  }
  async function refresh(){
   if(busy)return;busy=true;button.disabled=true;meta.textContent='Checking latest published ESPN report…';
@@ -933,6 +973,7 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
     (d.filter==='first-string-out-only'?' · Questionable and Doubtful pending next scheduled data refresh':'')+
     (d.coverageComplete?'':' · INCOMPLETE COVERAGE')+
     ' · Recheck loads published data; it does not force ESPN to publish';
+   populateTeams();
    render();
   }catch(error){
    meta.textContent='ESPN injury recheck unavailable'+(snapshot?' · keeping last verified report':' · check NFL.com');
