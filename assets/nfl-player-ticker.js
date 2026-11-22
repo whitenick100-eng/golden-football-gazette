@@ -7,7 +7,8 @@
 const BASE='https://site.api.espn.com/apis/site/v2/sports/football/nfl/';
 const CATEGORIES={passing:{short:'PASS',stat:'PASS YDS'},
                   rushing:{short:'RUSH',stat:'RUSH YDS'},
-                  receiving:{short:'REC',stat:'REC YDS'}};
+                  receiving:{short:'REC',stat:'REC YDS'},
+                  fantasy:{short:'FANTASY',stat:'FANTASY PTS'}};
 const MAX_GAMES=8;
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 
@@ -195,7 +196,7 @@ async function fallbackFantasy(){
  if(data.leagueId!==1413446022||data.season!==2026||!Array.isArray(data.players))throw Error('No verified fantasy leaderboard');
  const rows=data.players.filter(p=>typeof p.name==='string'&&numeric(p.points)!==null)
    .map(p=>({name:p.name,playerId:String(p.playerId||''),
-     team:p.position||'NFL',kind:'passing',amount:p.points,
+     team:p.position||'NFL',kind:'fantasy',amount:p.points,
      text:Number(p.points).toFixed(2)+' FANTASY PTS'})).slice(0,5);
  if(!rows.length)throw Error('No fantasy player totals');
  return {rows,mode:'LAST COMPLETED FANTASY WEEK '+data.week,
