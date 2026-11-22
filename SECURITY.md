@@ -10,7 +10,7 @@ No public website can guarantee protection against all malware, phishing, compro
 
 - **Allowlisted Pages publishing:** `scripts/build_public_site.py` copies only `index.html`, necessary local JavaScript/images, selected sanitized `data/*.json`, and the previously owner-approved `editorial/latest.json` into `public/`. The deploy workflow uploads `public/`, **not** the repository root. Python scripts, tests, workflows, private notes, `.env` files and `editorial/*DRAFT.md` are never included in the Pages artifact.
 - **Browser Content Security Policy:** the generated public HTML includes a meta CSP with exact SHA-256 hashes for the current inline scripts/styles, local JavaScript only, an explicit allowlist for ESPN and Unsplash images, and ESPN scoreboard network access. Third-party scripts, `eval`, iframes, forms, and object/plugin content are blocked by policy in supporting browsers. A referrer meta tag limits URL leakage.
-- **Automatic prevention checks:** the publishing workflow and the separate weekly `Security Audit - Public Gazette` workflow check obvious leaked credentials, verify the exact upload manifest, validate the CSP, and run offline security regressions.
+- **Automatic prevention checks:** the publishing workflow and the separate weekly `Security Audit - Public Gazette` workflow check obvious leaked credentials, verify the exact upload manifest, validate the CSP, run offline security regressions, and use GitHub CodeQL to inspect Python and JavaScript source for common security defects.
 - **Update review:** Dependabot proposes GitHub Actions updates as pull requests instead of silently replacing deployment dependencies.
 - **Editorial approval:** AI-written newspaper articles continue to require a separate pull request and an owner's merge. Source data from ESPN remains untrusted and is rendered by text-safe DOM APIs, not `innerHTML`.
 
@@ -30,7 +30,7 @@ GitHub Pages does **not provide application-layer authentication, custom server 
 
 ### Operational verification
 
-- Scheduled audit: **every Monday** and on proposed code changes.
+- Scheduled allowlist/token audit: **every Monday** and on proposed code changes. CodeQL source analysis: **every Tuesday** and on proposed code changes (results depend on GitHub Code Scanning being enabled/available).
 - Pages deploy: `python scripts/build_public_site.py && python scripts/qa_public_site.py` must pass before upload.
 - Browser: after deploying, check Console in developer tools for CSP violations or broken images/scoreboard requests.
 - If the audit reports a possible secret, do **not** paste the secret into a public issue; rotate it and use a private reporting channel with the repository owner.
