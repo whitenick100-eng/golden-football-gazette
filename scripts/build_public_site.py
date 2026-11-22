@@ -31,6 +31,7 @@ PUBLIC_DATA = (
 STATIC_ASSETS = (
     "assets/stadium-late-fall.webp",
     "assets/live-nfl-scores.js",
+    "assets/espn-matchups.js",
     "assets/espn-team-logos.json",
 )
 IMAGE_EXTENSIONS = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg"}
