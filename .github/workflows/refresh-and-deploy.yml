@@ -79,7 +79,7 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Upload allowlisted website artifact only
         id: upload
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public
       - name: Confirm artifact upload
