@@ -59,6 +59,59 @@ const cards=$('espn-games'),weekSelect=$('espn-week-select'),previous=$('espn-we
 if(!cards||!weekSelect||!previous||!next||!status||!summary||!refresh)return;
 
 let snapshot=null,selectedWeek=null,loading=false,liveCheckedAt=null,lastLiveAt=null,liveError='';
+const emblemSources=new Map();
+let emblemsLoading=null;
+const trustedESPNLogo=url=>typeof url==='string'&&/^https:\/\/(?:mystique-api\.fantasy\.espn\.com|g\.espncdn\.com|a\.espncdn\.com)\//.test(url);
+const trustedCachedLogo=(url,id)=>typeof url==='string'&&
+  /^assets\/fantasy-logos\/team-\d+\.(?:png|jpg|jpeg|webp|gif|svg)$/.test(url)&&
+  url.split('/').pop().startsWith('team-'+String(id)+'.');
+async function loadEmblems(){
+ if(emblemsLoading)return emblemsLoading;
+ emblemsLoading=(async()=>{
+  const sources=await Promise.allSettled([
+   root.fetch('assets/espn-team-logos.json',{cache:'force-cache'}).then(r=>{if(!r.ok)throw Error('Logo catalog unavailable');return r.json()}),
+   root.fetch('assets/fantasy-logos/manifest.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw Error('Cached logo manifest unavailable');return r.json()})
+  ]);
+  const catalog=sources[0].status==='fulfilled'?sources[0].value:null;
+  const manifest=sources[1].status==='fulfilled'?sources[1].value:null;
+  if(String(catalog?.leagueId)==='1413446022'&&Array.isArray(catalog.teams)){
+   for(const team of catalog.teams){
+    if(!Number.isInteger(team.id))continue;
+    emblemSources.set(String(team.id),{remote:trustedESPNLogo(team.logo)?team.logo:null,local:null});
+   }
+  }
+  if(String(manifest?.leagueId)==='1413446022'&&manifest.teams&&typeof manifest.teams==='object'){
+   for(const [id,item] of Object.entries(manifest.teams)){
+    if(!/^\d+$/.test(id)||!item||typeof item!=='object')continue;
+    const existing=emblemSources.get(id)||{remote:null,local:null};
+    existing.remote=trustedESPNLogo(item.sourceUrl)?item.sourceUrl:existing.remote;
+    existing.local=trustedCachedLogo(item.localUrl,id)?item.localUrl:null;
+    emblemSources.set(id,existing);
+   }
+  }
+ })();
+ return emblemsLoading;
+}
+function teamEmblem(teamId,name,snapshotLogo){
+ const id=String(teamId??'');
+ const saved=emblemSources.get(id)||{};
+ const remote=trustedESPNLogo(snapshotLogo)?snapshotLogo:saved.remote;
+ const local=saved.local;
+ const holder=tag('span',undefined,'gazette-logo-holder');
+ holder.setAttribute('aria-label',name+' team emblem');
+ const fallback=()=>{holder.replaceChildren(tag('span',initials(name),'gazette-logo-initials'));};
+ if(!local&&!remote){fallback();return holder;}
+ const image=tag('img',undefined,'gazette-team-logo');
+ image.alt=name+' ESPN fantasy emblem';image.loading='lazy';image.decoding='async';
+ image.onerror=()=>{
+  if(local&&remote&&image.getAttribute('src')===local){image.src=remote;return;}
+  fallback();
+ };
+ holder.append(image);
+ image.src=local||remote;
+ return holder;
+}
+
 const tag=(name,value,cls)=>{
   const e=doc.createElement(name);
   if(value!==undefined)e.textContent=String(value);
@@ -81,7 +134,7 @@ function createTeam(game,side,details,win){
   const names=tag('div',undefined,'espn-matchup-identity-text');
   names.append(tag('strong',team.name||'Team unavailable','espn-matchup-name'),
                tag('span',record(club),'espn-matchup-record'));
-  identity.append(names);
+  identity.append(teamEmblem(team.teamId,team.name||'Fantasy team',club?.logo),names);
   section.append(identity);
   const points=tag('div',undefined,'espn-matchup-points');
   const actual=scored(game,side);
@@ -159,7 +212,9 @@ function render(){
     leagueCards.replaceChildren();
     for(const t of snapshot.standings||[]){
       const card=tag('div',undefined,'gazette-record-card');
-      card.append(tag('strong',t.name,'gazette-record-name'),tag('span',record(t),'gazette-record-value'));
+      const clubIdentity=tag('div',undefined,'gazette-record-identity');
+      clubIdentity.append(teamEmblem(t.teamId,t.name,t.logo),tag('strong',t.name,'gazette-record-name'));
+      card.append(clubIdentity,tag('span',record(t),'gazette-record-value'));
       leagueCards.append(card);
     }
   }
@@ -276,5 +331,6 @@ const gamesActive=()=>snapshot?.matchups?.some(g=>
 root.setInterval(()=>{if(!doc.hidden&&gamesActive())load()},POLL_MS);
 root.setInterval(()=>{if(!doc.hidden&&!gamesActive())load()},3*60*1000);
 doc.addEventListener('visibilitychange',()=>{if(!doc.hidden)load()});
+loadEmblems().finally(()=>{if(snapshot)render()});
 load();
 })(typeof window!=='undefined'?window:null);
