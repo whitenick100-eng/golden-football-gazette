@@ -187,6 +187,18 @@ def validate():
                     assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
                     assert isinstance(move.get("mentionedTeams"),list)
     # In-browser, auto-refreshed NFL scores supplement the daily static snapshot.
+    for required in ('id="nfl-stat-ticker"', 'id="nfl-stat-track"',
+                      'id="nfl-stat-ticker-mode"', 'id="nfl-stat-ticker-status"',
+                      'id="nfl-stat-ticker-refresh"', 'id="roster-wire-health"',
+                      'id="roster-wire-scan-details"', 'id="roster-wire-refresh"'):
+        assert required in page, f"Ticker or roster health element missing: {required}"
+    assert '<script src="assets/nfl-player-ticker.js"></script>' in page
+    ticker=ROOT/"assets/nfl-player-ticker.js"
+    assert ticker.is_file(), "NFL ticker script not present"
+    tick=ticker.read_text(encoding="utf-8")
+    assert "summary?event=" in tick and "gameBoxStats" in tick
+    assert "SEASON LEADERS" in tick and "not live game stats" in tick
+    assert "d.keyOnly!==true" in page and "FEED ACTIVE" in page
     assert 'id="live-score-status"' in page and 'id="refresh-nfl-scores"' in page
     assert 'data-nfl-game-id' in page or 'dataset.nflGameId' in page
     assert 'assets/live-nfl-scores.js' in page
