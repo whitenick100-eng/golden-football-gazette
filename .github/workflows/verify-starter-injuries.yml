@@ -1,0 +1,55 @@
+name: Verify NFL First-String OUT Watch
+on:
+  pull_request:
+    paths:
+      - 'scripts/refresh_nfl_injuries.py'
+      - 'tests/test_nfl_injuries.py'
+      - 'index.html'
+      - 'scripts/qa_gazette.py'
+      - '.github/workflows/refresh-and-deploy.yml'
+      - '.github/workflows/verify-starter-injuries.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and test ESPN starter-only injury rules
+        run: |
+          python -m py_compile scripts/refresh_nfl_injuries.py scripts/qa_gazette.py
+          python -m unittest discover -s tests -p 'test_nfl_injuries.py' -v
+      - name: Verify real NFL starting depth charts and injury statuses
+        run: |
+          python scripts/refresh_nfl_injuries.py
+          python scripts/qa_gazette.py
+          python - <<'PY'
+          import json
+          with open('data/nfl-injuries.json',encoding='utf-8') as f: d=json.load(f)
+          if d.get('status')=='unavailable':
+              raise SystemExit('ESPN starter injury verification unavailable')
+          print('Verified ESPN first-string OUT/IR players:',d['playerCount'])
+          print('Latest OUT:',d['outCount'],'IR/PUP:',d['reserveCount'])
+          print('NFL team depth charts verified:',d['depthChartTeamCount'],'of',d['injuryTeamCount'])
+          print('Coverage complete:',d['coverageComplete'])
+          for team in d['teams']:
+              for p in team['players']:
+                  print(p['position'],team['name'],p['name'],p['reportedStatus'],
+                        'source:',p['verificationSource'])
+          PY
+      - name: Validate all Gazette browser scripts
+        run: |
+          python - <<'PY'
+          import pathlib,re
+          html=pathlib.Path('index.html').read_text(encoding='utf-8')
+          code='\n'.join(re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',html))
+          pathlib.Path('/tmp/gazette.js').write_text(code,encoding='utf-8')
+          PY
+          node --check /tmp/gazette.js

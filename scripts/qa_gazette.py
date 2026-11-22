@@ -67,30 +67,34 @@ def validate():
     injuries = read_json("data/nfl-injuries.json")
     if injuries:
         if injuries.get("status") == "unavailable":
-            print("WARNING: NFL league injury feed unavailable; official report links remain visible")
-        else:
-            assert valid_time(injuries.get("fetchedAt")), "Injury report missing timestamp"
-            assert injuries.get("season") == datetime.now(timezone.utc).year, "Injury season mismatch"
-            assert injuries.get("source") == "ESPN NFL injury listing"
-            assert isinstance(injuries.get("teams"), list)  # A true zero is possible
+            print("WARNING: First-string NFL out watch unavailable; official NFL injury link remains")
+        elif injuries.get("filter") == "first-string-out-only":
+            assert valid_time(injuries.get("fetchedAt")), "Missing ESPN starter verification timestamp"
+            assert injuries.get("season") == datetime.now(timezone.utc).year
+            assert injuries.get("source") == "ESPN NFL injury listing + ESPN starting depth charts"
+            assert set(injuries.get("positions",[])) == {"QB","RB","WR","TE","K"}
+            assert isinstance(injuries.get("teams"), list)
             assert injuries.get("teamCount") == len(injuries["teams"])
             assert injuries.get("playerCount") == sum(len(t["players"]) for t in injuries["teams"])
-            assert injuries.get("filter") == "major-availability-only"
-            assert set(injuries.get("positions",[])) == {"QB","RB","WR","TE","K"}
+            assert injuries.get("outCount",0) + injuries.get("reserveCount",0) == injuries["playerCount"]
+            assert isinstance(injuries.get("coverageComplete"),bool)
+            assert 0 < injuries.get("depthChartTeamCount",0) <= injuries.get("injuryTeamCount",0)
             for team in injuries["teams"]:
                 assert team.get("teamId") and team.get("name")
-                assert isinstance(team.get("players"), list) and team["players"]
-                for player in team["players"]:
-                    assert isinstance(player.get("name"), str) and player["name"]
-                    assert "reportedStatus" in player and "practiceStatus" in player
-                    assert player.get("position") in {"QB","RB","WR","TE","K"}, "Non-target NFL player displayed"
-                    from_major = (player.get("gameStatus") or "").casefold()
-                    from_report = (player.get("reportedStatus") or "").casefold()
-                    assert any(k in (from_major+" "+from_report) for k in
-                        ("out","questionable","doubtful","injured reserve","reserve/injured",
-                         "reserve injured","ir","pup","physically unable to perform"))
+                assert isinstance(team.get("players"),list) and team["players"]
+                for p in team["players"]:
+                    assert p.get("name") and p.get("position") in {"QB","RB","WR","TE","K"}
+                    assert p.get("depthRank") == 1 and p.get("starterSlot")
+                    assert str(p.get("athleteId","")).isdigit()
+                    assert p.get("outType") in {"out","reserve"}
+                    assert p.get("verificationSource") in {"ESPN injury listing","ESPN starter depth chart"}
+                    assert p.get("reportedStatus") and "reportDate" in p
+        else:
+            print("WARNING: Existing injury snapshot predates first-string verification; refresh required")
     assert 'id="nfl-injury-report"' in page and 'id="injury-teams"' in page
     assert "data/nfl-injuries.json" in page
+    assert 'id="injury-position-filter"' in page
+    assert 'NFL Key Starter OUT Watch' in page
     for marker in ('id="auto-coverage"', 'id="auto-coverage-stories"',
                    'id="player-stars"', 'id="player-star-meta"',
                    'id="championship-pairings"', 'id="consolation-pairings"'):
