@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ESPN NFL Key Injury Watch: verified first-string QB/RB/WR/TE/K who are out.
+"""ESPN NFL Key Injury Watch: first-string QB/RB/WR/TE/K with reported statuses.
 
 Join ESPN's current team depth charts to ESPN injury records by athlete ID,
 not just injury position or assumed 'star' status. ESPN limits its league-wide
@@ -28,6 +28,8 @@ HEADERS = {"User-Agent": "Mozilla/5.0 GoldenFootballGazette/1.0",
 WATCHED_POSITIONS = {"QB", "RB", "WR", "TE", "K"}
 PRIMARY_SLOTS = {"qb":"QB", "rb":"RB", "hb":"RB", "te":"TE", "pk":"K", "k":"K"}
 OUT_STATES = {"out", "ruled out"}
+QUESTIONABLE_STATES = {"questionable", "q"}
+DOUBTFUL_STATES = {"doubtful", "d"}
 RESERVE_STATES = {"ir", "ir r", "injured reserve", "reserve injured",
                   "reserve ir", "pup", "reserve pup",
                   "physically unable to perform"}
@@ -50,6 +52,8 @@ def state(value):
     norm=" ".join(label(value).casefold().replace("_"," ").replace("-"," ").split())
     if norm in OUT_STATES:return "out"
     if norm in RESERVE_STATES:return "reserve"
+    if norm in QUESTIONABLE_STATES:return "questionable"
+    if norm in DOUBTFUL_STATES:return "doubtful"
     return None
 
 
@@ -137,7 +141,7 @@ def first_string(chart):
 def recent_out(record,now):
     category=state(record.get("status"))
     when=parse_date(record.get("date"))
-    if category=="out":
+    if category in {"out", "questionable", "doubtful"}:
         # Game-week OUT is not automatically true indefinitely. A historical
         # "Out" tag older than eight days needs fresh reconfirmation.
         if not when:return False
@@ -233,7 +237,7 @@ def normalize(payload, depthcharts, now=None, week=None):
             })
         if injured:
             injured.sort(key=lambda p:(
-                0 if p["outType"]=="out" else 1,
+                {"out":0,"doubtful":1,"questionable":2,"reserve":3}.get(p["outType"],4),
                 {"QB":0,"RB":1,"WR":2,"TE":3,"K":4}.get(p["position"],9),p["name"].casefold()))
             results.append({"teamId":team_id,"name":team_name,
                             "abbreviation":label(team.get("abbreviation")),
@@ -246,15 +250,17 @@ def normalize(payload, depthcharts, now=None, week=None):
         "season":now.year,"week":week,"fetchedAt":now.isoformat(),
         "source":"ESPN NFL injury listing + ESPN starting depth charts",
         "sourceUrl":SOURCE_PAGE,"officialNflReportUrl":OFFICIAL_REPORT,
-        "positions":sorted(WATCHED_POSITIONS),"filter":"first-string-out-only",
+        "positions":sorted(WATCHED_POSITIONS),"filter":"first-string-status-watch",
         "outCount":sum(p["outType"]=="out" for t in results for p in t["players"]),
         "reserveCount":sum(p["outType"]=="reserve" for t in results for p in t["players"]),
+        "questionableCount":sum(p["outType"]=="questionable" for t in results for p in t["players"]),
+        "doubtfulCount":sum(p["outType"]=="doubtful" for t in results for p in t["players"]),
         "teamCount":len(results),"playerCount":total,
         "depthChartTeamCount":checked,"injuryTeamCount":len(groups_seen),
         "coverageComplete":checked==len(groups_seen),
         "teamsNotVerified":failed,
         "verifiedStarterCount":total_first_string,
-        "coverageNote":"ESPN first-string QB, RB, WR (multiple slots), TE and K only. ESPN-listed Out must be reported within eight days; IR/PUP are listed separately as unavailable. Questionable/Doubtful/backup players are excluded. Some ESPN injury entries may be missing or delayed. Verify game-day inactives and final designations with NFL.com.",
+        "coverageNote":"ESPN first-string QB, RB, WR (multiple slots), TE and K only. ESPN-listed Out must be reported within eight days; IR/PUP are listed separately as unavailable. Recent Questionable/Doubtful starting players are included; backups are excluded. Some ESPN injury entries may be missing or delayed. Verify game-day inactives and final designations with NFL.com.",
         "teams":results,
     }
 
