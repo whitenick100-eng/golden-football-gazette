@@ -22,7 +22,7 @@ def valid_time(value):
 
 def validate():
     page = (ROOT / "index.html").read_text(encoding="utf-8")
-    for marker in ['id="nfl-games"', 'id="fantasy-team-grid"', 'id="championship-bracket"',
+    for marker in ['id="nfl-games"', 'id="gazette-team-records"', 'id="championship-bracket"',
                    'id="espn-games"', 'id="nfl-status"']:
         assert marker in page, f"Website missing required section: {marker}"
     assert "data/nfl-week.json" in page and "data/league.json" in page
@@ -99,7 +99,7 @@ def validate():
     if injuries:
         if injuries.get("status") == "unavailable":
             print("WARNING: First-string NFL out watch unavailable; official NFL injury link remains")
-        elif injuries.get("filter") == "first-string-out-only":
+        elif injuries.get("filter") == "first-string-status-watch":
             assert valid_time(injuries.get("fetchedAt")), "Missing ESPN starter verification timestamp"
             assert injuries.get("season") == datetime.now(timezone.utc).year
             assert injuries.get("source") == "ESPN NFL injury listing + ESPN starting depth charts"
@@ -107,7 +107,8 @@ def validate():
             assert isinstance(injuries.get("teams"), list)
             assert injuries.get("teamCount") == len(injuries["teams"])
             assert injuries.get("playerCount") == sum(len(t["players"]) for t in injuries["teams"])
-            assert injuries.get("outCount",0) + injuries.get("reserveCount",0) == injuries["playerCount"]
+            assert (injuries.get("outCount",0) + injuries.get("reserveCount",0) +
+                    injuries.get("questionableCount",0) + injuries.get("doubtfulCount",0)) == injuries["playerCount"]
             assert isinstance(injuries.get("coverageComplete"),bool)
             assert 0 < injuries.get("depthChartTeamCount",0) <= injuries.get("injuryTeamCount",0)
             for team in injuries["teams"]:
@@ -117,7 +118,7 @@ def validate():
                     assert p.get("name") and p.get("position") in {"QB","RB","WR","TE","K"}
                     assert p.get("depthRank") == 1 and p.get("starterSlot")
                     assert str(p.get("athleteId","")).isdigit()
-                    assert p.get("outType") in {"out","reserve"}
+                    assert p.get("outType") in {"out","reserve","questionable","doubtful"}
                     assert p.get("verificationSource") in {"ESPN injury listing","ESPN starter depth chart"}
                     assert p.get("reportedStatus") and "reportDate" in p
         else:
