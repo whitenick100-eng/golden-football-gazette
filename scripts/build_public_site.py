@@ -168,7 +168,7 @@ def csp_for_html(source: str) -> str:
         # Four existing, trusted inline style attributes in the static layout:
         "style-src-attr 'unsafe-inline'",
         "img-src 'self' data: https://a.espncdn.com https://g.espncdn.com https://mystique-api.fantasy.espn.com https://images.unsplash.com",
-        "connect-src 'self' https://site.api.espn.com",
+        "connect-src 'self' https://site.api.espn.com https://lm-api-reads.fantasy.espn.com",
         "font-src 'self'",
         "media-src 'none'",
         "worker-src 'none'",
