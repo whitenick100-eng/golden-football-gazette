@@ -64,4 +64,17 @@ check('Team emblems can fall back to sanitized initials',()=>{
   assert.equal(matchups.initials('4th'),'4T');
   assert.equal(matchups.initials(''),'??'.slice(0,2).replace('??','?'));
 });
+check('Both league records and matchups reuse authentic ESPN fantasy emblem URLs',()=>{
+  const fs=require('node:fs');
+  const source=fs.readFileSync(require.resolve('../assets/espn-matchups.js'),'utf8');
+  const catalog=JSON.parse(fs.readFileSync(require.resolve('../assets/espn-team-logos.json'),'utf8'));
+  assert.equal(catalog.leagueId,1413446022);
+  assert.equal(catalog.teams.length,10);
+  assert.equal(new Set(catalog.teams.map(t=>t.id)).size,10);
+  assert.ok(source.includes('assets/fantasy-logos/manifest.json'));
+  assert.ok(source.includes('teamEmblem(team.teamId'));
+  assert.ok(source.includes('teamEmblem(t.teamId'));
+  assert.ok(source.includes('image.onerror'));
+});
+
 console.log('All ESPN fantasy scoreboard tests passed.');
