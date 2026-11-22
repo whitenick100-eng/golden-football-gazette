@@ -434,11 +434,72 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .key-transaction-card p{line-height:1.55;margin:5px 0 0}
 @media(max-width:600px){.transaction-items{grid-template-columns:1fr}.key-transaction-card{padding:11px}}
 
+
+/* The Golden Football Gazette: sticky, accessible rolling NFL player stats. */
+.nfl-stat-ticker{position:sticky;top:0;z-index:48;border:1px solid rgba(236,195,115,.86);
+  border-radius:0 0 9px 9px;background:rgba(3,13,24,.97);box-shadow:0 9px 28px #0008;
+  margin:0 0 15px;overflow:hidden}
+.nfl-stat-heading{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  padding:7px 12px;border-bottom:1px solid rgba(243,212,150,.32);font:700 .7rem/1.25 system-ui,sans-serif}
+.nfl-ticker-title{color:#ffe4ab;text-transform:uppercase;letter-spacing:.075em;white-space:nowrap}
+.nfl-ticker-dot{color:#f39b78}
+.nfl-ticker-mode{color:#b7e0c4;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.nfl-ticker-refresh,.roster-wire-refresh{border:1px solid rgba(236,195,115,.6);border-radius:4px;
+  background:rgba(42,37,29,.7);color:#ffe1a3;cursor:pointer;padding:5px 8px;font:700 .7rem system-ui,sans-serif}
+.nfl-ticker-refresh:focus-visible,.roster-wire-refresh:focus-visible{outline:2px solid #ffe5b0;outline-offset:2px}
+.nfl-ticker-refresh:disabled,.roster-wire-refresh:disabled{opacity:.45;cursor:not-allowed}
+.nfl-stat-ticker-window{width:100%;overflow:hidden}
+.nfl-stat-track{width:max-content;min-width:100%;display:flex;align-items:stretch}
+.nfl-stat-group{display:flex;align-items:center;gap:15px;flex:none;padding:5px 15px 5px 0}
+.nfl-player-ticker-item{display:flex;gap:7px;align-items:center;white-space:nowrap;padding:9px 10px;
+  text-decoration:none!important;font:.77rem/1.3 system-ui,sans-serif;color:#fff4dd!important;
+  border-right:1px solid rgba(226,194,136,.35);border-radius:4px;background:rgba(12,38,43,.64)}
+.nfl-player-ticker-item:hover,.nfl-player-ticker-item:focus-visible{background:rgba(64,83,70,.7)!important;outline-offset:-2px}
+.ticker-stat-kind{font-size:.62rem;font-weight:900;letter-spacing:.09em;color:#f5cf80}
+.ticker-player-name{font-weight:800;color:#ffecc0}
+.ticker-player-team{font-size:.65rem;color:#c8ddd1}
+.ticker-player-stat{font-weight:700;font-variant-numeric:tabular-nums;color:#fff5d8}
+.nfl-stat-track.ticker-animate{animation:gz-nfl-marquee 65s linear infinite}
+.nfl-stat-ticker:hover .ticker-animate,
+.nfl-stat-ticker:focus-within .ticker-animate{animation-play-state:paused}
+@keyframes gz-nfl-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.nfl-ticker-source{font:500 .65rem/1.35 system-ui,sans-serif;color:#d9c9a9;padding:3px 12px 6px;margin:0!important}
+.ticker-empty{padding:8px 12px;color:#e8cf9f;font:.75rem system-ui,sans-serif}
+.roster-wire-scanline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;
+  font:.73rem/1.35 system-ui,sans-serif}
+.roster-wire-health{color:#e8d3a5;border:1px solid #bba075;background:rgba(13,30,33,.85);
+  padding:4px 8px;border-radius:4px;font-weight:800;letter-spacing:.035em}
+.roster-wire-health[data-state="active"]{color:#bff0c2;border-color:#73b98e}
+.roster-wire-health[data-state="stale"],.roster-wire-health[data-state="unavailable"]{color:#ffcc9a;border-color:#e2a260}
+.roster-wire-scan-details{color:#eadbc1;font-size:.72rem}
+@media(max-width:650px){.nfl-stat-heading{padding:6px 8px;gap:6px}.nfl-ticker-title{font-size:.65rem}
+ .nfl-ticker-mode{font-size:.6rem}.nfl-ticker-source{padding:3px 8px 6px}
+ .nfl-player-ticker-item{font-size:.73rem}.nfl-stat-ticker{margin-bottom:10px}
+ .roster-wire-scan-details{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){
+ .nfl-stat-ticker-window{overflow-x:auto}
+ .nfl-stat-track.ticker-animate{animation:none}
+ .nfl-stat-track .nfl-stat-group[aria-hidden="true"]{display:none}
+}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 <div class="topline"><span>Est. 2026 · The Golden Football Gazette</span><span>ESPN Fantasy League #1413446022</span></div>
+<section id="nfl-stat-ticker" class="nfl-stat-ticker" aria-label="Rolling NFL player statistics">
+  <div class="nfl-stat-heading">
+    <span class="nfl-ticker-title"><span class="nfl-ticker-dot" aria-hidden="true">●</span> NFL Player Stat Tracker</span>
+    <span id="nfl-stat-ticker-mode" class="nfl-ticker-mode">Checking ESPN game statistics</span>
+    <button id="nfl-stat-ticker-refresh" type="button" class="nfl-ticker-refresh" title="Refresh ESPN NFL player stats" aria-label="Refresh player statistics">↻ Refresh</button>
+  </div>
+  <div class="nfl-stat-ticker-window" aria-label="NFL statistical leaders; hover or focus to pause scrolling">
+    <div id="nfl-stat-track" class="nfl-stat-track" aria-label="Player statistics">
+      <div class="nfl-stat-group"><span class="ticker-empty">Loading ESPN's verified player statistics…</span></div>
+    </div>
+  </div>
+  <p id="nfl-stat-ticker-status" class="nfl-ticker-source" role="status" aria-live="polite">Connecting to ESPN NFL player statistics</p>
+</section>
 <header class="gazette-masthead"><div class="masthead-side"><svg class="masthead-trophy" viewBox="0 0 150 190" role="img" aria-label="Golden Football championship trophy"><defs><linearGradient id="goldFootball" x1="0" x2="1"><stop stop-color="#76500b"/><stop offset=".32" stop-color="#fff2a1"/><stop offset=".67" stop-color="#d5a526"/><stop offset="1" stop-color="#68420a"/></linearGradient></defs><ellipse cx="75" cy="61" rx="60" ry="28" transform="rotate(-34 75 61)" fill="url(#goldFootball)" stroke="#ffdf7b" stroke-width="3"/><path d="M38 84L109 38M66 64l8 13m1-19 8 12m1-19 8 12" stroke="#fff1ba" stroke-width="3"/><path d="M69 90L82 94 94 135H57z" fill="url(#goldFootball)" stroke="#c98b20" stroke-width="2"/><path d="M39 135h72v15H39zm-11 15h94v27H28z" fill="url(#goldFootball)" stroke="#f5d273" stroke-width="2"/><text x="75" y="164" font-size="11" text-anchor="middle" font-family="Georgia" font-weight="bold" fill="#36240b">CHAMPION</text></svg><span>Golden Football</span></div><div class="masthead-center"><div class="eyebrow">Independent Fantasy Football Newspaper</div><h1>The Golden Football Gazette</h1><div class="sub masthead-live-date"><span class="date-label">Today · Eastern Time</span><time id="gazette-current-datetime" aria-label="Current Eastern date and time">Current Eastern date and time</time></div><div class="masthead-edition">2026 NFL Season · Gridiron Giggles</div></div><div class="masthead-side"><svg class="masthead-trophy" viewBox="0 0 150 190" role="img" aria-label="Golden Toilet last-place trophy"><defs><linearGradient id="goldToilet" x1="0" x2="1"><stop stop-color="#81550c"/><stop offset=".38" stop-color="#ffed91"/><stop offset=".7" stop-color="#d39b1e"/><stop offset="1" stop-color="#65420c"/></linearGradient></defs><rect x="28" y="20" width="67" height="63" rx="8" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="3"/><ellipse cx="88" cy="82" rx="51" ry="17" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="3"/><path d="M40 84q-2 46 40 52h23q25-9 24-52" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="3"/><path d="M59 130h47v19H59zM31 150h93v27H31z" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="2"/><text x="77" y="166" font-size="12" text-anchor="middle" font-family="Georgia" font-weight="bold" fill="#36240b">LAST PLACE</text></svg><span>Golden Toilet</span></div></header>
 <section class="league-logos-feature" aria-label="Official ESPN fantasy club emblems"><h2>Gridiron Giggles, the White/Wilcox Fantasy League</h2><p class="hub-intro league-heading-description">Official ESPN Fantasy Team Emblems</p><div class="league-logo-list" id="gazette-logo-directory"><p class="hub-intro">Loading team emblems from the ESPN league export…</p></div></section><div class="nfl-banner"><div class="banner-title">Around the National Football League · Team Gallery</div><div class="logo-grid"><div class="team-logo"><img loading="lazy" alt="ARI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ari.png" onerror="this.style.display='none'"><span>ARI</span></div><div class="team-logo"><img loading="lazy" alt="ATL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png" onerror="this.style.display='none'"><span>ATL</span></div><div class="team-logo"><img loading="lazy" alt="BAL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/bal.png" onerror="this.style.display='none'"><span>BAL</span></div><div class="team-logo"><img loading="lazy" alt="BUF team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" onerror="this.style.display='none'"><span>BUF</span></div><div class="team-logo"><img loading="lazy" alt="CAR team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/car.png" onerror="this.style.display='none'"><span>CAR</span></div><div class="team-logo"><img loading="lazy" alt="CHI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/chi.png" onerror="this.style.display='none'"><span>CHI</span></div><div class="team-logo"><img loading="lazy" alt="CIN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/cin.png" onerror="this.style.display='none'"><span>CIN</span></div><div class="team-logo"><img loading="lazy" alt="CLE team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/cle.png" onerror="this.style.display='none'"><span>CLE</span></div><div class="team-logo"><img loading="lazy" alt="DAL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/dal.png" onerror="this.style.display='none'"><span>DAL</span></div><div class="team-logo"><img loading="lazy" alt="DEN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/den.png" onerror="this.style.display='none'"><span>DEN</span></div><div class="team-logo"><img loading="lazy" alt="DET team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/det.png" onerror="this.style.display='none'"><span>DET</span></div><div class="team-logo"><img loading="lazy" alt="GB team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/gb.png" onerror="this.style.display='none'"><span>GB</span></div><div class="team-logo"><img loading="lazy" alt="HOU team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/hou.png" onerror="this.style.display='none'"><span>HOU</span></div><div class="team-logo"><img loading="lazy" alt="IND team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ind.png" onerror="this.style.display='none'"><span>IND</span></div><div class="team-logo"><img loading="lazy" alt="JAX team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/jax.png" onerror="this.style.display='none'"><span>JAX</span></div><div class="team-logo"><img loading="lazy" alt="KC team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" onerror="this.style.display='none'"><span>KC</span></div><div class="team-logo"><img loading="lazy" alt="LV team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lv.png" onerror="this.style.display='none'"><span>LV</span></div><div class="team-logo"><img loading="lazy" alt="LAC team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lac.png" onerror="this.style.display='none'"><span>LAC</span></div><div class="team-logo"><img loading="lazy" alt="LAR team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lar.png" onerror="this.style.display='none'"><span>LAR</span></div><div class="team-logo"><img loading="lazy" alt="MIA team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/mia.png" onerror="this.style.display='none'"><span>MIA</span></div><div class="team-logo"><img loading="lazy" alt="MIN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/min.png" onerror="this.style.display='none'"><span>MIN</span></div><div class="team-logo"><img loading="lazy" alt="NE team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ne.png" onerror="this.style.display='none'"><span>NE</span></div><div class="team-logo"><img loading="lazy" alt="NO team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/no.png" onerror="this.style.display='none'"><span>NO</span></div><div class="team-logo"><img loading="lazy" alt="NYG team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png" onerror="this.style.display='none'"><span>NYG</span></div><div class="team-logo"><img loading="lazy" alt="NYJ team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png" onerror="this.style.display='none'"><span>NYJ</span></div><div class="team-logo"><img loading="lazy" alt="PHI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/phi.png" onerror="this.style.display='none'"><span>PHI</span></div><div class="team-logo"><img loading="lazy" alt="PIT team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/pit.png" onerror="this.style.display='none'"><span>PIT</span></div><div class="team-logo"><img loading="lazy" alt="SF team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/sf.png" onerror="this.style.display='none'"><span>SF</span></div><div class="team-logo"><img loading="lazy" alt="SEA team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/sea.png" onerror="this.style.display='none'"><span>SEA</span></div><div class="team-logo"><img loading="lazy" alt="TB team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/tb.png" onerror="this.style.display='none'"><span>TB</span></div><div class="team-logo"><img loading="lazy" alt="TEN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ten.png" onerror="this.style.display='none'"><span>TEN</span></div><div class="team-logo"><img loading="lazy" alt="WAS team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png" onerror="this.style.display='none'"><span>WAS</span></div></div><p class="legal">NFL team marks are the property of their respective owners. Independent fantasy league publication; not endorsed by the NFL or ESPN.</p></div><nav aria-label="Site sections"><a href="#headlines">Headlines</a><a href="#standings">Standings</a><a href="#matchups">Week 11 Matchups</a><a href="#waivers">Waiver Wire</a><a href="#trophies">Trophy Watch</a></nav>
 <section id="headlines" class="breaking"><div class="kicker">The lead story · Week 11</div><h2>Unbeaten Leader Sets the Pace as Playoff Race Tightens</h2><p>At 10–0, 4th and 10 leads the standings. HVAC guru and Michelle’s Magnificent Team follow at 6–4, while Sunday Morning Panic produced the highest team total of Week 10 with 157.68 points.</p></section>
@@ -475,6 +536,11 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   <div class="transactions-heading">
     <div><h3>Roster Wire · Key NFL Player Moves</h3>
       <p id="transaction-freshness" class="hub-intro" role="status">Checking ESPN for verified major trades and releases…</p>
+      <div class="roster-wire-scanline" aria-label="Roster Wire feed status">
+        <span id="roster-wire-health" class="roster-wire-health" data-state="checking">Checking feed</span>
+        <span id="roster-wire-scan-details" class="roster-wire-scan-details">Latest verification pending</span>
+        <button id="roster-wire-refresh" type="button" class="roster-wire-refresh" title="Check the latest published Roster Wire data">↻ Recheck</button>
+      </div>
     </div>
     <a href="https://www.espn.com/nfl/transactions" target="_blank" rel="noopener noreferrer">ESPN transaction source</a>
   </div>
@@ -1088,6 +1154,7 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
   });
 })();
 </script>
+<script src="assets/nfl-player-ticker.js"></script>
 </body>
 </html>
 
