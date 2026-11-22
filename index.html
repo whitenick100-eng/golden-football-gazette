@@ -580,6 +580,11 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 }
 
 
+/* Awaiting owner-provided first-page image; hidden until the actual artwork is supplied. */
+.gazette-page-one-sidebar{float:left;width:min(35%,190px);margin:0 16px 12px 0;padding:7px;border:1px solid rgba(237,209,147,.6);background:rgba(9,26,29,.9)}
+.gazette-page-one-sidebar[hidden]{display:none!important}
+.gazette-page-one-sidebar img{display:block;width:100%;height:auto;object-fit:contain}
+@media(max-width:530px){.gazette-page-one-sidebar{float:none;width:100%;margin:0 0 15px 0}}
 /* Compact NFL watch desks and Gridiron Giggles record directory. */
 .gazette-records-feature{margin:12px 0 18px}
 .gazette-records-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:10px}
@@ -775,7 +780,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 <p class="hub-intro bracket-disclaimer" id="bracket-disclaimer">Until official playoff pairings are published, these are provisional seed positions. A team outside the current field is not necessarily eliminated.</p>
 </section>
 <main class="paper">
-<article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · League Report</h2>
+<article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · League Report</h2><aside id="gazette-page-one-sidebar" class="gazette-page-one-sidebar" aria-label="Featured first-page picture" hidden><img id="gazette-sidebar-picture" alt="Featured Golden Football Gazette artwork" loading="lazy" decoding="async"></aside>
 <section class="section"><div class="statgrid"><div class="stat"><strong>10–0</strong><span>4th and 10</span></div><div class="stat"><strong>157.68</strong><span>Panic's Week 10</span></div><div class="stat"><strong>6–4</strong><span>HVAC / Michelle</span></div></div><h3 style="margin-top:17px">Unbeaten Through Ten: 4th and 10 Maintains Command</h3><p><strong>4th and 10</strong> remains undefeated after beating Michelle 133.98–75.00. The result extends the club’s unbeaten start to ten games and strengthens its position atop the league standings.</p><p><strong>Sunday Morning Panic</strong> defeated Fumbly In My Tumbly 157.68–131.12, delivering the league’s highest team score of Week 10 despite remaining at the foot of the standings.</p><p><strong>HVAC guru</strong> improved to 6–4 by beating the Automatons 146.14–128.42. <strong>Jeremy</strong> defeated Football 144.40–129.78, while <strong>Violet</strong> beat Cam 148.36–115.90.</p></section>
 <section class="section" id="standings"><h3>League Standings · Through Week 10</h3><div class="table-scroll"><table><thead><tr><th>Seed</th><th>Team</th><th>W–L</th></tr></thead><tbody id="standings-body"></tbody></table></div><p class="small">Standings through Week 10 from the latest verified snapshot; not a current Week 11 table. The top four are the championship positions in this snapshot.</p></section>
 <section class="section" id="trophies"><h3><span class="trophy">🏆</span> Championship Race</h3><p><strong>4th and 10</strong> controls the race at 10–0. Michelle and HVAC are 6–4; Jeremy, Fumbly and Cam sit in a 5–5 traffic jam.</p><h3><span class="toilet">🚽</span>Last-Place Trophy Outlook</h3><p><strong>Sunday Morning Panic (2–8)</strong> is still last, followed by Football (3–7). The Automatons and Violet are both 4–6. The final weeks will determine which club finishes last and receives the Golden Toilet trophy.</p></section>
