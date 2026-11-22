@@ -108,7 +108,8 @@ function selectGames(events){
  const active=events.filter(e=>e.state==='in');
  const complete=events.filter(e=>e.state==='post')
    .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
- const candidates=active.concat(complete);
+ // Never mix FINAL game totals into a ticker marked LIVE.
+ const candidates=active.length?active:complete;
  return {games:candidates.slice(0,MAX_GAMES),active:active.length,
    partial:candidates.length>MAX_GAMES};
 }
