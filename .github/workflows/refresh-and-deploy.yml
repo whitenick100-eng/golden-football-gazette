@@ -32,7 +32,7 @@ jobs:
         run: python scripts/refresh_nfl.py
       - name: Refresh league-wide ESPN NFL injury report
         run: python scripts/refresh_nfl_injuries.py
-      - name: Refresh completed-week ESPN fantasy player leaders
+      - name: Preserve weekly Top Five and refresh after Tuesday morning ESPN confirmation
         run: python scripts/refresh_player_leaders.py
       - name: Fetch verified NFL trades, waivers and releases
         run: python scripts/refresh_nfl_transactions.py
