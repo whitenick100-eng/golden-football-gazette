@@ -44,7 +44,17 @@ def validate():
     assert 'id="gazette-current-datetime"' in page, "Live Gazette date/time missing from masthead"
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
     assert "setInterval(refreshMastheadTime,60000)" in page, "Masthead clock must refresh every minute"
-    assert "Gridiron Giggles, the White/Wilcox Fantasy League" in page
+    # New league identity must be presented consistently in the emblem gallery
+    # and ESPN matchup center, without losing any of the four families.
+    full_name = "Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League"
+    assert full_name in page, "Full league name missing from accessible heading"
+    assert page.count("The White / Wilcox / Hulsey / Homan Fantasy Football League") >= 4
+    assert 'class="league-identity-heading"' in page
+    assert 'class="league-identity-brand"' in page
+    assert 'class="league-identity-family"' in page
+    assert 'league-identity-kicker' in page
+    assert "White/Wilcox Fantasy League" not in page, "Old league identity remains"
+    assert "color:#ffdb9d" in page, "Gold team-name color was changed"
     assert "<h2>Our Fantasy League" not in page, "Former generic league header remains"
     assert "Thursday, November 19, 2026 · Week 11 Daily Brief</div>" not in page, "Old static masthead date remains"
 
