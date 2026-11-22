@@ -198,19 +198,27 @@ def named_key_moves(moves,key_index):
     """Prefer strict full-name matches; unknown and routine players are excluded."""
     index=[(name,info) for name,info in key_index.items() if len(name)>=5 and " " in name]
     index.sort(key=lambda pair:len(pair[0]),reverse=True)
-    hits=[];seen=set()
+    hits=[];seen={}
     for move in moves:
         description=" "+normalized(move.get("description"))+" "
         found=[]
         for name,details in index:
             if " "+name+" " in description and name not in found:
                 found.append(name)
+                # An ESPN trade is often reported by both involved teams.
+                # Display it once per named player and transaction day.
+                key=(move["date"],move["type"],name) if move["type"]=="Trade" else (
+                    move["date"],move["teamAbbr"],move["type"],name)
+                if key in seen:
+                    prior=hits[seen[key]]
+                    if move["team"] not in prior["mentionedTeams"]:
+                        prior["mentionedTeams"].append(move["team"])
+                    continue
                 item={**move,"playerName":details["name"],
                       "position":details["position"],
-                      "importanceBasis":details["importanceBasis"]}
-                key=(move["date"],move["teamAbbr"],move["type"],name)
-                if key not in seen:
-                    seen.add(key);hits.append(item)
+                      "importanceBasis":details["importanceBasis"],
+                      "mentionedTeams":[move["team"]]}
+                seen[key]=len(hits);hits.append(item)
         # A sentence mentioning only unknown/nonstarter players is not major news.
     hits.sort(key=lambda m:(m["date"],m["type"]=="Trade",m["team"],m["playerName"]),reverse=True)
     return hits
