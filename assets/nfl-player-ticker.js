@@ -13,6 +13,7 @@ const MAX_GAMES=18;
 const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
+const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 
 function numeric(v){
  if(typeof v!=='number'&&typeof v!=='string')return null;
@@ -28,7 +29,8 @@ function statEntry(section,person,team,game){
  const yards=numeric(person.stats[y]),touchdowns=numeric(person.stats[td]);
  const name=person.athlete?.displayName||person.athlete?.fullName;
  const playerId=person.athlete?.id;
- if(typeof name!=='string'||!name.trim()||yards===null||touchdowns===null)return null;
+ if(typeof name!=='string'||!name.trim()||yards===null||touchdowns===null||
+    yards< -100||yards>1000||!Number.isInteger(touchdowns)||touchdowns<0||touchdowns>15)return null;
  // Exclude non-participating, zero-activity placeholder rows.
  if(yards===0&&touchdowns===0)return null;
  return {
@@ -42,6 +44,9 @@ function statEntry(section,person,team,game){
 function gameBoxStats(doc,event){
  const groups=doc?.boxscore?.players;
  if(!Array.isArray(groups)||!event||!['in','post'].includes(event.state))return [];
+ // A summary response for a different matchup must never be shown as this game.
+ const reportedId=doc?.header?.id;
+ if(reportedId!==undefined&&reportedId!==null&&String(reportedId)!==String(event.id))return [];
  const players=[];
  for(const team of groups){
    const abbr=team?.team?.abbreviation||'';
@@ -55,7 +60,7 @@ function gameBoxStats(doc,event){
  }
  return players;
 }
-function seasonLeaders(board){
+function scoreboardLeaders(board){
  const found=new Map();
  for(const ev of board?.events||[]){
    const comp=ev?.competitions?.[0];
@@ -77,7 +82,7 @@ function seasonLeaders(board){
        }
        const key=kind+'-'+id;
        const item={name,playerId:id,team:abbr,kind,amount:yards,
-         touchdowns:null,phase:'SEASON',
+         touchdowns:null,phase:'SCOREBOARD',
          text:typeof text==='string'&&text.trim()?text.slice(0,95):yards+' '+CATEGORIES[kind].stat};
        if(!found.has(key)||item.amount>found.get(key).amount)found.set(key,item);
      }
@@ -136,7 +141,7 @@ function summaryURL(id){
  if(!/^\d+$/.test(String(id)))throw Error('Unexpected ESPN game ID');
  return BASE+'summary?event='+id;
 }
-const api={numeric,statEntry,gameBoxStats,seasonLeaders,topByKind,boardEvents,
+const api={numeric,statEntry,gameBoxStats,scoreboardLeaders,topByKind,boardEvents,
            selectGames,currentWeek,boardURL,summaryURL};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
@@ -275,10 +280,11 @@ async function boxForGame(game){
  const cached=finalBoxCache.get(game.id);
  // Completed boxes are immutable; fetch them once per visit. Live boxes
  // are always checked again so the scroll updates during games.
- if(game.state==='post'&&cached?.state==='post')return {rows:cached.rows,stale:false};
+ if(game.state==='post'&&cached?.state==='post'&&
+    Date.now()-cached.checkedAt<FINAL_BOX_RECHECK_MS)return {rows:cached.rows,stale:false};
  try{
    const stats=gameBoxStats(await loadJSON(summaryURL(game.id),15000),game);
-   if(stats.length)finalBoxCache.set(game.id,{state:game.state,rows:stats});
+   if(stats.length)finalBoxCache.set(game.id,{state:game.state,rows:stats,checkedAt:Date.now()});
    return {rows:stats,stale:false};
  }catch(error){
    if(cached?.state===game.state)return {rows:cached.rows,stale:true};
@@ -325,16 +331,16 @@ async function refresh(){
        'NFL WEEK '+week+' GAME STATS';
      const chosen=newlyRecorded(rows);
      paint({rows:chosen.rows,mode:heading+(chosen.changed?' · NEW STATS':''),
-       checked:new Date(),notes:'Passing · rushing · receiving · ESPN box scores · '+current.source,
-       partial});
+       checked:new Date(),notes:'Passing · rushing · receiving · ESPN game box scores · '+current.source,
+       partial,stale:results.some(x=>x.stale)});
    }else{
-     const leaders=seasonLeaders(board);
+     const leaders=scoreboardLeaders(board);
      if(!leaders.length)throw Error('ESPN player stats unavailable');
-     paint({rows:leaders,mode:season+' NFL SEASON LEADERS',
+     paint({rows:leaders,mode:'ESPN NFL SCOREBOARD LEADERS',
        checked:new Date(),notes:selected.active?
-          'Game box scores pending; season totals shown · '+current.source:
-          'Season totals · not live game stats · '+current.source,
-       partial:false});
+          'Game box scores pending · ESPN scoreboard figures; not verified season totals · '+current.source:
+          'ESPN scoreboard figures · not independently verified season totals · '+current.source,
+       partial:!!selected.games.length});
    }
    next(selected.active?REFRESH_GAME_MS:REFRESH_OTHER_MS);
  }catch(e){
