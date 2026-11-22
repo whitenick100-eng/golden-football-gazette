@@ -45,13 +45,17 @@ jobs:
         run: |
           python scripts/qa_gazette.py
           python scripts/data_status.py
+      - name: Security scan, construct allowlisted public site, and enforce browser CSP
+        run: |
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload website artifact
+      - name: Upload allowlisted website artifact only
         id: upload
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: public
       - name: Confirm artifact upload
         run: echo "Pages artifact upload step completed"
   deploy:
