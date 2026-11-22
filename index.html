@@ -579,6 +579,25 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   .gazette-masthead .dancing-turkey{animation:none!important;transform:none!important}
 }
 
+
+/* Compact NFL watch desks and Gridiron Giggles record directory. */
+.gazette-records-feature{margin:12px 0 18px}
+.gazette-records-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:10px}
+.gazette-record-card{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px;border:1px solid rgba(223,188,118,.6);background:rgba(17,29,32,.86);color:#fff3d8}
+.gazette-record-name{font:700 .85rem/1.35 system-ui,sans-serif}
+.gazette-record-value{font:900 1.05rem system-ui,sans-serif;color:#ffdb9d;white-space:nowrap}
+.gazette-nfl-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:start;margin-top:20px}
+.gazette-nfl-report-grid>.injury-report,.gazette-nfl-report-grid>.transactions-desk{min-width:0;margin:0;padding:16px;border:1px solid #e2c486;background:rgba(10,26,29,.92)}
+.injury-club summary,.roster-club summary{cursor:pointer;padding:12px 11px;display:flex;justify-content:space-between;gap:10px;align-items:center;color:#ffe2a8;background:#213833;border:1px solid rgba(233,200,137,.4);font:700 .84rem system-ui,sans-serif}
+.injury-club,.roster-club{margin:8px 0;border-radius:3px;overflow:hidden}
+.injury-club summary:hover,.roster-club summary:hover{background:#36564c}
+.injury-club[open] summary,.roster-club[open] summary{background:#36564c}
+.roster-club .transaction-card{margin:8px;padding:9px}
+.gazette-nfl-report-grid .injury-filter-bar,.gazette-nfl-report-grid .transactions-tools{gap:8px}
+@media(max-width:1050px){.gazette-nfl-report-grid{grid-template-columns:1fr}}
+@media(max-width:540px){.gazette-records-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .gazette-record-card{flex-direction:column;align-items:flex-start}
+ .gazette-nfl-report-grid>.injury-report,.gazette-nfl-report-grid>.transactions-desk{padding:10px}}
 </style>
 </head>
 <body>
@@ -598,9 +617,13 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   <p id="nfl-stat-ticker-status" class="nfl-ticker-source" role="status" aria-live="polite">Connecting to ESPN NFL player statistics</p>
 </section>
 <header class="gazette-masthead"><div class="masthead-side"><img class="dancing-turkey" src="assets/turkey-left.webp" width="420" height="630" alt="Realistic dancing Thanksgiving turkey in a football jersey, number 26" onerror="this.style.display='none'"><svg class="masthead-trophy" viewBox="0 0 150 190" role="img" aria-label="Golden Football championship trophy"><defs><linearGradient id="goldFootball" x1="0" x2="1"><stop stop-color="#76500b"/><stop offset=".32" stop-color="#fff2a1"/><stop offset=".67" stop-color="#d5a526"/><stop offset="1" stop-color="#68420a"/></linearGradient></defs><ellipse cx="75" cy="61" rx="60" ry="28" transform="rotate(-34 75 61)" fill="url(#goldFootball)" stroke="#ffdf7b" stroke-width="3"/><path d="M38 84L109 38M66 64l8 13m1-19 8 12m1-19 8 12" stroke="#fff1ba" stroke-width="3"/><path d="M69 90L82 94 94 135H57z" fill="url(#goldFootball)" stroke="#c98b20" stroke-width="2"/><path d="M39 135h72v15H39zm-11 15h94v27H28z" fill="url(#goldFootball)" stroke="#f5d273" stroke-width="2"/><text x="75" y="164" font-size="11" text-anchor="middle" font-family="Georgia" font-weight="bold" fill="#36240b">CHAMPION</text></svg><span>Golden Football</span></div><div class="masthead-center"><div class="eyebrow">Independent Fantasy Football Newspaper</div><h1>The Golden Football Gazette</h1><div class="sub masthead-live-date"><span class="date-label">Today · Eastern Time</span><time id="gazette-current-datetime" aria-label="Current Eastern date and time">Current Eastern date and time</time></div><div class="masthead-edition">2026 NFL Season · Gridiron Giggles</div></div><div class="masthead-side"><img class="dancing-turkey" src="assets/turkey-right.webp" width="420" height="630" alt="Realistic dancing Thanksgiving turkey in a football jersey, number 25" onerror="this.style.display='none'"><svg class="masthead-trophy" viewBox="0 0 150 190" role="img" aria-label="Golden Toilet last-place trophy"><defs><linearGradient id="goldToilet" x1="0" x2="1"><stop stop-color="#81550c"/><stop offset=".38" stop-color="#ffed91"/><stop offset=".7" stop-color="#d39b1e"/><stop offset="1" stop-color="#65420c"/></linearGradient></defs><rect x="28" y="20" width="67" height="63" rx="8" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="3"/><ellipse cx="88" cy="82" rx="51" ry="17" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="3"/><path d="M40 84q-2 46 40 52h23q25-9 24-52" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="3"/><path d="M59 130h47v19H59zM31 150h93v27H31z" fill="url(#goldToilet)" stroke="#ffe085" stroke-width="2"/><text x="77" y="166" font-size="12" text-anchor="middle" font-family="Georgia" font-weight="bold" fill="#36240b">LAST PLACE</text></svg><span>Golden Toilet</span></div></header>
-<section class="league-logos-feature" aria-label="Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League official ESPN fantasy club emblems"><h2 class="league-identity-heading" aria-label="Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League"><span class="league-identity-brand">Gridiron Giggles</span><span class="league-identity-family">The White / Wilcox / Hulsey / Homan Fantasy Football League</span></h2><p class="hub-intro league-heading-description">Official ESPN Fantasy Team Emblems</p><div class="league-logo-list" id="gazette-logo-directory"><p class="hub-intro">Loading team emblems from the ESPN league export…</p></div></section><div class="nfl-banner"><div class="banner-title">Around the National Football League · Team Gallery</div><div class="logo-grid"><div class="team-logo"><img loading="lazy" alt="ARI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ari.png" onerror="this.style.display='none'"><span>ARI</span></div><div class="team-logo"><img loading="lazy" alt="ATL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png" onerror="this.style.display='none'"><span>ATL</span></div><div class="team-logo"><img loading="lazy" alt="BAL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/bal.png" onerror="this.style.display='none'"><span>BAL</span></div><div class="team-logo"><img loading="lazy" alt="BUF team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" onerror="this.style.display='none'"><span>BUF</span></div><div class="team-logo"><img loading="lazy" alt="CAR team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/car.png" onerror="this.style.display='none'"><span>CAR</span></div><div class="team-logo"><img loading="lazy" alt="CHI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/chi.png" onerror="this.style.display='none'"><span>CHI</span></div><div class="team-logo"><img loading="lazy" alt="CIN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/cin.png" onerror="this.style.display='none'"><span>CIN</span></div><div class="team-logo"><img loading="lazy" alt="CLE team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/cle.png" onerror="this.style.display='none'"><span>CLE</span></div><div class="team-logo"><img loading="lazy" alt="DAL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/dal.png" onerror="this.style.display='none'"><span>DAL</span></div><div class="team-logo"><img loading="lazy" alt="DEN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/den.png" onerror="this.style.display='none'"><span>DEN</span></div><div class="team-logo"><img loading="lazy" alt="DET team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/det.png" onerror="this.style.display='none'"><span>DET</span></div><div class="team-logo"><img loading="lazy" alt="GB team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/gb.png" onerror="this.style.display='none'"><span>GB</span></div><div class="team-logo"><img loading="lazy" alt="HOU team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/hou.png" onerror="this.style.display='none'"><span>HOU</span></div><div class="team-logo"><img loading="lazy" alt="IND team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ind.png" onerror="this.style.display='none'"><span>IND</span></div><div class="team-logo"><img loading="lazy" alt="JAX team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/jax.png" onerror="this.style.display='none'"><span>JAX</span></div><div class="team-logo"><img loading="lazy" alt="KC team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" onerror="this.style.display='none'"><span>KC</span></div><div class="team-logo"><img loading="lazy" alt="LV team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lv.png" onerror="this.style.display='none'"><span>LV</span></div><div class="team-logo"><img loading="lazy" alt="LAC team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lac.png" onerror="this.style.display='none'"><span>LAC</span></div><div class="team-logo"><img loading="lazy" alt="LAR team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lar.png" onerror="this.style.display='none'"><span>LAR</span></div><div class="team-logo"><img loading="lazy" alt="MIA team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/mia.png" onerror="this.style.display='none'"><span>MIA</span></div><div class="team-logo"><img loading="lazy" alt="MIN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/min.png" onerror="this.style.display='none'"><span>MIN</span></div><div class="team-logo"><img loading="lazy" alt="NE team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ne.png" onerror="this.style.display='none'"><span>NE</span></div><div class="team-logo"><img loading="lazy" alt="NO team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/no.png" onerror="this.style.display='none'"><span>NO</span></div><div class="team-logo"><img loading="lazy" alt="NYG team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png" onerror="this.style.display='none'"><span>NYG</span></div><div class="team-logo"><img loading="lazy" alt="NYJ team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png" onerror="this.style.display='none'"><span>NYJ</span></div><div class="team-logo"><img loading="lazy" alt="PHI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/phi.png" onerror="this.style.display='none'"><span>PHI</span></div><div class="team-logo"><img loading="lazy" alt="PIT team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/pit.png" onerror="this.style.display='none'"><span>PIT</span></div><div class="team-logo"><img loading="lazy" alt="SF team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/sf.png" onerror="this.style.display='none'"><span>SF</span></div><div class="team-logo"><img loading="lazy" alt="SEA team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/sea.png" onerror="this.style.display='none'"><span>SEA</span></div><div class="team-logo"><img loading="lazy" alt="TB team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/tb.png" onerror="this.style.display='none'"><span>TB</span></div><div class="team-logo"><img loading="lazy" alt="TEN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ten.png" onerror="this.style.display='none'"><span>TEN</span></div><div class="team-logo"><img loading="lazy" alt="WAS team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png" onerror="this.style.display='none'"><span>WAS</span></div></div><p class="legal">NFL team marks are the property of their respective owners. Independent fantasy league publication; not endorsed by the NFL or ESPN.</p></div><nav aria-label="Site sections"><a href="#headlines">Headlines</a><a href="#standings">Standings</a><a href="#matchups">Week 11 Matchups</a><a href="#waivers">Waiver Wire</a><a href="#trophies">Trophy Watch</a></nav>
+<section class="league-logos-feature gazette-records-feature" aria-label="Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League team records">
+ <h2 class="league-identity-heading" aria-label="Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League"><span class="league-identity-brand">Gridiron Giggles</span><span class="league-identity-family">The White / Wilcox / Hulsey / Homan Fantasy Football League</span></h2>
+ <p class="hub-intro league-heading-description">Current ESPN fantasy team records · automatically refreshed when verified</p>
+ <div id="gazette-team-records" class="gazette-records-grid" aria-live="polite"><p>Checking verified team records…</p></div>
+</section><div class="nfl-banner"><div class="banner-title">Around the National Football League · Team Gallery</div><div class="logo-grid"><div class="team-logo"><img loading="lazy" alt="ARI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ari.png" onerror="this.style.display='none'"><span>ARI</span></div><div class="team-logo"><img loading="lazy" alt="ATL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png" onerror="this.style.display='none'"><span>ATL</span></div><div class="team-logo"><img loading="lazy" alt="BAL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/bal.png" onerror="this.style.display='none'"><span>BAL</span></div><div class="team-logo"><img loading="lazy" alt="BUF team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/buf.png" onerror="this.style.display='none'"><span>BUF</span></div><div class="team-logo"><img loading="lazy" alt="CAR team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/car.png" onerror="this.style.display='none'"><span>CAR</span></div><div class="team-logo"><img loading="lazy" alt="CHI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/chi.png" onerror="this.style.display='none'"><span>CHI</span></div><div class="team-logo"><img loading="lazy" alt="CIN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/cin.png" onerror="this.style.display='none'"><span>CIN</span></div><div class="team-logo"><img loading="lazy" alt="CLE team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/cle.png" onerror="this.style.display='none'"><span>CLE</span></div><div class="team-logo"><img loading="lazy" alt="DAL team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/dal.png" onerror="this.style.display='none'"><span>DAL</span></div><div class="team-logo"><img loading="lazy" alt="DEN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/den.png" onerror="this.style.display='none'"><span>DEN</span></div><div class="team-logo"><img loading="lazy" alt="DET team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/det.png" onerror="this.style.display='none'"><span>DET</span></div><div class="team-logo"><img loading="lazy" alt="GB team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/gb.png" onerror="this.style.display='none'"><span>GB</span></div><div class="team-logo"><img loading="lazy" alt="HOU team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/hou.png" onerror="this.style.display='none'"><span>HOU</span></div><div class="team-logo"><img loading="lazy" alt="IND team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ind.png" onerror="this.style.display='none'"><span>IND</span></div><div class="team-logo"><img loading="lazy" alt="JAX team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/jax.png" onerror="this.style.display='none'"><span>JAX</span></div><div class="team-logo"><img loading="lazy" alt="KC team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png" onerror="this.style.display='none'"><span>KC</span></div><div class="team-logo"><img loading="lazy" alt="LV team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lv.png" onerror="this.style.display='none'"><span>LV</span></div><div class="team-logo"><img loading="lazy" alt="LAC team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lac.png" onerror="this.style.display='none'"><span>LAC</span></div><div class="team-logo"><img loading="lazy" alt="LAR team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/lar.png" onerror="this.style.display='none'"><span>LAR</span></div><div class="team-logo"><img loading="lazy" alt="MIA team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/mia.png" onerror="this.style.display='none'"><span>MIA</span></div><div class="team-logo"><img loading="lazy" alt="MIN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/min.png" onerror="this.style.display='none'"><span>MIN</span></div><div class="team-logo"><img loading="lazy" alt="NE team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ne.png" onerror="this.style.display='none'"><span>NE</span></div><div class="team-logo"><img loading="lazy" alt="NO team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/no.png" onerror="this.style.display='none'"><span>NO</span></div><div class="team-logo"><img loading="lazy" alt="NYG team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png" onerror="this.style.display='none'"><span>NYG</span></div><div class="team-logo"><img loading="lazy" alt="NYJ team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png" onerror="this.style.display='none'"><span>NYJ</span></div><div class="team-logo"><img loading="lazy" alt="PHI team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/phi.png" onerror="this.style.display='none'"><span>PHI</span></div><div class="team-logo"><img loading="lazy" alt="PIT team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/pit.png" onerror="this.style.display='none'"><span>PIT</span></div><div class="team-logo"><img loading="lazy" alt="SF team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/sf.png" onerror="this.style.display='none'"><span>SF</span></div><div class="team-logo"><img loading="lazy" alt="SEA team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/sea.png" onerror="this.style.display='none'"><span>SEA</span></div><div class="team-logo"><img loading="lazy" alt="TB team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/tb.png" onerror="this.style.display='none'"><span>TB</span></div><div class="team-logo"><img loading="lazy" alt="TEN team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/ten.png" onerror="this.style.display='none'"><span>TEN</span></div><div class="team-logo"><img loading="lazy" alt="WAS team logo" src="https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png" onerror="this.style.display='none'"><span>WAS</span></div></div><p class="legal">NFL team marks are the property of their respective owners. Independent fantasy league publication; not endorsed by the NFL or ESPN.</p></div><nav aria-label="Site sections"><a href="#headlines">Headlines</a><a href="#standings">Standings</a><a href="#matchups">Week 11 Matchups</a><a href="#waivers">Waiver Wire</a><a href="#trophies">Trophy Watch</a></nav>
 <section id="headlines" class="breaking"><div class="kicker">The lead story · Week 11</div><h2>Unbeaten Leader Sets the Pace as Playoff Race Tightens</h2><p>At 10–0, 4th and 10 leads the standings. HVAC guru and Michelle’s Magnificent Team follow at 6–4, while Sunday Morning Panic produced the highest team total of Week 10 with 157.68 points.</p></section>
-<div class="stamp" role="note">DATA STATUS: Historical ESPN snapshot updated November 18, 2026. This website is a static edition, not a live ESPN feed. Week 11 predictions below are editorial picks, not ESPN projections.</div>
+<div class="stamp" role="note">EDITORIAL ARCHIVE: The story below reflects the historical November 18, 2026 edition. The ESPN Matchup Center above the archived newspaper can refresh independently. Editorial predictions are not ESPN projections.</div>
 <section id="espn-live" class="archive espn-matchup-center" aria-label="Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League ESPN fantasy matchups">
   <div class="espn-matchup-header">
     <div>
@@ -622,42 +645,13 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   <p id="espn-week-summary" class="espn-scoreboard-summary" role="status">Checking the ESPN league schedule…</p>
   <div id="espn-games" class="espn-scoreboard-grid" aria-label="Fantasy weekly matchups" aria-live="polite"></div>
   <p id="espn-status" class="espn-scoreboard-source">Checking the last ESPN data refresh…</p>
-  <p class="espn-scoreboard-note">Final results and projected scores are separate. The Gazette displays only data returned by ESPN through its scheduled publishing workflow. The newspaper stories below remain archived editorial editions.</p>
+  <p class="espn-scoreboard-note">Final results and projections are separate. During games the site attempts direct ESPN API refreshes every 30 seconds when the browser permits; otherwise it clearly identifies the last published verified snapshot. ESPN remains the authoritative live source.</p>
 </section>
 <script src="assets/espn-matchups.js"></script>
 <section id="auto-coverage" class="hub-section" aria-label="Automatically updated verified sports coverage">
 <h2>Today's Football Desk · Verified Briefing</h2>
 <p class="hub-intro" id="auto-coverage-meta">Retrieving the newest verified NFL and fantasy-league headlines…</p>
 <div id="auto-coverage-stories" class="coverage-stories" aria-live="polite"></div>
-<div id="nfl-transactions-desk" class="transactions-desk" aria-label="Significant NFL player transactions">
-  <div class="transactions-heading">
-    <div><h3>Roster Wire · Key NFL Player Moves</h3>
-      <p id="transaction-freshness" class="hub-intro" role="status">Checking ESPN for verified major trades and releases…</p>
-      <div class="roster-wire-scanline" aria-label="Roster Wire feed status">
-        <span id="roster-wire-health" class="roster-wire-health" data-state="checking">Checking feed</span>
-        <span id="roster-wire-scan-details" class="roster-wire-scan-details">Latest verification pending</span>
-        <button id="roster-wire-refresh" type="button" class="roster-wire-refresh" title="Check the latest published Roster Wire data">↻ Recheck</button>
-      </div>
-    </div>
-    <a href="https://www.espn.com/nfl/transactions" target="_blank" rel="noopener noreferrer">ESPN transaction source</a>
-  </div>
-  <div class="transactions-tools">
-    <label for="transaction-filter">Display
-      <select id="transaction-filter">
-        <option value="all">Only key-player moves</option>
-        <option value="Trade">Major trades</option>
-        <option value="Released">Key releases</option>
-        <option value="Waived">Key waivers</option>
-      </select>
-    </label>
-    <label for="transaction-team-search">Find featured team or player
-      <input type="search" id="transaction-team-search" placeholder="Search key moves…" autocomplete="off">
-    </label>
-  </div>
-  <div id="transaction-summary" class="transaction-summary" role="status"></div>
-  <div id="transaction-items" class="transaction-items"><p class="hub-intro">Checking the latest significant player moves…</p></div>
-  <p class="transaction-note">A selective ESPN transaction wire—not every NFL roster move. Only confirmed trades, releases, or waivers involving players ESPN identifies as first-string starters or as QB/RB/WR/TE/K players on a Gridiron Giggles fantasy roster are included. Ordinary backups and practice-squad moves are excluded. ESPN depth charts can change after a release, so some notable former starters may be missed.</p>
-</div>
 <p class="coverage-caveat">Daily fact-based coverage generated from timestamped ESPN data, not AI opinion. The independently written newspaper edition remains subject to editor approval.</p>
 </section>
 <section id="approved-editorial" class="hub-section" aria-live="polite" hidden>
@@ -695,10 +689,11 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 </div>
 <div id="featured-games" class="featured-games"></div>
 <div id="nfl-games" class="games-grid"></div>
+<div class="gazette-nfl-report-grid" aria-label="NFL Injury Watch and Roster Wire reports">
 <div id="nfl-injury-report" class="injury-report" aria-label="NFL verified first-string starters ruled out or on injured reserve">
   <div class="injury-title-row">
     <div>
-      <h3>NFL Key Starter OUT Watch · QB / RB / WR / TE / K</h3>
+      <h3>NFL Key Starter OUT Watch · OUT / QUESTIONABLE / DOUBTFUL / IR</h3>
       <p class="injury-subtitle" id="injury-meta" role="status">Checking ESPN's starting depth charts and reported absences…</p>
     </div>
     <div class="injury-source-links">
@@ -706,6 +701,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
       <a href="https://www.espn.com/nfl/injuries" target="_blank" rel="noopener noreferrer">ESPN injury source</a>
     </div>
   </div>
+  <button type="button" id="injury-refresh" class="refresh-nfl-scores" aria-label="Recheck the latest published ESPN injury report">↻ Recheck injury reports</button>
   <div class="injury-filter-bar">
     <label for="injury-team-filter">NFL team
       <select id="injury-team-filter"><option value="all">All affected teams</option></select>
@@ -718,9 +714,10 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
       </select>
     </label>
     <label for="injury-status-filter">Unavailable status
-      <select id="injury-status-filter"><option value="all">Out + IR / PUP</option>
+      <select id="injury-status-filter"><option value="all">OUT / Questionable / Doubtful / IR</option>
         <option value="out">Reported OUT</option>
         <option value="reserve">Injured Reserve / PUP</option>
+        <option value="questionable">Questionable</option><option value="doubtful">Doubtful</option>
       </select>
     </label>
     <label for="injury-search">Find starter
@@ -729,13 +726,39 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   </div>
   <p class="injury-count" id="injury-count" role="status"></p>
   <div id="injury-teams" class="injury-teams"><p class="injury-empty">Verifying confirmed absences from ESPN…</p></div>
-  <p class="injury-disclaimer">Only ESPN-listed first-string QB, RB, WR (multiple starting spots), TE and K appear. “Out” must have a recent ESPN report; Injured Reserve / PUP are labeled separately as longer-term unavailability. Questionable and Doubtful players, ordinary day-to-day updates, and backups are excluded. ESPN depth charts and injury feeds may be incomplete or lag official game-day inactive lists. Check NFL.com for final designations.</p>
+  <p class="injury-disclaimer">Only ESPN-listed first-string QB, RB, WR, TE and K appear. OUT, Questionable, and Doubtful require recent dated ESPN reports; IR/PUP is listed separately. A questionable designation is not the same as being ruled out. ESPN feeds can lag official game-day inactives; verify with NFL.com.</p>
 </div>
-</section>
-<section id="fantasy-helmets" class="hub-section">
-<h2>Fantasy League Clubs &amp; Emblems</h2>
-<p class="hub-intro" id="fantasy-logo-status">ESPN team images are displayed when available. A team's original ESPN image may be a custom logo rather than a helmet.</p>
-<div id="fantasy-team-grid" class="fantasy-grid"></div>
+<div id="nfl-transactions-desk" class="transactions-desk" aria-label="Significant NFL player transactions">
+  <div class="transactions-heading">
+    <div><h3>Roster Wire · Key NFL Player Moves</h3>
+      <p id="transaction-freshness" class="hub-intro" role="status">Checking ESPN for verified major trades and releases…</p>
+      <div class="roster-wire-scanline" aria-label="Roster Wire feed status">
+        <span id="roster-wire-health" class="roster-wire-health" data-state="checking">Checking feed</span>
+        <span id="roster-wire-scan-details" class="roster-wire-scan-details">Latest verification pending</span>
+        <button id="roster-wire-refresh" type="button" class="roster-wire-refresh" title="Check the latest published Roster Wire data">↻ Recheck</button>
+      </div>
+    </div>
+    <a href="https://www.espn.com/nfl/transactions" target="_blank" rel="noopener noreferrer">ESPN transaction source</a>
+  </div>
+  <div class="transactions-tools">
+    <label for="transaction-filter">Display
+      <select id="transaction-filter">
+        <option value="all">Only key-player moves</option>
+        <option value="Trade">Major trades</option>
+        <option value="Released">Key releases</option>
+        <option value="Waived">Key waivers</option>
+      </select>
+    </label>
+    <label for="transaction-team-search">Find featured team or player
+      <input type="search" id="transaction-team-search" placeholder="Search key moves…" autocomplete="off">
+    </label>
+  </div>
+  <div id="transaction-summary" class="transaction-summary" role="status"></div>
+  <div id="transaction-items" class="transaction-items"><p class="hub-intro">Checking the latest significant player moves…</p></div>
+  <p class="transaction-note">A selective ESPN transaction wire—not every NFL roster move. Only confirmed trades, releases, or waivers involving players ESPN identifies as first-string starters or as QB/RB/WR/TE/K players on a Gridiron Giggles fantasy roster are included. Ordinary backups and practice-squad moves are excluded. ESPN depth charts can change after a release, so some notable former starters may be missed.</p>
+</div>
+
+</div>
 </section>
 <section id="weekly-stars" class="hub-section">
 <h2>Five Leading Fantasy Performers</h2>
@@ -818,235 +841,107 @@ let weather='Weather forecast unavailable';if(g.indoor)weather='Indoor venue';el
 c.append(el('div','game-meta',when+' · '+(venue||'Venue not confirmed')+' · '+weather));return c}
 Promise.allSettled([fetch('data/nfl-week.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()}),fetch('data/league.json?ts='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()})]).then(([nfl,league])=>{
 if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;document.getElementById('nfl-status').textContent='NFL season '+d.season+' · Week '+d.week+' · Source: ESPN NFL scoreboard · Retrieved '+new Date(d.fetchedAt).toLocaleString();const all=document.getElementById('nfl-games'),feature=document.getElementById('featured-games');d.games.forEach((g,i)=>{all.append(gameCard(g,i));const day=new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long'});if(day==='Sunday'&&new Date(g.date).toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}).replace(/\D/g,'')>=19 || day==='Monday'){const wrap=el('div');wrap.append(el('h3','',day==='Monday'?'Monday Night Football':'Sunday Night Football'),gameCard(g,i));feature.append(wrap)}});window.GazetteNFL?.start(d)}else {document.getElementById('nfl-status').textContent='NFL schedule could not be verified; no fixtures are displayed.';document.getElementById('live-score-status').textContent='No verified schedule loaded; scores cannot be matched.';}
-if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=league.value;const grid=document.getElementById('fantasy-team-grid');d.standings.forEach((t,i)=>{const c=el('div','fantasy-card');c.dataset.espnTeamId=String(t.teamId??'');c.append(imageLogo(t.logo,t.name+' ESPN team emblem'));const info=el('div','team-info',t.name);info.append(el('span','',[(t.wins??'?')+'-'+(t.losses??'?'),t.ties?'Ties '+t.ties:null].filter(Boolean).join(' · ')));c.append(info);grid.append(c);});}else{document.getElementById('fantasy-logo-status').textContent='Fantasy team emblems are unavailable until ESPN league data is successfully retrieved.';}
+
 });
 })();
 </script><script>
-/* ESPN team images: use cached originals, current ESPN logo URLs, then label missing images. */
-(async function(){
- const normalize=s=>String(s||'').replace(/\s*\(\d+\s*[–-]\s*\d+\)\s*/g,' ').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
- const validESPN=u=>/^https:\/\/(mystique-api\.fantasy\.espn\.com|g\.espncdn\.com|a\.espncdn\.com)\//.test(String(u||''));
- const validLocal=u=>/^assets\/fantasy-logos\/team-\d+\.(?:svg|png|jpg|webp|gif)$/.test(String(u||''));
- const getJSON=async url=>{const r=await fetch(url,{cache:'no-cache'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()};
- try{
-  const base=await getJSON('assets/espn-team-logos.json');
-  if(!Array.isArray(base.teams)||base.teams.length!==10)throw Error('Expected exactly ten ESPN fantasy team emblems');
-  let manifest=null;
-  try{manifest=await getJSON('assets/fantasy-logos/manifest.json')}catch(e){console.info('Local ESPN emblem cache unavailable; checking original URLs')}
-  const teams=base.teams.map(t=>{
-    const entry=manifest?.teams?.[String(t.id)];
-    return {...t,name:entry?.name||t.name,logo:validESPN(entry?.sourceUrl)?entry.sourceUrl:t.logo,
-      localLogo:validLocal(entry?.localUrl)?entry.localUrl:null};
-  });
-  const byID=new Map(teams.map(t=>[String(t.id),t]));
-  const byName=new Map(teams.map(t=>[normalize(t.name),t]));
-  function find(name){
-    const key=normalize(name);
-    return byName.get(key)||teams.find(t=>key.startsWith(normalize(t.name))||normalize(t.name).startsWith(key));
+/* ESPN first-string starter injury report; expandable team cards and dated status updates. */
+(function(){
+ const $=id=>document.getElementById(id);
+ const meta=$('injury-meta'),area=$('injury-teams'),count=$('injury-count');
+ const teamSelect=$('injury-team-filter'),posSelect=$('injury-position-filter');
+ const statusSelect=$('injury-status-filter'),search=$('injury-search'),button=$('injury-refresh');
+ if(![meta,area,count,teamSelect,posSelect,statusSelect,search,button].every(Boolean))return;
+ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
+ const positions=new Set(['QB','RB','WR','TE','K']);
+ const statuses=new Set(['out','reserve','questionable','doubtful']);
+ const valid=p=>p&&p.depthRank===1&&positions.has(p.position)&&statuses.has(p.outType)&&typeof p.name==='string';
+ const formatDate=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'Not reported':d.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'})};
+ let snapshot=null,busy=false;
+ function render(){
+  if(!snapshot)return;
+  const previous=new Set([...area.querySelectorAll('details[open]')].map(e=>e.dataset.teamId));
+  const teams=snapshot.teams.map(t=>({...t,players:(t.players||[]).filter(valid)})).filter(t=>t.players.length);
+  const current=teamSelect.value;
+  teamSelect.replaceChildren();
+  const all=el('option','All affected teams');all.value='all';teamSelect.append(all);
+  for(const t of teams){const option=el('option',t.name);option.value=String(t.teamId);teamSelect.append(option)}
+  teamSelect.value=[...teamSelect.options].some(o=>o.value===current)?current:'all';
+  area.replaceChildren();let clubs=0,visible=0;
+  const counts={out:0,reserve:0,questionable:0,doubtful:0};
+  for(const t of teams){
+   if(teamSelect.value!=='all'&&teamSelect.value!==String(t.teamId))continue;
+   const q=search.value.trim().toLowerCase();
+   const filtered=t.players.filter(p=>(posSelect.value==='all'||p.position===posSelect.value)&&
+     (statusSelect.value==='all'||p.outType===statusSelect.value)&&
+     (!q||[p.name,p.position,t.name,p.injury,p.reportedStatus].filter(Boolean).join(' ').toLowerCase().includes(q)));
+   if(!filtered.length)continue;
+   clubs++;visible+=filtered.length;for(const p of filtered)counts[p.outType]++;
+   const details=el('details',undefined,'injury-club');
+   details.dataset.teamId=String(t.teamId);details.open=previous.has(String(t.teamId));
+   const head=el('summary');
+   head.append(el('strong',t.name),el('span',filtered.length+' reported starter'+(filtered.length===1?'':'s'),'club-count'));
+   details.append(head);
+   const wrap=el('div',undefined,'injury-grid-scroll');
+   const table=el('table',undefined,'injury-table');
+   const thead=el('thead'),tr=el('tr');
+   for(const label of ['Player','Position','Status','Injury / reason','Report date']){const th=el('th',label);th.scope='col';tr.append(th)}
+   thead.append(tr);table.append(thead);
+   const body=el('tbody');
+   for(const p of filtered){
+    const row=el('tr'),name=el('td');
+    if(typeof p.playerUrl==='string'&&/^https:\/\/www\.espn\.com\/nfl\/player\/_\/id\/\d+$/.test(p.playerUrl)){
+     const a=el('a',p.name,'starter-link');a.href=p.playerUrl;a.target='_blank';a.rel='noopener noreferrer';name.append(a);
+    }else name.textContent=p.name;
+    name.append(el('span','1st string · '+(p.starterSlot||p.position),'starter-depth-note'));
+    row.append(name,el('td',p.position));
+    const status=el('td');
+    const chip=el('span',p.reportedStatus||(p.outType==='reserve'?'IR / PUP':p.outType.toUpperCase()),'injury-status-chip');
+    chip.dataset.severity=p.outType;status.append(chip);
+    row.append(status,el('td',p.injury||'Reason not reported','injury-muted'),
+       el('td',p.reportDate?formatDate(p.reportDate):'Not reported','injury-muted'));
+    body.append(row);
+   }
+   table.append(body);wrap.append(table);details.append(wrap);area.append(details);
   }
-  function badge(team,small=false){
-    const holder=document.createElement('span');
-    holder.className='gazette-logo-holder'+(small?' gazette-logo-small':'');
-    holder.title=team.name+' — official ESPN fantasy emblem';
-    const img=document.createElement('img');
-    img.className='gazette-team-logo';
-    img.loading='lazy';
-    img.alt=team.name+' ESPN emblem';
-    const original=validESPN(team.logo)?team.logo:null;
-    const cached=validLocal(team.localLogo)?team.localLogo:null;
-    const label=()=>{
-      const missing=document.createElement('span');
-      missing.className='gazette-logo-unavailable';
-      missing.setAttribute('aria-label','ESPN emblem unavailable for '+team.name);
-      missing.title='ESPN emblem could not be loaded';
-      missing.textContent='—';
-      img.replaceWith(missing);
-      holder.title='ESPN emblem unavailable for '+team.name;
-    };
-    img.onerror=()=>{
-      if(cached && img.src.endsWith(cached) && original){img.src=original;return}
-      label();
-    };
-    holder.append(img);
-    if(cached)img.src=cached;
-    else if(original)img.src=original;
-    else label();
-    return holder;
-  }
-  const grid=document.getElementById('gazette-logo-directory');
-  if(grid){
-    grid.textContent='';
-    for(const team of teams){
-      const row=document.createElement('div');row.className='league-logo-entry';
-      const name=document.createElement('span');name.textContent=team.name;
-      row.append(badge(team),name);grid.append(row);
-    }
-  }
-  function decorateStandings(){
-    for(const td of document.querySelectorAll('#standings-body tr td:nth-child(2)')){
-      if(td.dataset.logoDecorated)continue;
-      const team=find(td.textContent);
-      if(!team)continue;
-      td.prepend(badge(team,true));td.dataset.logoDecorated='true';
-    }
-  }
-  function decorateMatchups(){
-    for(const title of document.querySelectorAll('#matchups-list .match .teams')){
-      if(title.dataset.logoDecorated)continue;
-      const txt=[...title.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE);
-      if(txt.length<2)continue;
-      const away=txt[0].textContent.replace(/^\d+\.\s*/,'').trim(),home=txt[txt.length-1].textContent.trim();
-      const left=find(away),right=find(home);
-      if(!left&&!right)continue;
-      const leftSpan=document.createElement('span'),rightSpan=document.createElement('span');
-      leftSpan.className=rightSpan.className='gazette-team-label';
-      if(left)leftSpan.append(badge(left,true));
-      leftSpan.append(document.createTextNode(away));
-      if(right)rightSpan.append(badge(right,true));
-      rightSpan.append(document.createTextNode(home));
-      const vs=document.createElement('span');vs.className='vs';vs.textContent='VS';
-      title.replaceChildren(leftSpan,vs,rightSpan);title.dataset.logoDecorated='true';
-    }
-  }
-  function decorateFantasyCards(){
-    for(const card of document.querySelectorAll('#fantasy-team-grid .fantasy-card')){
-      if(card.dataset.logoDecorated)continue;
-      const team=byID.get(card.dataset.espnTeamId)||find(card.querySelector('.team-info')?.firstChild?.textContent||'');
-      if(!team)continue;
-      const prior=card.querySelector('img');
-      if(prior)prior.replaceWith(badge(team));
-      else card.prepend(badge(team));
-      card.dataset.logoDecorated='true';
-    }
-  }
-  function decorateESPNRows(){
-    // New ESPN-style cards use verified team IDs rather than parsing matchup
-    // names from an old table. This preserves each team's actual ESPN emblem.
-    for(const placeholder of document.querySelectorAll('#espn-games .espn-matchup-emblem[data-espn-team-id]')){
-      const team=byID.get(placeholder.dataset.espnTeamId);
-      if(!team)continue;
-      placeholder.replaceWith(badge(team));
-    }
-  }
-  function decorate(){decorateStandings();decorateMatchups();decorateFantasyCards();decorateESPNRows()}
-  decorate();
-  const observer=new MutationObserver(decorate);
-  for(const id of ['fantasy-team-grid','espn-games','standings-body','matchups-list']){
-    const target=document.getElementById(id);
-    if(target)observer.observe(target,{childList:true,subtree:true});
-  }
- }catch(e){
-  const grid=document.getElementById('gazette-logo-directory');
-  if(grid)grid.textContent='The ESPN logo directory is currently unavailable.';
-  console.warn('ESPN emblem directory error:',e);
+  count.textContent=visible+' reported first-string starter'+(visible===1?'':'s')+
+   ' · '+counts.out+' OUT · '+counts.questionable+' Questionable · '+counts.doubtful+
+   ' Doubtful · '+counts.reserve+' IR/PUP · '+clubs+' affected teams'+
+   (snapshot.coverageComplete?'':' · Partial ESPN depth-chart coverage');
+  if(!visible)area.append(el('p','No matching first-string injury designations were verified. Check the official NFL report before kickoff.','injury-empty'));
  }
-})();
-</script><script>
-/* Verified ESPN first-string OUT/IR/PUP only — backups and Q/D are excluded. */
-(async function(){
- const meta=document.getElementById('injury-meta');
- const area=document.getElementById('injury-teams');
- const count=document.getElementById('injury-count');
- const teamSelect=document.getElementById('injury-team-filter');
- const posSelect=document.getElementById('injury-position-filter');
- const statusSelect=document.getElementById('injury-status-filter');
- const search=document.getElementById('injury-search');
- if(!meta||!area||!count||!teamSelect||!posSelect||!statusSelect||!search)return;
- const el=(tag,text,cls)=>{
-   const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n;
- };
- const validPosition=new Set(['QB','RB','WR','TE','K']);
- const safeName=value=>typeof value==='string'?value:'';
- const validPlayer=p=>p&&p.depthRank===1&&validPosition.has(p.position)&&
-   (p.outType==='out'||p.outType==='reserve')&&typeof p.name==='string';
- const col=(tr,value,cls)=>{const n=el('td',value||'Not reported',cls);tr.append(n)};
- try {
+ async function refresh(){
+  if(busy)return;busy=true;button.disabled=true;meta.textContent='Checking latest published ESPN report…';
+  try{
    const response=await fetch('data/nfl-injuries.json?ts='+Date.now(),{cache:'no-store'});
-   if(!response.ok)throw Error('No published ESPN starter report');
-   const data=await response.json();
-   if(data.status==='unavailable'||data.filter!=='first-string-out-only'||!Array.isArray(data.teams)){
-     throw Error('Verified ESPN starting-player report has not been published');
+   if(!response.ok)throw Error('No ESPN injury snapshot published');
+   const d=await response.json();
+   if(!Array.isArray(d.teams)||!d.fetchedAt||!['first-string-out-only','first-string-status-watch'].includes(d.filter)){
+    throw Error('ESPN injury feed not verified');
    }
-   const stamp=new Date(data.fetchedAt);
-   if(Number.isNaN(stamp.getTime()))throw Error('Missing ESPN verification time');
-   const stale=(Date.now()-stamp.getTime())>36*3600000;
-   const teams=data.teams.map(t=>({...t,players:(t.players||[]).filter(validPlayer)}))
-     .filter(t=>t.players.length);
-   meta.textContent=(stale?'Previous verified starter report (may be outdated)':'Latest verified ESPN starter injury report')+
-     ' · '+stamp.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
-     ' · '+(data.depthChartTeamCount||0)+' of '+(data.injuryTeamCount||32)+' team depth charts checked'+
-     (data.coverageComplete?'':' · INCOMPLETE COVERAGE');
-   for(const t of teams){
-     const option=el('option',t.name);option.value=String(t.teamId);teamSelect.append(option);
-   }
-   function render(){
-     area.replaceChildren();
-     let visible=0,clubs=0,actualOut=0,reserve=0;
-     const query=search.value.trim().toLowerCase();
-     for(const t of teams){
-       if(teamSelect.value!=='all'&&teamSelect.value!==String(t.teamId))continue;
-       const players=t.players.filter(p=>
-         (posSelect.value==='all'||p.position===posSelect.value)&&
-         (statusSelect.value==='all'||p.outType===statusSelect.value)&&
-         (!query||[p.name,t.name,p.position,p.injury,p.reportedStatus].filter(Boolean)
-           .join(' ').toLowerCase().includes(query))
-       );
-       if(!players.length)continue;
-       clubs++;visible+=players.length;
-       actualOut+=players.filter(p=>p.outType==='out').length;
-       reserve+=players.filter(p=>p.outType==='reserve').length;
-       const details=document.createElement('details');details.className='injury-club';
-       details.open=true; // Users requested ALL eligible starters be visible immediately.
-       const summary=el('summary');
-       summary.append(el('span',t.name),el('span',players.length+' first-string unavailable','club-count'));
-       details.append(summary);
-       const scroll=el('div',undefined,'injury-grid-scroll');
-       const table=el('table',undefined,'injury-table');
-       const head=el('thead');const row=el('tr');
-       for(const title of ['First-string starter','Position','ESPN status','Injury detail','Report date']){
-         const th=el('th',title);th.scope='col';row.append(th);
-       }
-       head.append(row);table.append(head);
-       const body=el('tbody');
-       for(const player of players){
-         const tr=el('tr');
-         const name=el('td');
-         const link=player.playerUrl;
-         if(typeof link==='string'&&/^https:\/\/www\.espn\.com\/nfl\/player\/_\/id\/\d+$/.test(link)){
-           const a=el('a',player.name);a.href=link;a.target='_blank';a.rel='noopener noreferrer';
-           a.className='starter-link';name.append(a);
-         }else{name.textContent=player.name}
-         name.append(el('span','1st string · '+safeName(player.starterSlot),'starter-depth-note'));
-         tr.append(name);
-         col(tr,player.position);
-         const status=el('td');
-         const chip=el('span',player.outType==='out'?'OUT':(player.reportedStatus||'IR / PUP'),'injury-status-chip');
-         chip.dataset.severity=player.outType==='out'?'out':'reserve';
-         status.append(chip);tr.append(status);
-         col(tr,player.injury,'injury-muted');
-         let when='Not reported';
-         if(player.reportDate){
-           const date=new Date(player.reportDate);
-           if(!Number.isNaN(date.getTime()))
-             when=date.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});
-         }
-         col(tr,when,'injury-muted');body.append(tr);
-       }
-       table.append(body);scroll.append(table);details.append(scroll);area.append(details);
-     }
-     count.textContent=visible+' unavailable first-string starter'+(visible===1?'':'s')+
-       ' ('+actualOut+' OUT; '+reserve+' IR/PUP) across '+clubs+' team'+(clubs===1?'':'s')+
-       (!data.coverageComplete?' · Partial ESPN coverage':'')+(stale?' · Earlier snapshot':'');
-     if(!visible)area.append(el('p','No verified first-string OUT or IR/PUP players match these filters. That does not guarantee starters are healthy or available.','injury-empty'));
-   }
-   for(const filter of [teamSelect,posSelect,statusSelect])filter.addEventListener('change',render);
-   search.addEventListener('input',render);
+   if(Number.isNaN(new Date(d.fetchedAt).getTime()))throw Error('Invalid report timestamp');
+   snapshot=d;
+   const date=new Date(d.fetchedAt);
+   const stale=Date.now()-date.getTime()>36*3600000;
+   meta.textContent=(stale?'Earlier verified report':'Last ESPN publication')+' · '+
+    date.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
+    (d.filter==='first-string-out-only'?' · Questionable and Doubtful pending next scheduled data refresh':'')+
+    (d.coverageComplete?'':' · INCOMPLETE COVERAGE')+
+    ' · Recheck loads published data; it does not force ESPN to publish';
    render();
- }catch(e){
-   meta.textContent='Verified starter OUT report unavailable. Official injury and game-day inactive links remain above.';
-   area.replaceChildren(el('p','No current first-string absences can be verified. Check NFL.com for confirmed game-day inactives.','injury-empty'));
-   count.textContent='';console.warn('ESPN first-string OUT watch:',e.message);
+  }catch(error){
+   meta.textContent='ESPN injury recheck unavailable'+(snapshot?' · keeping last verified report':' · check NFL.com');
+   if(snapshot)render();
+   else{area.replaceChildren(el('p','No verified injury report is available.','injury-empty'));count.textContent=''}
+   console.warn('Gazette injury refresh:',error.message);
+  }finally{busy=false;button.disabled=false}
  }
+ for(const select of [teamSelect,posSelect,statusSelect])select.addEventListener('change',render);
+ search.addEventListener('input',render);
+ button.addEventListener('click',refresh);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+ setInterval(()=>{if(!document.hidden)refresh()},15*60*1000);
+ refresh();
 })();
 </script><script>
 /* Daily fact-based stories + verified ESPN fantasy player scores and brackets. */
@@ -1173,47 +1068,48 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
    month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(when);
  const setHealth=(value,label)=>{health.dataset.state=value;health.textContent=label};
  function draw(){
-   if(!snapshot)return;
-   const d=snapshot;
-   const q=search.value.trim().toLowerCase();
-   const selected=filter.value;
-   const all=d.moves.filter(verified);
-   const eligible=all.filter(m=>(selected==='all'||m.type===selected)&&
-     (!q||[m.playerName,m.team,m.teamAbbr,m.position,m.description]
-       .filter(Boolean).join(' ').toLowerCase().includes(q)));
-   area.replaceChildren();
-   count.textContent=all.length+' significant verified move'+(all.length===1?'':'s')+
-     ' · '+d.windowStart+' to '+d.windowEnd+
-     ' · '+eligible.length+' displayed with current filters';
-   if(!eligible.length){
-     area.append(node('p',
-       all.length?'No key-player moves match these filters. Clear your search to see reported moves.':
-       'No major qualifying trades, releases, or waivers were found during this period. The ESPN feed was checked successfully; ordinary roster changes are hidden.',
-       'injury-empty'));
-     return;
+  if(!snapshot)return;
+  const d=snapshot;
+  const q=search.value.trim().toLowerCase(),selected=filter.value;
+  const all=d.moves.filter(verified);
+  const eligible=all.filter(m=>(selected==='all'||m.type===selected)&&
+    (!q||[m.playerName,m.team,m.teamAbbr,m.position,m.description].filter(Boolean).join(' ').toLowerCase().includes(q)));
+  const expanded=new Set([...area.querySelectorAll('details[open]')].map(e=>e.dataset.team));
+  area.replaceChildren();
+  count.textContent=all.length+' verified significant moves · '+d.windowStart+' to '+d.windowEnd+
+   ' · '+eligible.length+' displayed (select a team to see players)';
+  if(!eligible.length){
+   area.append(node('p',all.length?'No key-player moves match these filters.':
+    'No major qualifying trades, releases, or waivers were found in the most recent verified scan.','injury-empty'));
+   return;
+  }
+  const byTeam=new Map();
+  for(const m of eligible){
+   const team=m.team||m.teamAbbr||'Other NFL team';
+   if(!byTeam.has(team))byTeam.set(team,[]);
+   byTeam.get(team).push(m);
+  }
+  for(const [team,moves] of [...byTeam].sort((a,b)=>a[0].localeCompare(b[0]))){
+   const details=node('details',undefined,'roster-club');
+   details.dataset.team=team;details.open=expanded.has(team);
+   const summary=node('summary');
+   summary.append(node('strong',team),node('span',moves.length+' move'+(moves.length===1?'':'s'),'club-count'));
+   details.append(summary);
+   for(const m of moves){
+    const card=node('article',undefined,'transaction-card key-transaction-card');
+    const body=node('div',undefined,'transaction-details');
+    const tags=node('div',undefined,'transaction-meta');
+    tags.append(node('span',m.type,'transaction-tag'),node('span',m.date||'Date not reported'));
+    body.append(tags);
+    const name=node('h4',m.playerName,'transaction-player-name');
+    if(m.position)name.append(node('span',m.position,'transaction-position'));
+    body.append(name,node('p',m.description||'No reason reported'));
+    body.append(node('div',m.importanceBasis==='ESPN NFL first-string depth chart'?
+      'ESPN depth-chart starter':'On a Gridiron Giggles fantasy roster','transaction-verified'));
+    card.append(body);details.append(card);
    }
-   for(const m of eligible.slice(0,8)){
-     const card=node('article',undefined,'transaction-card key-transaction-card');
-     if(safeLogo(m.teamLogo)){
-       const image=node('img');image.loading='lazy';image.alt=m.team+' NFL logo';
-       image.src=m.teamLogo;image.onerror=()=>image.remove();card.append(image);
-     }
-     const body=node('div',undefined,'transaction-details');
-     const type=node('div',undefined,'transaction-meta');
-     type.append(node('span',m.type,'transaction-tag'),node('span',m.date+' · '+m.team));
-     body.append(type);
-     const head=node('h4',m.playerName,'transaction-player-name');
-     if(m.position)head.append(node('span',m.position,'transaction-position'));
-     body.append(head,node('p',m.description));
-     if(Array.isArray(m.mentionedTeams)&&m.mentionedTeams.length>1)
-       body.append(node('div','Also reported by: '+m.mentionedTeams.slice(1).join(', '),'transaction-meta'));
-     body.append(node('div',
-       m.importanceBasis==='ESPN NFL first-string depth chart'?
-         'ESPN depth-chart starter':'Rostered in Gridiron Giggles',
-       'transaction-verified'));
-     card.append(body);area.append(card);
-   }
-   if(eligible.length>8)area.append(node('p','Showing eight featured moves. Use search to narrow the list.','hub-intro'));
+   area.append(details);
+  }
  }
  async function refresh(){
    if(busy)return;
