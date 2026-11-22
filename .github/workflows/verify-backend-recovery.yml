@@ -1,0 +1,39 @@
+name: Verify Gazette Backend Recovery and Health Alerts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check backend Python syntax
+        run: python -m py_compile scripts/verified_data_guard.py tests/test_verified_data_guard.py
+      - name: Test verified public snapshots, recovery integrity and fail-closed behavior
+        run: python -m unittest discover -s tests -p 'test_verified_data_guard.py' -v
+      - name: Recheck Gazette markup without changing it
+        run: python scripts/qa_gazette.py
+      - name: Check workflows are scoped to backend only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          guard=Path("scripts/verified_data_guard.py").read_text()
+          assert "index.html" not in guard
+          assert 'monitor/backup-artifact' in Path(".github/workflows/refresh-and-deploy.yml").read_text()
+          assert 'if: always()' in Path(".github/workflows/refresh-and-deploy.yml").read_text()
+          assert "TinyFish" not in guard
+          print("Backend recovery respects the existing HTML and no-TinyFish boundary")
+          PY

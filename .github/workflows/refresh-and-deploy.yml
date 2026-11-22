@@ -26,6 +26,8 @@ jobs:
         run: |
           python -m py_compile scripts/*.py
           python scripts/qa_gazette.py
+      - name: Stage last verified published snapshots before contacting ESPN
+        run: python scripts/verified_data_guard.py preload
       - name: Refresh sanitized ESPN snapshot
         run: python scripts/refresh_espn.py
       - name: Refresh weekly NFL schedule and weather
@@ -42,6 +44,29 @@ jobs:
         run: |
           python scripts/cache_fantasy_logos.py
           python -c "import json; d=json.load(open('assets/fantasy-logos/manifest.json')); print('ESPN logos cached:',sum(bool(t['cached']) for t in d['teams'].values()),'of',len(d['teams']))"
+      - name: Recover invalid/regressed feeds and enforce freshness gate
+        if: always()
+        run: |
+          python scripts/verified_data_guard.py check || {
+            echo "::error::Critical ESPN/NFL feed unavailable, stale or invalid. Gazette deployment blocked; previous live Pages release remains intact."
+            exit 1
+          }
+      - name: Write data-health status to Actions job summary
+        if: always()
+        run: |
+          if [ -f monitor/backup-artifact/health-report.md ]; then
+            cat monitor/backup-artifact/health-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Data health report unavailable; inspect this workflow run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Preserve checksummed verified snapshots for 90 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gazette-verified-snapshots-${{ github.run_id }}
+          path: monitor/backup-artifact/
+          if-no-files-found: ignore
+          retention-days: 90
       - name: Validate refreshed data and report freshness
         run: |
           python scripts/qa_gazette.py

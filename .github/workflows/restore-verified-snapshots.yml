@@ -1,0 +1,89 @@
+name: Restore verified Gazette snapshots (manual only)
+
+# The owner chooses a previously successful main-branch publication run.
+# No automatic rollback or editorial merge is ever initiated.
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: Successful "Refresh ESPN and publish Gazette" run ID holding the desired verified snapshots
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gazette-pages-deployment
+  cancel-in-progress: false
+
+jobs:
+  restore-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify the requested backup belongs to successful main-branch publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_RUN_ID: ${{ inputs.backup_run_id }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$BACKUP_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::A numeric GitHub Actions run ID is required."
+            exit 1
+          fi
+          RUN_NAME="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID" --jq '.name')"
+          RUN_BRANCH="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID" --jq '.head_branch')"
+          RUN_RESULT="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN_ID" --jq '.conclusion')"
+          if [ "$RUN_NAME" != "Refresh ESPN and publish Gazette" ] || [ "$RUN_BRANCH" != "main" ] || [ "$RUN_RESULT" != "success" ]; then
+            echo "::error::Only a successful main-branch Gazette deployment can be used for manual recovery."
+            exit 1
+          fi
+          gh run download "$BACKUP_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "gazette-verified-snapshots-$BACKUP_RUN_ID" --dir monitor/restore-input
+
+      - name: Validate backup SHA-256 checksums and restore original timestamps
+        run: |
+          python -m py_compile scripts/verified_data_guard.py
+          python scripts/verified_data_guard.py restore-artifact --source monitor/restore-input
+          python scripts/qa_gazette.py
+
+      - name: Recreate existing fantasy emblems without altering the page design
+        run: python scripts/cache_fantasy_logos.py
+
+      - name: Construct secure Pages artifact from restored data and original main code
+        run: |
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+  restore-deploy:
+    needs: restore-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the operator-selected verified historical snapshot
+        id: deployment
+        uses: actions/deploy-pages@v4

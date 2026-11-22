@@ -1,0 +1,40 @@
+name: Gazette Published Data Health (failure notifications)
+
+# Independently verifies what visitors could actually download, even if
+# a scheduled publishing run was skipped or ended before deployment.
+on:
+  schedule:
+    - cron: '37 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-public-feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Retrieve the last publicly verified published datasets
+        run: python scripts/verified_data_guard.py preload
+
+      - name: Flag critical missing, stale or invalid published data
+        run: |
+          python scripts/verified_data_guard.py check || {
+            echo "::error::Gazette public data health check failed. Review the Actions summary and the publishing workflow."
+            exit 1
+          }
+
+      - name: Record backend data health summary (not published on site)
+        if: always()
+        run: |
+          if [ -f monitor/backup-artifact/health-report.md ]; then
+            cat monitor/backup-artifact/health-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
