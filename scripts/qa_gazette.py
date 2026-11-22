@@ -125,6 +125,15 @@ def validate():
             print("WARNING: Existing injury snapshot predates first-string verification; refresh required")
     assert 'id="nfl-injury-report"' in page and 'id="injury-teams"' in page
     assert "data/nfl-injuries.json" in page
+    # Only a chosen team is shown; OUT totals include all verified affected teams.
+    assert 'id="injury-team-filter"' in page
+    assert 'Select an NFL team' in page
+    assert 'id="injury-count"' in page
+    assert 'outTeams+' in page and 'totals.out+' in page
+    assert 'All affected teams' not in page
+    assert 'class="gazette-records-grid"' in page
+    assert 'assets/espn-team-logos.json' in (ROOT/"assets/espn-matchups.js").read_text(encoding="utf-8")
+    assert 'assets/fantasy-logos/manifest.json' in (ROOT/"assets/espn-matchups.js").read_text(encoding="utf-8")
     assert 'id="injury-position-filter"' in page
     assert 'NFL Key Starter OUT Watch' in page
     for marker in ('id="auto-coverage"', 'id="auto-coverage-stories"',
