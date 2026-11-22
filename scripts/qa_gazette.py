@@ -42,6 +42,20 @@ def validate():
 
     assert "40 — 50 — 40" not in page, "Old yard-number strip returned"
     assert 'id="gazette-current-datetime"' in page, "Live Gazette date/time missing from masthead"
+    # Seasonal design is restricted to the masthead: the original turkeys,
+    # accessible live clock and tournament branding must remain visible.
+    assert '<header class="gazette-masthead thanksgiving-masthead">' in page
+    assert page.count('class="dancing-turkey"') == 2
+    assert 'src="assets/turkey-left.webp"' in page
+    assert 'src="assets/turkey-right.webp"' in page
+    assert 'The Golden Football Gazette</h1>' in page
+    assert 'Thanksgiving Week · 2026 NFL Season' in page
+    assert 'A Gridiron Thanksgiving Special' in page
+    assert '.gazette-masthead.thanksgiving-masthead h1' in page
+    assert 'color:#fff7e5!important' in page
+    assert '.gazette-masthead.thanksgiving-masthead .masthead-live-date' in page
+    assert 'animation:turkey-mascot-left' in page, "Dancing turkeys unexpectedly disabled"
+    assert '@media(prefers-reduced-motion:reduce)' in page
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
     assert "setInterval(refreshMastheadTime,60000)" in page, "Masthead clock must refresh every minute"
     # New league identity must be presented consistently in the emblem gallery
