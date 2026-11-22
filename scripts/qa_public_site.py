@@ -4,7 +4,7 @@ import html
 import re
 from pathlib import Path
 
-from build_public_site import OUT, ROOT, SCRIPT, STYLE, PUBLIC_DATA, hash_source
+from build_public_site import OUT, ROOT, PUBLIC_DATA, hash_source, inline_content
 
 def check(root=ROOT, output=OUT):
     if not (output/"index.html").is_file():
@@ -12,9 +12,11 @@ def check(root=ROOT, output=OUT):
     raw=(root/"index.html").read_text("utf-8")
     rendered=(output/"index.html").read_text("utf-8")
     assert rendered.count('http-equiv="Content-Security-Policy"')==1
-    match=re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)">',rendered)
-    assert match, "Missing early enforcement policy"
-    policy=html.unescape(match.group(1))
+    parsed = inline_content(rendered)
+    policies = [m.get("content") for m in parsed.metadata
+                if m.get("http-equiv", "").lower() == "content-security-policy"]
+    assert len(policies) == 1, "Missing early enforcement policy"
+    policy = html.unescape(policies[0])
     assert rendered.index('http-equiv="Content-Security-Policy"')<rendered.index("<style")
     assert "default-src 'none'" in policy
     assert "script-src-attr 'none'" in policy
@@ -23,11 +25,11 @@ def check(root=ROOT, output=OUT):
     assert "'unsafe-eval'" not in policy
     script_part=policy.split("script-src 'self' ",1)[1].split("; ",1)[0]
     assert "'unsafe-inline'" not in script_part
-    for match in SCRIPT.finditer(raw):
-        if not re.search(r"\bsrc\s*=",match.group(1),re.I):
-            assert hash_source(match.group(2)) in script_part, "Inline JS would be blocked by CSP"
-    for match in STYLE.finditer(raw):
-        assert hash_source(match.group(2)) in policy, "Inline CSS would be blocked by CSP"
+    for tag, attrs, content in inline_content(raw).blocks:
+        if tag == "script" and "src" not in attrs:
+            assert hash_source(content) in script_part, "Inline JS would be blocked by CSP"
+        if tag == "style":
+            assert hash_source(content) in policy, "Inline CSS would be blocked by CSP"
     assert 'name="referrer" content="no-referrer"' in rendered
     assert rendered.count("<script")==raw.count("<script"), "Scripts were unexpectedly changed"
 
