@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("gazette_secure_build",ROOT/"scripts/build_public_site.py")
@@ -57,12 +58,29 @@ class PublicSiteSecurityTests(unittest.TestCase):
         self.assertIn("no-referrer",secured)
 
     def test_credentials_blocked_without_echoing_secret(self):
-        secret="sk-"+("a"*45)
-        (self.root/"data/league.json").write_text(json.dumps({"secret":secret}))
-        with self.assertRaises(ValueError) as e:
-            build.build(self.root)
-        self.assertIn("OpenAI API key",str(e.exception))
-        self.assertNotIn(secret,str(e.exception))
+        # Feed a simulated token into the scanner entirely in memory;
+        # never persist even a fake credential-shaped string to disk.
+        simulated = "sk-" + ("a" * 45)
+        original_reader = Path.read_text
+        target = self.root / "data/league.json"
+
+        def in_memory_reader(path, *args, **kwargs):
+            if path == target:
+                return simulated
+            return original_reader(path, *args, **kwargs)
+
+        with patch.object(Path, "read_text", in_memory_reader):
+            with self.assertRaises(ValueError) as error:
+                build.build(self.root)
+        self.assertIn("OpenAI API key", str(error.exception))
+        self.assertNotIn(simulated, str(error.exception))
+
+    def test_html_parser_does_not_silently_accept_ambiguous_closing_tags(self):
+        # A malformed closing tag must be rejected rather than used for a
+        # possibly incorrect script hash.
+        source = '<script>console.log(1)</script  extra>'
+        with self.assertRaises(ValueError):
+            build.inline_content(source)
 
     def test_forbidden_dotenv_blocked_even_if_not_in_public_allowlist(self):
         (self.root/".env").write_text("MOCK=value")
