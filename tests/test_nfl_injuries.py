@@ -66,13 +66,14 @@ class StarterInjuryWatchTests(unittest.TestCase):
 
     def test_report_includes_only_reported_out_and_ir_pup_starters(self):
         result=feed.normalize(feed_data(),{"1":depth()},now=NOW,week=12)
-        self.assertEqual(result["filter"],"first-string-out-only")
+        self.assertEqual(result["filter"],"first-string-status-watch")
         self.assertEqual(result["teamCount"],1)
-        self.assertEqual(result["playerCount"],3)
+        self.assertEqual(result["playerCount"],4)
         self.assertEqual(result["outCount"],2)
         self.assertEqual(result["reserveCount"],1)
+        self.assertEqual(result["questionableCount"],1)
         names={p["name"]:p for t in result["teams"] for p in t["players"]}
-        self.assertEqual(set(names),{"Starter QB","Starter WR Two","Starting Kicker"})
+        self.assertEqual(set(names),{"Starter QB","Starter RB","Starter WR Two","Starting Kicker"})
         self.assertTrue(all(p["depthRank"]==1 for p in names.values()))
         self.assertEqual(names["Starter WR Two"]["outType"],"reserve")
         self.assertEqual(names["Starter QB"]["injury"],"Shoulder")
@@ -84,7 +85,7 @@ class StarterInjuryWatchTests(unittest.TestCase):
         data=feed_data([injury_entry(998,"Other Cornerback","Out")])
         result=feed.normalize(data,{"1":depth()},now=NOW)
         self.assertIn("Starter QB",[p["name"] for t in result["teams"] for p in t["players"]])
-        self.assertEqual(result["playerCount"],3)
+        self.assertEqual(result["playerCount"],4)
 
     def test_latest_active_status_overrides_older_out(self):
         chart=depth()
@@ -96,8 +97,8 @@ class StarterInjuryWatchTests(unittest.TestCase):
     def test_recent_out_not_infinite_across_weeks(self):
         self.assertFalse(feed.recent_out({"status":"Out","date":"2026-11-01T12:00Z"},NOW))
         self.assertTrue(feed.recent_out({"status":"Injured Reserve","date":"2026-10-02T12:00Z"},NOW))
-        self.assertFalse(feed.recent_out({"status":"Doubtful","date":"2026-11-22T12:00Z"},NOW))
-        self.assertFalse(feed.recent_out({"status":"Questionable","date":"2026-11-22T12:00Z"},NOW))
+        self.assertTrue(feed.recent_out({"status":"Doubtful","date":"2026-11-22T12:00Z"},NOW))
+        self.assertTrue(feed.recent_out({"status":"Questionable","date":"2026-11-22T12:00Z"},NOW))
         self.assertFalse(feed.recent_out({"status":"Out"},NOW))
 
     def test_zero_absent_first_string_is_valid_no_fabrication(self):
@@ -114,7 +115,7 @@ class StarterInjuryWatchTests(unittest.TestCase):
         data=feed_data([injury_entry(102,"Backup QB","Out"),
                         injury_entry(102,"Backup QB","Out")])
         result=feed.normalize(data,{"1":depth()},now=NOW)
-        self.assertEqual(result["playerCount"],3)
+        self.assertEqual(result["playerCount"],4)
 
     def test_team_depthchart_failure_is_explicit_incomplete_coverage(self):
         raw=feed_data()
