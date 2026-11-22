@@ -133,23 +133,28 @@ def story(tag, headline, body, source_name):
 
 def report(league,nfl,injuries,leaders,now,transactions=None):
     items=[]
-    if transactions and transactions.get("status")=="available":
-        # Prioritize newly confirmed roster moves in Today's Football Desk.
-        moves=transactions.get("moves") or []
+    if (transactions and transactions.get("status")=="available"
+        and transactions.get("keyOnly") is True
+        and transactions.get("filter")=="verified-key-players-only"):
+        # Only confirmed important players; never turn the broad ESPN feed
+        # back into unfiltered newspaper headlines.
+        moves=[m for m in (transactions.get("moves") or [])
+               if m.get("playerName") and m.get("importanceBasis")
+               and m.get("type") in ("Trade","Released","Waived")]
         trades=[m for m in moves if m.get("type")=="Trade"]
         departures=[m for m in moves if m.get("type") in ("Released","Waived")]
         for kind,headline,subset in (
-            ("NFL Trades","NFL transaction wire · confirmed trades",trades),
-            ("NFL Releases","NFL transaction wire · releases and waivers",departures),
+            ("NFL Trades","Key NFL trades · verified player moves",trades),
+            ("NFL Releases","Key NFL releases · verified starter/fantasy-rostered players",departures),
         ):
             if not subset:continue
             mentions=[
-                f"{m['team']}: {m['description']} ({m['date']})"
+                f"{m['playerName']} ({m.get('position','NFL')}) — {m['team']}: {m['description']} ({m['date']})"
                 for m in subset[:4]
             ]
             items.append(story(kind,headline,
                 "ESPN's roster wire reports: "+"; ".join(mentions)+
-                ". These are dated ESPN transaction descriptions, not rumors.",
+                ". Each named player was cross-checked against ESPN's NFL first-string depth charts or this league's fantasy rosters. Routine transactions are omitted.",
                 "ESPN NFL transactions"))
     if league:
         ordered=league["standings"]
@@ -245,6 +250,8 @@ def generate(now=None):
     injuries=source("nfl-injuries.json",now)
     leaders=source("top-performers.json",now)
     transactions=source("nfl-transactions.json",now)
+    if transactions and transactions.get("keyOnly") is not True:
+        transactions=None  # Suppress legacy whole-league transactions snapshots.
     if transactions and not isinstance(transactions.get("moves"),list):
         transactions=None
     if leaders and not (isinstance(leaders.get("players"),list) and len(leaders["players"])==5):

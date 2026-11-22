@@ -1,0 +1,72 @@
+name: Verify Key Player Roster Wire
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'scripts/refresh_nfl_transactions.py'
+      - 'scripts/build_weekly_features.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_nfl_transactions.py'
+      - '.github/workflows/verify-key-roster-wire.yml'
+permissions:
+  contents: read
+jobs:
+  verify-key-roster-wire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test that only key ESPN players' actions make the wire
+        run: |
+          python -m py_compile scripts/refresh_nfl_transactions.py scripts/build_weekly_features.py
+          python -m unittest discover -s tests -p 'test_nfl_transactions.py' -v
+          python scripts/qa_gazette.py
+      - name: Verify real ESPN depth charts, fantasy rosters and significant transactions
+        run: |
+          python scripts/refresh_nfl_transactions.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc=json.loads(Path('data/nfl-transactions.json').read_text(encoding='utf-8'))
+          if doc.get('status')!='available' or doc.get('keyOnly') is not True:
+              raise SystemExit('Important NFL player transactions could not be verified; do not publish all-player feed')
+          print('Important NFL transactions:',doc['total'],
+                'among original ESPN actions:',doc['allESPNMovesChecked'])
+          print('Verified ESPN player coverage:',doc['playerCoverage'])
+          print('Coverage complete:',doc['coverageComplete'])
+          for move in doc['moves'][:12]:
+              print('KEY PLAYER',move['date'],move['type'],move['playerName'],
+                    move['team'],'verified by',move['importanceBasis'])
+          PY
+          python scripts/build_weekly_features.py
+          python scripts/qa_gazette.py
+      - name: Check browser JavaScript, Pages CSP and public file allowance
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=False)
+                  self.active=False
+                  self.scripts=[]
+                  self.current=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='script' and not dict(attrs).get('src'):
+                      self.active=True;self.current=[]
+              def handle_data(self, data):
+                  if self.active:self.current.append(data)
+              def handle_endtag(self,tag):
+                  if tag=='script' and self.active:
+                      self.scripts.append(''.join(self.current));self.active=False
+          p=Scripts();p.feed(Path('index.html').read_text(encoding='utf-8'))
+          Path('/tmp/gazette-roster-wire.js').write_text('\n'.join(p.scripts),encoding='utf-8')
+          PY
+          node --check /tmp/gazette-roster-wire.js
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py

@@ -154,6 +154,9 @@ def validate():
                    'id="transaction-filter"','id="transaction-freshness"'):
         assert marker in page, f"Missing daily NFL transactions view: {marker}"
     assert "data/nfl-transactions.json" in page
+    assert 'Roster Wire · Key NFL Player Moves' in page
+    assert "d.keyOnly!==true" in page, "Legacy all-NFL snapshot must be suppressed"
+    assert "m.importanceBasis" in page, "Selected moves must show verified relevance"
     transactions=read_json("data/nfl-transactions.json")
     if transactions:
         if transactions.get("status")=="unavailable":
@@ -164,11 +167,25 @@ def validate():
             assert valid_time(transactions.get("fetchedAt"))
             assert transactions.get("windowStart") and transactions.get("windowEnd")
             assert isinstance(transactions.get("moves"),list)
-            assert transactions.get("total")>=len(transactions["moves"])
-            for move in transactions["moves"]:
-                assert move.get("type") in ("Trade","Released","Waived")
-                assert move.get("team") and move.get("description")
-                assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
+            if transactions.get("keyOnly") is not True:
+                # Existing data from before upgrade must not be treated as
+                # curated major transactions; browser will suppress it.
+                print("WARNING: Legacy all-NFL transaction snapshot; key-player filter pending refresh")
+            else:
+                assert transactions.get("filter")=="verified-key-players-only"
+                assert isinstance(transactions.get("playerCoverage"),dict)
+                assert transactions.get("allESPNMovesChecked",0)>=transactions.get("total",0)
+                assert transactions.get("total")>=len(transactions["moves"])
+                for move in transactions["moves"]:
+                    assert move.get("type") in ("Trade","Released","Waived")
+                    assert move.get("team") and move.get("description")
+                    assert isinstance(move.get("playerName"),str) and move["playerName"]
+                    assert move.get("position")
+                    assert move.get("importanceBasis") in (
+                        "ESPN NFL first-string depth chart",
+                        "Rostered in Gridiron Giggles ESPN fantasy league")
+                    assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
+                    assert isinstance(move.get("mentionedTeams"),list)
     # In-browser, auto-refreshed NFL scores supplement the daily static snapshot.
     assert 'id="live-score-status"' in page and 'id="refresh-nfl-scores"' in page
     assert 'data-nfl-game-id' in page or 'dataset.nflGameId' in page
