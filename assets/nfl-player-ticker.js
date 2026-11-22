@@ -9,7 +9,9 @@ const CATEGORIES={passing:{short:'PASS',stat:'PASS YDS'},
                   rushing:{short:'RUSH',stat:'RUSH YDS'},
                   receiving:{short:'REC',stat:'REC YDS'},
                   fantasy:{short:'FANTASY',stat:'FANTASY PTS'}};
-const MAX_GAMES=8;
+const MAX_GAMES=18;
+const MAX_PARALLEL_BOX_SCORES=4;
+const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 
 function numeric(v){
@@ -105,13 +107,24 @@ function boardEvents(board){
  })).filter(e=>/^\d+$/.test(e.id));
 }
 function selectGames(events){
- const active=events.filter(e=>e.state==='in');
- const complete=events.filter(e=>e.state==='post')
-   .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
- // Never mix FINAL game totals into a ticker marked LIVE.
- const candidates=active.length?active:complete;
- return {games:candidates.slice(0,MAX_GAMES),active:active.length,
-   partial:candidates.length>MAX_GAMES};
+ // Keep all games already underway or finished from the *same NFL week*.
+ // Never mix these per-game box scores with scoreboard season-leader totals.
+ const played=events.filter(e=>e.state==='in'||e.state==='post')
+   .sort((a,b)=>(b.state==='in')-(a.state==='in') ||
+      ((Date.parse(b.date)||0)-(Date.parse(a.date)||0)));
+ return {games:played.slice(0,MAX_GAMES),
+   active:played.filter(g=>g.state==='in').length,
+   partial:played.length>MAX_GAMES};
+}
+function currentWeek(board){
+ const season=Number(board?.season?.year);
+ const week=Number(board?.week?.number);
+ const seasonType=Number(board?.season?.type ?? 2);
+ if(!Number.isInteger(season)||season<2024||season>2100||
+    !Number.isInteger(week)||week<1||week>22||seasonType!==2){
+   throw Error('ESPN current NFL regular-season week not verified');
+ }
+ return {season,week};
 }
 function boardURL(year,week){
  if(!Number.isInteger(year)||year<2024||year>2100||!Number.isInteger(week)||week<1||week>22){
@@ -124,7 +137,7 @@ function summaryURL(id){
  return BASE+'summary?event='+id;
 }
 const api={numeric,statEntry,gameBoxStats,seasonLeaders,topByKind,boardEvents,
-           selectGames,boardURL,summaryURL};
+           selectGames,currentWeek,boardURL,summaryURL};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 root.GazetteStatTicker=api;
@@ -133,7 +146,8 @@ const doc=root.document,bar=doc.getElementById('nfl-stat-track'),
   mode=doc.getElementById('nfl-stat-ticker-mode'),
   btn=doc.getElementById('nfl-stat-ticker-refresh');
 if(!bar||!status||!mode||!btn)return;
-let inFlight=false,timer=null,last=null,stop=false,season=2026,week=null;
+let inFlight=false,timer=null,last=null,stop=false,season=null,week=null;
+const finalBoxCache=new Map();
 const tag=(name,value,cls)=>{const element=doc.createElement(name);
   if(value!==undefined)element.textContent=String(value);
   if(cls)element.className=cls;return element};
@@ -194,7 +208,7 @@ async function fallbackFantasy(){
  const r=await root.fetch('data/top-performers.json?ts='+Date.now(),{cache:'no-store'});
  if(!r.ok)throw Error('No published fantasy leaderboard');
  const data=await r.json();
- if(data.leagueId!==1413446022||data.season!==2026||!Array.isArray(data.players))throw Error('No verified fantasy leaderboard');
+ if(data.leagueId!==1413446022||data.season!==season||!Array.isArray(data.players))throw Error('No verified fantasy leaderboard');
  const rows=data.players.filter(p=>typeof p.name==='string'&&numeric(p.points)!==null)
    .map(p=>({name:p.name,playerId:String(p.playerId||''),
      team:p.position||'NFL',kind:'fantasy',amount:p.points,
@@ -203,37 +217,84 @@ async function fallbackFantasy(){
  return {rows,mode:'LAST COMPLETED FANTASY WEEK '+data.week,
          checked:new Date(data.fetchedAt),notes:'ESPN fantasy points · not live NFL stats',partial:false};
 }
+// Resolve the week from ESPN at runtime: the ticker can roll into the next
+// week's games even before the daily GitHub Pages data publication completes.
+async function latestWeek(){
+ try{
+   return {...currentWeek(await loadJSON(CURRENT_BOARD_URL,12000)),
+     source:'ESPN current week'};
+ }catch(_){
+   // The scheduled daily publication is an explicit, verified fallback.
+   const snap=await loadJSON('data/nfl-week.json?ts='+Date.now());
+   if(!Number.isInteger(snap.season)||snap.season<2024||snap.season>2100||
+      !Number.isInteger(snap.week)||snap.week<1||snap.week>22){
+     throw Error('No verified NFL week');
+   }
+   return {season:snap.season,week:snap.week,source:'Published ESPN schedule'};
+ }
+}
+async function boxForGame(game){
+ const cached=finalBoxCache.get(game.id);
+ // Completed boxes are immutable; fetch them once per visit. Live boxes
+ // are always checked again so the scroll updates during games.
+ if(game.state==='post'&&cached?.state==='post')return {rows:cached.rows,stale:false};
+ try{
+   const stats=gameBoxStats(await loadJSON(summaryURL(game.id),15000),game);
+   if(stats.length)finalBoxCache.set(game.id,{state:game.state,rows:stats});
+   return {rows:stats,stale:false};
+ }catch(error){
+   if(cached?.state===game.state)return {rows:cached.rows,stale:true};
+   throw error;
+ }
+}
+async function fetchWeeklyBoxes(games){
+ const result=new Array(games.length);
+ let index=0;
+ async function worker(){
+   while(index<games.length){
+     const i=index++;
+     try{result[i]=await boxForGame(games[i]);}
+     catch(_){result[i]={rows:[],failed:true};}
+   }
+ }
+ await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_BOX_SCORES,games.length)},()=>worker()));
+ return result;
+}
 async function refresh(){
  if(inFlight||stop)return;
  if(doc.hidden){next(REFRESH_OTHER_MS);return}
  inFlight=true;btn.disabled=true;
  try{
-   const snap=await loadJSON('data/nfl-week.json?ts='+Date.now());
-   if(!Number.isInteger(snap.season)||!Number.isInteger(snap.week))throw Error('No verified NFL week');
-   season=snap.season;week=snap.week;
+   const current=await latestWeek();
+   if(current.season!==season||current.week!==week){
+     // No last-week players should silently carry over to a new game week.
+     finalBoxCache.clear();last=null;
+   }
+   season=current.season;week=current.week;
    const board=await loadJSON(boardURL(season,week));
    if(!Array.isArray(board.events)||!board.events.length)throw Error('ESPN NFL scoreboard has no events');
    const selected=selectGames(boardEvents(board));
-   let rows=[],errors=0,partial=selected.partial;
-   if(selected.games.length){
-     const result=await Promise.allSettled(selected.games.map(async g=>{
-       const summary=await loadJSON(summaryURL(g.id),15000);
-       return gameBoxStats(summary,g);
-     }));
-     for(const item of result){
-       if(item.status==='fulfilled')rows.push(...item.value);
-       else errors++;
-     }
-     partial=partial||errors>0;
+   const results=await fetchWeeklyBoxes(selected.games);
+   let rows=[],partial=selected.partial;
+   for(const item of results){
+     rows.push(...item.rows);
+     if(item.failed||item.stale||!item.rows.length)partial=true;
    }
    if(rows.length){
-     paint({rows:topByKind(rows,4),mode:selected.active?'LIVE NFL GAME STATS':'NFL WEEK '+week+' GAME STATS',
-       checked:new Date(),notes:'Passing · rushing · receiving · ESPN box scores',partial});
+     const hasFinal=selected.games.some(g=>g.state==='post');
+     const heading=selected.active?
+       'NFL WEEK '+week+' · LIVE'+(hasFinal?' + FINAL':'')+' GAME STATS':
+       'NFL WEEK '+week+' GAME STATS';
+     paint({rows:topByKind(rows,4),mode:heading,
+       checked:new Date(),notes:'Passing · rushing · receiving · ESPN box scores · '+current.source,
+       partial});
    }else{
      const leaders=seasonLeaders(board);
      if(!leaders.length)throw Error('ESPN player stats unavailable');
-     paint({rows:leaders,mode:'2026 NFL SEASON LEADERS',
-       checked:new Date(),notes:selected.active?'Live game box scores pending; season totals shown':'Season totals · not live game stats',
+     paint({rows:leaders,mode:season+' NFL SEASON LEADERS',
+       checked:new Date(),notes:selected.active?
+          'Game box scores pending; season totals shown · '+current.source:
+          'Season totals · not live game stats · '+current.source,
        partial:false});
    }
    next(selected.active?REFRESH_GAME_MS:REFRESH_OTHER_MS);
