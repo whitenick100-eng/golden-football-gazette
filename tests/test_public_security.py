@@ -75,10 +75,9 @@ class PublicSiteSecurityTests(unittest.TestCase):
         self.assertIn("OpenAI API key", str(error.exception))
         self.assertNotIn(simulated, str(error.exception))
 
-    def test_html_parser_does_not_silently_accept_ambiguous_closing_tags(self):
-        # A malformed closing tag must be rejected rather than used for a
-        # possibly incorrect script hash.
-        source = '<script>console.log(1)</script  extra>'
+    def test_html_parser_rejects_unclosed_script_element(self):
+        # An unterminated script must not be hashed and allowed to execute.
+        source = '<script>console.log(1)'
         with self.assertRaises(ValueError):
             build.inline_content(source)
 
