@@ -89,7 +89,7 @@ def refresh():
                + f"&matchupPeriodId={week}&scoringPeriodId={week}")
         try:
             scoped = get_json(url)
-            if str(scoped.get("id")) == LEAGUE and scoped.get("seasonId") == YEAR:
+            if str(scoped.get("id")) == LEAGUE and scoped.get("seasonId", YEAR) == YEAR:
                 schedule = merge_schedule(schedule, scoped.get("schedule") or [], week)
         except Exception as exc:
             # The original mMatchupScore schedule remains intact.
