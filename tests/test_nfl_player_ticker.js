@@ -40,7 +40,7 @@ test('completed game box is labeled final',()=>{
  const p=t.gameBoxStats(box,{...event,state:'post'})[0];
  assert.equal(p.phase,'FINAL');
 });
-test('season scoreboard leaders must remain separate from game boxes',()=>{
+test('unscoped ESPN scoreboard leaders must not be mislabeled as season data',()=>{
  const scoreboard={events:[{id:'401873078',status:{type:{state:'in'}},
    competitions:[{competitors:[{team:{id:'1',abbreviation:'CIN'}}],
       leaders:[{name:'passingYards',leaders:[{
@@ -48,9 +48,9 @@ test('season scoreboard leaders must remain separate from game boxes',()=>{
         value:2600,displayValue:'2600 YDS, 20 TD'
       }]}]
    }]}]};
- const values=t.seasonLeaders(scoreboard);
+ const values=t.scoreboardLeaders(scoreboard);
  assert.equal(values[0].amount,2600);
- assert.equal(values[0].phase,'SEASON');
+ assert.equal(values[0].phase,'SCOREBOARD');
  assert.equal(values[0].text,'2600 YDS, 20 TD');
  assert.equal(values[0].team,'CIN');
  // A live game state never changes the season metric's source label.
@@ -107,4 +107,22 @@ test('top player leaders use actual yard values and limit per category',()=>{
  assert.equal(best.length,3);
  assert.deepEqual(best.map(p=>p.kind),['passing','rushing','receiving']);
 });
+test('wrong event summary is excluded and final corrections are not permanently frozen',()=>{
+ const wrong={...box,header:{id:'999'}};
+ assert.deepEqual(t.gameBoxStats(wrong,event),[]);
+ assert.equal(t.gameBoxStats({...box,header:{id:event.id}},event).length,4);
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8');
+ assert.ok(source.includes('FINAL_BOX_RECHECK_MS'));
+ assert.ok(source.includes('checkedAt:Date.now()'));
+ assert.ok(source.includes('scoreboardLeaders(board)'));
+ assert.ok(!source.includes('NFL SEASON LEADERS'));
+});
+test('invalid game box stats cannot inject unrealistic TD or yardage totals',()=>{
+ const section={name:'passing',labels:['YDS','TD']};
+ assert.equal(t.statEntry(section,athlete(7,'Example',['8001','1']), 'KC', event),null);
+ assert.equal(t.statEntry(section,athlete(7,'Example',['121','-1']), 'KC', event),null);
+ assert.equal(t.statEntry(section,athlete(7,'Example',['121','1.5']), 'KC', event),null);
+});
+
 console.log('All NFL player-stat ticker tests passed.');

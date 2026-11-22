@@ -243,7 +243,10 @@ def validate():
     assert ticker.is_file(), "NFL ticker script not present"
     tick=ticker.read_text(encoding="utf-8")
     assert "summary?event=" in tick and "gameBoxStats" in tick
-    assert "SEASON LEADERS" in tick and "not live game stats" in tick
+    assert "ESPN NFL SCOREBOARD LEADERS" in tick and "not verified season totals" in tick
+    assert "FINAL_BOX_RECHECK_MS" in tick, "Final-game statistics must allow ESPN corrections"
+    assert "verifiedGameUpdate" in (ROOT/"assets/live-nfl-scores.js").read_text(encoding="utf-8")
+    assert "liveMatchupMerge" in (ROOT/"assets/espn-matchups.js").read_text(encoding="utf-8")
     assert "d.keyOnly!==true" in page and "FEED ACTIVE" in page
     assert 'id="live-score-status"' in page and 'id="refresh-nfl-scores"' in page
     assert 'data-nfl-game-id' in page or 'dataset.nflGameId' in page

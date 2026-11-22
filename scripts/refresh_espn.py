@@ -24,21 +24,51 @@ def get_json(url):
     with urllib.request.urlopen(req, timeout=25) as response:
         return json.load(response)
 
-def merge_schedule(base, current):
-    """Overlay the freshest current-week scores on complete season matchups."""
-    by_id = {g.get("id"): g for g in base if g.get("id") is not None}
+def point(value):
+    """Only finite, league-plausible ESPN fantasy points."""
+    import math
+    return value if type(value) in (int, float) and math.isfinite(value) and 0 <= value < 1000 else None
+
+
+def merge_schedule(base, current, week=None):
+    """Apply a verified current-week patch; never replace other fantasy weeks.
+
+    ESPN responses can be partial. Verify both team IDs and matchup week BEFORE
+    applying the update, and never regress ESPN's confirmed final to undecided.
+    """
+    import copy
+    games = copy.deepcopy(base)
+    if not isinstance(current, list):
+        return games
+    by_id = {str(g["id"]):g for g in games
+             if isinstance(g, dict) and g.get("id") is not None}
     for game in current:
-        key = game.get("id")
-        if key is not None and key in by_id:
-            old = by_id[key]
-            old.update({k:v for k,v in game.items() if k not in ("home","away")})
-            for side in ("home","away"):
-                if isinstance(game.get(side),dict):
-                    old.setdefault(side,{})
-                    old[side].update(game[side])
-        else:
-            base.append(game)
-    return base
+        if not isinstance(game, dict):
+            continue
+        old = by_id.get(str(game.get("id")))
+        if not old or (week is not None and game.get("matchupPeriodId") != week):
+            continue
+        if old.get("matchupPeriodId") != game.get("matchupPeriodId"):
+            continue
+        sides_match = all(
+            isinstance(game.get(side), dict) and
+            isinstance(old.get(side), dict) and
+            game[side].get("teamId") is not None and
+            game[side].get("teamId") == old[side].get("teamId")
+            for side in ("home", "away"))
+        if not sides_match:
+            continue
+        for side in ("home", "away"):
+            for key in ("totalPointsLive", "totalPoints", "totalProjectedPointsLive"):
+                validated = point(game[side].get(key))
+                if validated is not None:
+                    old[side][key] = validated
+        winner = game.get("winner")
+        if winner in {"HOME","AWAY","TIE"}:
+            old["winner"] = winner
+        elif winner == "UNDECIDED" and old.get("winner") not in {"HOME","AWAY","TIE"}:
+            old["winner"] = winner
+    return games
 
 def refresh():
     first = get_json(BASE_URL + "?view=mTeam&view=mMatchup&view=mMatchupScore")
@@ -59,8 +89,8 @@ def refresh():
                + f"&matchupPeriodId={week}&scoringPeriodId={week}")
         try:
             scoped = get_json(url)
-            if str(scoped.get("id")) == LEAGUE:
-                schedule = merge_schedule(schedule, scoped.get("schedule") or [])
+            if str(scoped.get("id")) == LEAGUE and scoped.get("seasonId", YEAR) == YEAR:
+                schedule = merge_schedule(schedule, scoped.get("schedule") or [], week)
         except Exception as exc:
             # The original mMatchupScore schedule remains intact.
             print("Week-specific ESPN projection lookup unavailable:",
@@ -95,22 +125,23 @@ def refresh():
     standings.sort(key=lambda t: (
         -(t["wins"] or 0),t["losses"] or 0,-(t["pointsFor"] or 0)
     ))
+    if week is None or week < 1 or week > 22:
+        raise ValueError("ESPN current matchup week is not verified")
     games = []
     for game in schedule:
         if not isinstance(game.get("home"), dict) or not isinstance(game.get("away"), dict):
             continue
         home, away = game["home"], game["away"]
         def side(item):
-            projected = item.get("totalProjectedPointsLive")
-            actual = item.get("totalPointsLive")
+            projected = point(item.get("totalProjectedPointsLive"))
+            actual = point(item.get("totalPointsLive"))
             if actual is None:
-                actual = item.get("totalPoints")
+                actual = point(item.get("totalPoints"))
             return {
                 "teamId":item.get("teamId"),
                 "name":names.get(item.get("teamId")),
                 "points":actual,
-                "projectedPoints":projected
-                  if isinstance(projected,(int,float)) and 0 < projected < 1000 else None,
+                "projectedPoints":projected if projected is not None and projected > 0 else None,
             }
         games.append({
             "id": game.get("id"),
