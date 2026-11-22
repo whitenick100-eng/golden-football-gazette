@@ -305,6 +305,38 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .score-source{font:.67rem/1.35 system-ui,sans-serif;color:#dbc69e}
 .gamecast-link{color:#ffe2a8;font:700 .7rem/1.3 system-ui,sans-serif;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:650px){.nfl-live-toolbar{align-items:stretch}.game-scoreline{gap:7px}.score-source{width:100%;text-align:center}.gamecast-link{margin-left:auto}.score-value{font-size:1.15rem}}
+
+/* Gazette readability: deeper ink behind print, stadium still visible. */
+:root { --gazette-reading-panel: rgba(4,14,23,.70); --gazette-inner-panel: rgba(3,12,19,.72); }
+.gazette-masthead,.page,.hub-section,.breaking,#espn-live,.nfl-banner,.archive,
+.league-logos-feature,header {
+  background: var(--gazette-reading-panel) !important;
+  color: #fff4dc;
+}
+.game-card,.coverage-story,.player-leader,.bracket-card,.fantasy-card,
+.injury-report,.injury-club,.transaction-card,.league-logo-entry,
+.bracket-pairing,.transaction-card {
+  background: var(--gazette-inner-panel) !important;
+  color: #fff5e2;
+}
+.injury-table th { background: rgba(4,12,19,.91) !important; }
+.injury-table td { background: rgba(5,17,24,.34); }
+.hub-section p,.page p,.coverage-story p,.game-card,.injury-table td {
+  color: #fff4df;
+}
+@media (max-width:700px) {
+  :root { --gazette-reading-panel:rgba(4,14,23,.77); --gazette-inner-panel:rgba(3,12,19,.78); }
+  .gazette-masthead,.page,.hub-section,.breaking,#espn-live,.nfl-banner,.archive,
+  .league-logos-feature,header {
+    background:var(--gazette-reading-panel) !important;
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+  }
+  .game-card,.coverage-story,.player-leader,.bracket-card,.fantasy-card,
+  .injury-report,.injury-club,.transaction-card,.league-logo-entry,.bracket-pairing{
+    background:var(--gazette-inner-panel) !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -409,11 +441,11 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 </div>
 <div id="featured-games" class="featured-games"></div>
 <div id="nfl-games" class="games-grid"></div>
-<div id="nfl-injury-report" class="injury-report" aria-label="NFL league-wide injury report">
+<div id="nfl-injury-report" class="injury-report" aria-label="NFL key offensive and kicking injury report">
   <div class="injury-title-row">
     <div>
-      <h3>NFL League-Wide Injury Report</h3>
-      <p class="injury-subtitle" id="injury-meta" role="status">Checking ESPN's latest available NFL injury listings…</p>
+      <h3>NFL Key Injury Watch · QB / RB / WR / TE / K</h3>
+      <p class="injury-subtitle" id="injury-meta" role="status">Checking ESPN's key fantasy-position injury updates…</p>
     </div>
     <div class="injury-source-links">
       <a href="https://www.nfl.com/injuries/" target="_blank" rel="noopener noreferrer">Official NFL report</a>
@@ -422,16 +454,15 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
   </div>
   <div class="injury-filter-bar">
     <label for="injury-team-filter">NFL team
-      <select id="injury-team-filter"><option value="all">All reporting teams</option></select>
+      <select id="injury-team-filter"><option value="all">Teams with key injuries</option></select>
     </label>
     <label for="injury-status-filter">Reported status
       <select id="injury-status-filter">
-        <option value="all">All statuses</option>
+        <option value="all">Major statuses only</option>
         <option value="out">Out</option>
         <option value="doubtful">Doubtful</option>
         <option value="questionable">Questionable</option>
-        <option value="reserve">Reserve / IR</option>
-        <option value="other">Other reported statuses</option>
+        <option value="reserve">Injured Reserve / PUP</option>
       </select>
     </label>
     <label for="injury-search">Find player
@@ -669,14 +700,16 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
  if(!meta||!area||!count||!teamSelect||!statusSelect||!search)return;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
  const clean=v=>typeof v==='string'?v:'';
+ const watched=new Set(['QB','RB','WR','TE','K']);
  const category=s=>{
-   const v=clean(s).toLowerCase();
-   if(v==='out')return 'out';
+   const v=clean(s).toLowerCase().replace(/[-_]/g,' ').trim();
+   if(v==='out'||v==='ruled out'||v==='out for season')return 'out';
    if(v==='doubtful')return 'doubtful';
    if(v==='questionable')return 'questionable';
-   if(v.includes('injured reserve')||v==='ir'||v.includes('reserve/'))return 'reserve';
-   return 'other';
+   if(v==='ir'||v==='ir r'||v.includes('injured reserve')||v.includes('reserve injured')||v==='pup'||v.includes('physically unable to perform')||v==='reserve pup')return 'reserve';
+   return null; // Not a major reported designation. Do not infer severity.
  };
+ const playerStatus=p=>category(p.gameStatus)?p.gameStatus:category(p.reportedStatus)?p.reportedStatus:null;
  const col=(tr,txt,cls)=>{const td=el('td',txt||'Not reported',cls);tr.append(td);return td};
  try{
    const response=await fetch('data/nfl-injuries.json?ts='+Date.now(),{cache:'no-store'});
@@ -691,8 +724,13 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
    const stale=hoursOld>36;
    meta.textContent=(stale?'Last verified snapshot (may be outdated)':'Latest retrieved ESPN listing')+
        ' · '+stamp.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
-       ' · '+data.teamCount+' clubs with reported statuses'+(data.possiblePerTeamLimit?' · ESPN may cap listings at 25 per club':'');
-   for(const team of data.teams){
+       ' · '+focused.length+' clubs with major QB/RB/WR/TE/K updates'+(data.possiblePerTeamLimit?' · ESPN may cap listings at 25 per club':'');
+   // Filter again in the browser so old, unfiltered cached snapshots
+   // cannot display defensive players or day-to-day designations.
+   const focused=data.teams.map(team=>({...team,players:(team.players||[]).filter(p=>
+     watched.has(clean(p.position).toUpperCase())&&!!playerStatus(p)
+   )})).filter(team=>team.players.length);
+   for(const team of focused){
      const option=el('option',team.name);option.value=String(team.teamId);teamSelect.append(option);
    }
    function render(){
@@ -700,10 +738,10 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
      const query=search.value.trim().toLocaleLowerCase();
      const which=teamSelect.value,selected=statusSelect.value;
      let shown=0,clubs=0;
-     for(const team of data.teams){
+     for(const team of focused){
        if(which!=='all'&&which!==String(team.teamId))continue;
-       const players=(team.players||[]).filter(p=>{
-         const status=category(p.gameStatus||p.reportedStatus);
+       const players=team.players.filter(p=>{
+         const status=category(playerStatus(p));
          return (selected==='all'||selected===status) &&
            (!query||[p.name,team.name,p.position,p.injury,p.reportedStatus,p.gameStatus]
                         .filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
@@ -730,7 +768,7 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
          col(tr,clean(p.position),'injury-muted');
          col(tr,clean(p.injury),'injury-muted');
          const statusCell=el('td');
-         const reported=clean(p.gameStatus||p.reportedStatus);
+         const reported=clean(playerStatus(p));
          const chip=el('span',reported||'Not reported','injury-status-chip');
          chip.dataset.severity=category(reported);statusCell.append(chip);
          if(p.gameStatus&&p.reportedStatus&&p.gameStatus!==p.reportedStatus){
@@ -744,9 +782,9 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
        }
        table.append(tbody);scroller.append(table);details.append(scroller);area.append(details);
      }
-     count.textContent=shown+' reported injury status'+(shown===1?'':'es')+' across '+clubs+' team'+(clubs===1?'':'s')+
+     count.textContent=shown+' significant injury status'+(shown===1?'':'es')+' across '+clubs+' team'+(clubs===1?'':'s')+
         (stale?' · Snapshot may be outdated':'');
-     if(!shown)area.append(el('p','No reported entries match these filters. This does not confirm that any team is injury-free.','injury-empty'));
+     if(!shown)area.append(el('p','No major QB, RB, WR, TE or K injury entries match these filters. This does not confirm that players are healthy.','injury-empty'));
    }
    for(const control of [teamSelect,statusSelect])control.addEventListener('change',render);
    search.addEventListener('input',render);
