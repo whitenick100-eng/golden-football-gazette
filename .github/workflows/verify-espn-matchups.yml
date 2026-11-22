@@ -1,0 +1,60 @@
+name: Verify ESPN Fantasy Matchup Cards
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/espn-matchups.js'
+      - 'scripts/build_public_site.py'
+      - 'scripts/qa_public_site.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_espn_matchups.js'
+      - 'tests/test_public_security.py'
+      - '.github/workflows/verify-espn-matchups.yml'
+permissions:
+  contents: read
+jobs:
+  verify-fantasy-scoreboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify matchup status, final scores, projections, records and week switching
+        run: |
+          node --check assets/espn-matchups.js
+          node tests/test_espn_matchups.js
+          python scripts/qa_gazette.py
+      - name: Verify all Gazette inline browser JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          class Parser(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=False)
+                  self.active=False
+                  self.content=[]
+                  self.current=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='script' and not dict(attrs).get('src'):
+                      self.active=True
+                      self.current=[]
+              def handle_data(self,data):
+                  if self.active:self.current.append(data)
+              def handle_endtag(self,tag):
+                  if tag=='script' and self.active:
+                      self.content.append(''.join(self.current));self.active=False
+          obj=Parser();obj.feed(Path('index.html').read_text(encoding='utf-8'))
+          Path('/tmp/inline-gazette.js').write_text('\n'.join(obj.content),encoding='utf-8')
+          print('Checked',len(obj.content),'inline scripts')
+          PY
+          node --check /tmp/inline-gazette.js
+      - name: Verify hardened publishing allowlist, content policy, and no secrets
+        run: |
+          python -m unittest discover -s tests -p 'test_public_security.py' -v
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
