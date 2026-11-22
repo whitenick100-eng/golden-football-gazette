@@ -14,6 +14,7 @@ import json
 import re
 import shutil
 from pathlib import Path
+from html.parser import HTMLParser
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public"
@@ -34,8 +35,59 @@ STATIC_ASSETS = (
 )
 IMAGE_EXTENSIONS = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg"}
 MAX_IMAGE_BYTES = 2_000_000
-SCRIPT = re.compile(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", re.IGNORECASE)
-STYLE = re.compile(r"<style\b([^>]*)>([\s\S]*?)</style\s*>", re.IGNORECASE)
+class InlineContentParser(HTMLParser):
+    """Extract exact inline JS/CSS using the HTML parser instead of a regex."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.blocks = []
+        self.metadata = []
+        self.active_tag = None
+        self.active_attrs = None
+        self.parts = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "meta":
+            self.metadata.append(dict(attrs))
+        if tag in ("script", "style"):
+            if self.active_tag is not None:
+                raise ValueError("Malformed nested script/style content")
+            self.active_tag = tag
+            self.active_attrs = dict(attrs)
+            self.parts = []
+
+    def handle_endtag(self, tag):
+        if self.active_tag == tag:
+            self.blocks.append((tag, self.active_attrs, "".join(self.parts)))
+            self.active_tag = None
+            self.active_attrs = None
+            self.parts = []
+
+    def handle_data(self, data):
+        if self.active_tag is not None:
+            self.parts.append(data)
+
+    def handle_entityref(self, name):
+        if self.active_tag is not None:
+            self.parts.append("&" + name + ";")
+
+    def handle_charref(self, name):
+        if self.active_tag is not None:
+            self.parts.append("&#" + name + ";")
+
+    def ensure_complete(self):
+        if self.active_tag is not None:
+            raise ValueError("Unterminated HTML script/style element")
+        return self
+
+
+def inline_content(source: str) -> InlineContentParser:
+    parser = InlineContentParser()
+    parser.feed(source)
+    parser.close()
+    return parser.ensure_complete()
+
+
 # Keep checks conservative: reject genuine credential patterns, not harmless
 # source-code references like os.getenv("OPENAI_API_KEY").
 SECRET_PATTERNS = {
@@ -89,9 +141,11 @@ def hash_source(source: str) -> str:
 
 
 def csp_for_html(source: str) -> str:
-    scripts = [hash_source(m.group(2)) for m in SCRIPT.finditer(source)
-               if not re.search(r"\bsrc\s*=", m.group(1), re.IGNORECASE)]
-    styles = [hash_source(m.group(2)) for m in STYLE.finditer(source)]
+    parsed = inline_content(source)
+    scripts = [hash_source(content) for tag, attrs, content in parsed.blocks
+               if tag == "script" and "src" not in attrs]
+    styles = [hash_source(content) for tag, attrs, content in parsed.blocks
+              if tag == "style"]
     if len(scripts) < 5 or not styles:
         raise ValueError("Inline scripts or styles changed unexpectedly; audit CSP generation")
     # GitHub Pages does not allow project-defined response headers. A meta CSP
@@ -122,7 +176,9 @@ def csp_for_html(source: str) -> str:
 def secure_html(source: str) -> str:
     if not source.startswith("<!doctype html>"):
         raise ValueError("Unexpected website HTML structure")
-    if re.search(r"<meta\b[^>]*http-equiv\s*=\s*['\"]Content-Security-Policy", source, flags=re.I):
+    parsed = inline_content(source)
+    if any(meta.get("http-equiv", "").lower() == "content-security-policy"
+           for meta in parsed.metadata):
         raise ValueError("Existing CSP must be audited before generating a new one")
     if "<head>" not in source:
         raise ValueError("No HTML head for CSP")
