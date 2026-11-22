@@ -58,7 +58,7 @@ const cards=$('espn-games'),weekSelect=$('espn-week-select'),previous=$('espn-we
   next=$('espn-week-next'),status=$('espn-status'),summary=$('espn-week-summary'),refresh=$('espn-week-refresh');
 if(!cards||!weekSelect||!previous||!next||!status||!summary||!refresh)return;
 
-let snapshot=null,selectedWeek=null,loading=false,liveCheckedAt=null,liveError='';
+let snapshot=null,selectedWeek=null,loading=false,liveCheckedAt=null,lastLiveAt=null,liveError='';
 const tag=(name,value,cls)=>{
   const e=doc.createElement(name);
   if(value!==undefined)e.textContent=String(value);
@@ -150,7 +150,9 @@ function render(){
     (games.length!==Math.floor((snapshot.standings||[]).length/2)?' · ESPN schedule may be incomplete':'');
   status.textContent=liveCheckedAt?
     'ESPN public API checked '+lastChecked(liveCheckedAt)+' · Best effort, not guaranteed real time · Scores and projections are distinct':
-    'Last published ESPN snapshot '+lastChecked(snapshot.fetchedAt)+' · Live API unavailable'+(liveError?' ('+liveError+')':'')+
+    (lastLiveAt?'Last successful direct ESPN scores '+lastChecked(lastLiveAt):
+      'Last published ESPN snapshot '+lastChecked(snapshot.fetchedAt))+
+    ' · Live API unavailable'+(liveError?' ('+liveError+')':'')+
     ' · Open ESPN for authoritative live scores';
   const leagueCards=$('gazette-team-records');
   if(leagueCards){
@@ -219,7 +221,7 @@ async function checkLive(){
  }
  const current=Number(fresh.status?.currentMatchupPeriod);
  if(Number.isInteger(current)&&current>=1&&current<=22)snapshot.currentMatchupPeriod=current;
- liveCheckedAt=new Date();liveError='';
+ liveCheckedAt=new Date();lastLiveAt=liveCheckedAt;liveError='';
 }
 async function load(){
  if(loading)return;
@@ -236,7 +238,7 @@ async function load(){
     throw Error('Current verified ESPN league snapshot unavailable');
   }
   // Never regress a more recent successful live score to a delayed daily snapshot.
-  if(!liveCheckedAt||!snapshot||new Date(data.fetchedAt)>liveCheckedAt)snapshot=data;
+  if(!lastLiveAt||!snapshot||new Date(data.fetchedAt)>lastLiveAt)snapshot=data;
   populateWeeks();
  }catch(error){
   if(!snapshot){
@@ -269,7 +271,10 @@ next.addEventListener('click',()=>{
 refresh.addEventListener('click',load);
 // The website is static and this rechecks the newest published data rather than
 // querying ESPN directly. The GitHub workflow updates the public snapshot daily.
-root.setInterval(()=>{if(!doc.hidden)load()},POLL_MS);
+const gamesActive=()=>snapshot?.matchups?.some(g=>
+  Number(g.week)===Number(snapshot.currentMatchupPeriod)&&phase(g)==='SCORING REPORTED');
+root.setInterval(()=>{if(!doc.hidden&&gamesActive())load()},POLL_MS);
+root.setInterval(()=>{if(!doc.hidden&&!gamesActive())load()},3*60*1000);
 doc.addEventListener('visibilitychange',()=>{if(!doc.hidden)load()});
 load();
 })(typeof window!=='undefined'?window:null);
