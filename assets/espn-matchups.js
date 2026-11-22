@@ -55,7 +55,8 @@ function liveMatchupMerge(existing,fresh,week) {
   // All corrections come from ESPN's requested fantasy week. Never merge an
   // arbitrary team ID or an unfinished response with another matchup.
   if(String(existing?.leagueId)!==ESPN_LEAGUE||Number(existing?.season)!==ESPN_SEASON||
-     String(fresh?.id)!==ESPN_LEAGUE||Number(fresh?.seasonId)!==ESPN_SEASON||
+     String(fresh?.id)!==ESPN_LEAGUE||
+     (fresh?.seasonId!==undefined&&fresh?.seasonId!==null&&Number(fresh.seasonId)!==ESPN_SEASON)||
      !Number.isInteger(week)||week<1||week>22||
      !Array.isArray(existing.matchups)||!Array.isArray(existing.standings)||
      !Array.isArray(fresh.schedule))throw Error('Unverified ESPN league/season/week payload');
