@@ -37,6 +37,7 @@ def check(root=ROOT, output=OUT):
     required={"index.html",".nojekyll",
               "assets/stadium-late-fall.webp",
               "assets/live-nfl-scores.js",
+              "assets/espn-matchups.js",
               "assets/espn-team-logos.json"}
     assert required.issubset(public_files), "Missing required web assets"
     allowed=required | {"editorial/latest.json"} | {"assets/fantasy-logos/manifest.json"}
