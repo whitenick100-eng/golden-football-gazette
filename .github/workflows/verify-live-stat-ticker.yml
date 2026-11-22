@@ -53,6 +53,11 @@ jobs:
           with urllib.request.urlopen(req,timeout=20) as r:
             doc=json.load(r)
           live=[e for e in doc.get('events',[]) if (e.get('status') or {}).get('type',{}).get('state') in ('in','post')]
+          if not live:
+            past=urllib.request.Request(base+'scoreboard?dates=2026&seasontype=2&week=11&limit=100',headers=headers)
+            with urllib.request.urlopen(past,timeout=20) as r: data=json.load(r)
+            live=[e for e in data.get('events',[]) if (e.get('status') or {}).get('type',{}).get('state') in ('in','post')]
+            print('USING PRIOR COMPLETED WEEK',len(live))
           print('LIVE/FINAL',len(live))
           for event in live[:2]:
             url=base+'summary?event='+str(event['id'])
