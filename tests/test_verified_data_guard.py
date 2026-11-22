@@ -43,6 +43,16 @@ class DataGuardTests(unittest.TestCase):
         altered = dict(league(),fetchedAt=stamp(NOW+dt.timedelta(days=3)))
         self.assertFalse(guard.valid("league.json",altered,NOW)[0])
 
+    def test_future_espn_playoff_matchup_can_have_unassigned_opponents(self):
+        data=league()
+        data["matchups"].append({
+            "id":12012,"week":15,"winner":"UNDECIDED",
+            "home":{"teamId":None},"away":{"teamId":None},
+        })
+        self.assertTrue(guard.valid("league.json",data,NOW)[0])
+        data["matchups"]=data["matchups"][-1:]
+        self.assertFalse(guard.valid("league.json",data,NOW)[0])
+
     def test_recovery_never_accepts_an_older_scoring_week(self):
         previous = league(NOW-dt.timedelta(hours=1),week=11)
         newer_time_but_old_week = league(NOW,week=10)
