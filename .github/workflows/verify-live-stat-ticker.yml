@@ -1,0 +1,45 @@
+name: Verify NFL Player Stat Ticker and Roster Wire
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/nfl-player-ticker.js'
+      - 'scripts/refresh_nfl_transactions.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_nfl_player_ticker.js'
+      - '.github/workflows/verify-live-stat-ticker.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: 
+          python-version: '3.12'
+      - name: Probe ESPN NFL scoreboard player leaders schema and CORS
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          url='https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=12&limit=100'
+          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Origin':'https://whitenick100-eng.github.io','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=25) as res:
+            data=json.load(res)
+            print('SCOREBOARD CORS',res.headers.get('Access-Control-Allow-Origin'))
+          print('EVENTS',len(data.get('events',[])))
+          for event in (data.get('events') or [])[:4]:
+            comp=(event.get('competitions') or [{}])[0]
+            print('GAME',event.get('id'),'STATE',(event.get('status') or {}).get('type',{}).get('state'),'COMP KEYS',list(comp))
+            leaders=comp.get('leaders') or []
+            print('LEADERS',type(leaders).__name__,len(leaders))
+            for group in leaders[:6]:
+              print('LEADER GROUP',json.dumps(group,ensure_ascii=False)[:1450])
+            if comp.get('competitors'):
+              p=(comp['competitors'][0].get('leaders') or [])
+              print('TEAM LEADERS',type(p).__name__,len(p))
+              for group in p[:2]:print('TEAM SAMPLE',json.dumps(group)[:800])
+          PY
