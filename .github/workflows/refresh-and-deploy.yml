@@ -7,17 +7,18 @@ on:
     branches: [main]
 permissions:
   contents: read
-  actions: read
-  pages: write
-  id-token: write
 concurrency:
   group: gazette-pages-deployment
   cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -45,18 +46,26 @@ jobs:
         run: |
           python scripts/qa_gazette.py
           python scripts/data_status.py
+      - name: Security scan, construct allowlisted public site, and enforce browser CSP
+        run: |
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload website artifact
+      - name: Upload allowlisted website artifact only
         id: upload
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: public
       - name: Confirm artifact upload
         run: echo "Pages artifact upload step completed"
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
