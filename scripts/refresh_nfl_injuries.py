@@ -213,10 +213,18 @@ def normalize(payload, depthcharts, now=None, week=None):
                 continue
             reported=label(entry.get("status"))
             out_type=state(reported)
+            # ESPN's summary listing may omit the body-part detail while
+            # the corresponding athlete's depthchart record still has it.
+            # Preserve the source's reported detail without inferring one.
+            injury_detail=condition(entry)
+            if not injury_detail:
+                for other,_source in records:
+                    injury_detail=condition(other)
+                    if injury_detail:break
             injured.append({
                 "name":start["name"],"athleteId":id_,"position":start["position"],
                 "depthRank":1,"starterSlot":start["starterSlot"],
-                "injury":condition(entry),
+                "injury":injury_detail,
                 "reportedStatus":reported,"gameStatus":None,"practiceStatus":None,
                 "outType":out_type,
                 "reportDate":entry.get("date") if parse_date(entry.get("date")) else None,
