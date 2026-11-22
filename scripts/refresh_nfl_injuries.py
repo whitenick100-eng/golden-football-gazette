@@ -28,6 +28,40 @@ def label(value):
         return " ".join(value.strip().split())[:100]
     return ""
 
+# Fantasy-relevant skill positions only. ESPN supplies either a position
+# abbreviation or its full name, depending on the feed format.
+WATCHED_POSITIONS = {"QB", "RB", "WR", "TE", "K"}
+POSITION_NAMES = {
+    "quarterback":"QB", "running back":"RB", "wide receiver":"WR",
+    "tight end":"TE", "kicker":"K", "place kicker":"K",
+    "placekicker":"K",
+}
+def position_label(value):
+    if isinstance(value, dict):
+        code=value.get("abbreviation") or value.get("shortName")
+        if isinstance(code,str) and code.strip():
+            normalized=code.strip().upper()
+            if normalized=="PK": normalized="K"
+            if normalized in WATCHED_POSITIONS:return normalized
+        text=label(value.get("displayName") or value.get("name"))
+    else:
+        text=label(value)
+    code=text.strip().upper()
+    if code=="PK":code="K"
+    if code in WATCHED_POSITIONS:return code
+    return POSITION_NAMES.get(text.strip().casefold(),"")
+
+# A "Day-To-Day" label, routine practice limitation or general roster status
+# does not amount to a major designation. Do not infer injury severity.
+def major_status(value):
+    status=label(value).strip().casefold().replace("_"," ").replace("-"," ")
+    status=" ".join(status.split())
+    if status in {"out","doubtful","questionable","injured reserve","ir","ir r",
+                  "reserve injured","reserve ir","physically unable to perform",
+                  "pup","reserve pup"}:
+        return True
+    return False
+
 def status_rank(status):
     s = (status or "").lower()
     order = ("out", "injured reserve", "ir", "doubtful", "questionable",
@@ -47,6 +81,7 @@ def normalize(payload, now=None, week=None):
     groups = {}
     excluded_active = 0
     source_entries = 0
+    attributable_entries = 0
     group_sizes = []
     for group in raw:
         if not isinstance(group, dict):
@@ -78,7 +113,8 @@ def normalize(payload, now=None, week=None):
             name = label(athlete.get("displayName") or athlete.get("fullName") or entry.get("name"))
             if not name:
                 continue
-            position = label(athlete.get("position"))
+            attributable_entries += 1
+            position = position_label(athlete.get("position") or entry.get("position"))
             injury = label(entry.get("type") or entry.get("injury"))
             reported = label(entry.get("status"))
             # ESPN includes ordinary roster 'Active' statuses in its large
@@ -88,6 +124,13 @@ def normalize(payload, now=None, week=None):
                 continue
             game_status = label(entry.get("gameStatus"))
             practice = label(entry.get("practiceStatus") or entry.get("practice"))
+            # Include only meaningful ESPN-listed injury availability updates
+            # for the five fantasy-relevant offensive/kicking positions.
+            # Practice participation alone is NOT an official game status.
+            if position not in WATCHED_POSITIONS:
+                continue
+            if not (major_status(game_status) or major_status(reported)):
+                continue
             date = entry.get("date")
             if not isinstance(date, str) or len(date) > 40:
                 date = None
@@ -106,7 +149,9 @@ def normalize(payload, now=None, week=None):
     for team in teams:
         team["players"].sort(key=lambda p:(status_rank(p["gameStatus"] or p["reportedStatus"]),
                                           p["name"].lower()))
-    if not teams:
+    # A genuine zero is valid: ESPN can have no significant QB/RB/WR/TE/K
+    # listings. Do not misreport this as an API outage or invent injuries.
+    if not teams and attributable_entries==0:
         # Schema-only diagnostics; never log player names or private fields.
         print("ESPN injury response keys:", sorted(payload.keys())[:25])
         print("ESPN injury group count:",len(raw))
@@ -128,7 +173,8 @@ def normalize(payload, now=None, week=None):
         "fetchedAt":now.isoformat(),
         "source":"ESPN NFL injury listing",
         "sourceUrl":SOURCE_PAGE, "officialNflReportUrl":OFFICIAL_REPORT,
-        "coverageNote":"ESPN injury listings are not necessarily official NFL game designations. Ordinary Active roster records are excluded. ESPN may limit the entries returned for each team; absence does not prove a player is healthy. Consult NFL.com for complete official practice and game reports.",
+        "coverageNote":"Only QB, RB, WR, TE and K players with ESPN-listed Out, Doubtful, Questionable, Injured Reserve or PUP statuses are included. ESPN injury listings are not necessarily official NFL game designations. Day-to-day, practice-only and Active roster records are excluded. ESPN may limit results; missing players are not necessarily healthy. Consult NFL.com for official practice and game reports.",
+        "positions":sorted(WATCHED_POSITIONS), "filter":"major-availability-only",
         "teamCount":len(teams), "playerCount":total,
         "sourceEntryCount":source_entries, "excludedActiveCount":excluded_active,
         "sourceTeamGroupCount":len(group_sizes),
@@ -161,7 +207,7 @@ def main():
     try:
         data = normalize(fetch(), week=current_week())
         OUT.write_text(json.dumps(data,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-        print(f"ESPN NFL injury listing updated: {data['playerCount']} non-active status entries across {data['teamCount']} teams ({data['excludedActiveCount']} Active records excluded)")
+        print(f"ESPN key-position injury watch: {data['playerCount']} major reported statuses across {data['teamCount']} teams (QB/RB/WR/TE/K only; {data['excludedActiveCount']} Active records excluded)")
     except Exception as exc:
         print(f"ESPN NFL injury listing unavailable ({type(exc).__name__}): {exc}")
         if OUT.is_file():
