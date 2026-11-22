@@ -56,16 +56,36 @@ test('season scoreboard leaders must remain separate from game boxes',()=>{
  // A live game state never changes the season metric's source label.
  assert.notEqual(values[0].phase,'LIVE');
 });
-test('live stat ribbon excludes finished games while any NFL game is in progress',()=>{
+test('ticker covers live and completed games from the same NFL week',()=>{
  const events=[{id:'1',state:'pre',date:'2026-11-22T18:00:00Z'},
  {id:'2',state:'in',date:'2026-11-22T18:00:00Z'},
  {id:'3',state:'post',date:'2026-11-19T20:00:00Z'}];
  const active=t.selectGames(events);
- assert.deepEqual(active.games.map(x=>x.id),['2']);
+ assert.deepEqual(active.games.map(x=>x.id),['2','3']);
  assert.equal(active.active,1);
+ assert.equal(active.partial,false);
  const final=t.selectGames(events.filter(x=>x.state!=='in'));
  assert.deepEqual(final.games.map(x=>x.id),['3']);
  assert.equal(final.active,0);
+});
+test('full 16-game NFL week is covered instead of truncating after eight games',()=>{
+ const events=Array.from({length:16},(_,i)=>({
+   id:String(i+1),state:'post',date:'2026-11-22T20:00:00Z'
+ }));
+ const result=t.selectGames(events);
+ assert.equal(result.games.length,16);
+ assert.equal(result.partial,false);
+ assert.equal(result.active,0);
+});
+test('direct ESPN scoreboard automatically detects next regular-season week',()=>{
+ const first={season:{year:2026,type:2},week:{number:11}};
+ const next={season:{year:2026,type:2},week:{number:12}};
+ assert.deepEqual(t.currentWeek(first),{season:2026,week:11});
+ assert.deepEqual(t.currentWeek(next),{season:2026,week:12});
+ assert.equal(t.boardURL(...Object.values(t.currentWeek(next))),
+   'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=12&limit=100');
+ assert.throws(()=>t.currentWeek({season:{year:2026,type:3},week:{number:1}}));
+ assert.throws(()=>t.currentWeek({season:{year:2026,type:2},week:{number:null}}));
 });
 test('numbers reject missing/invalid stats instead of inventing points',()=>{
  for(const value of ['',undefined,null,'NaN',{},[]]){
