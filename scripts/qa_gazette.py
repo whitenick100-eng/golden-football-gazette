@@ -26,6 +26,20 @@ def validate():
                    'id="espn-games"', 'id="nfl-status"']:
         assert marker in page, f"Website missing required section: {marker}"
     assert "data/nfl-week.json" in page and "data/league.json" in page
+    # ESPN fantasy matchup center must be cards, not the old crowded text table.
+    for marker in ('id="espn-live"', 'id="espn-games"', 'id="espn-week-select"',
+                   'id="espn-week-prev"', 'id="espn-week-next"',
+                   'id="espn-week-refresh"', 'id="espn-week-summary"',
+                   'ESPN Fantasy Matchup Center'):
+        assert marker in page, f"ESPN matchup center element missing: {marker}"
+    assert '<script src="assets/espn-matchups.js"></script>' in page
+    assert "<th>ESPN projected / actual points</th>" not in page
+    cards = ROOT / "assets/espn-matchups.js"
+    assert cards.is_file(), "Matchup renderer JavaScript missing"
+    logic=cards.read_text(encoding="utf-8")
+    assert "data/league.json" in logic and "winnerSide" in logic
+    assert "actual fantasy points" in logic and "Projected final" in logic
+
     assert "40 — 50 — 40" not in page, "Old yard-number strip returned"
     assert 'id="gazette-current-datetime"' in page, "Live Gazette date/time missing from masthead"
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
