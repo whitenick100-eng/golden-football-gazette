@@ -48,7 +48,81 @@ function initials(name) {
   return (words.length>1?words.slice(0,2).map(s=>s[0]).join(''):String(words[0]||'?').slice(0,2)).toUpperCase();
 }
 
-const api={validPoints,formatPoints,phase,scored,winnerSide,availableWeeks,record,initials};
+
+const ESPN_LEAGUE='1413446022';
+const ESPN_SEASON=2026;
+function liveMatchupMerge(existing,fresh,week) {
+  // All corrections come from ESPN's requested fantasy week. Never merge an
+  // arbitrary team ID or an unfinished response with another matchup.
+  if(String(existing?.leagueId)!==ESPN_LEAGUE||Number(existing?.season)!==ESPN_SEASON||
+     String(fresh?.id)!==ESPN_LEAGUE||Number(fresh?.seasonId)!==ESPN_SEASON||
+     !Number.isInteger(week)||week<1||week>22||
+     !Array.isArray(existing.matchups)||!Array.isArray(existing.standings)||
+     !Array.isArray(fresh.schedule))throw Error('Unverified ESPN league/season/week payload');
+
+  const matchups=existing.matchups.map(game=>({...game,
+    home:{...(game.home||{})},away:{...(game.away||{})}}));
+  const byId=new Map(matchups.filter(g=>Number(g.week)===week&&g.id!==null&&g.id!==undefined)
+    .map(g=>[String(g.id),g]));
+  const seen=new Set();
+  let matched=0,scoredGames=0,verifiedSides=0;
+  for(const current of fresh.schedule){
+    if(!current||Number(current.matchupPeriodId)!==week)continue;
+    const id=String(current.id??'');
+    const target=byId.get(id);
+    if(!target||seen.has(id))continue;
+    const validSides=['home','away'].every(side=>{
+      const updated=current[side],saved=target[side];
+      return updated&&saved&&saved.teamId!==null&&saved.teamId!==undefined&&
+        String(updated.teamId)===String(saved.teamId);
+    });
+    // ESPN may send future playoff placeholders and partially hydrated events.
+    if(!validSides)continue;
+    const incomingScores=['home','away'].map(side=>{
+      const item=current[side];
+      return validPoints(item.totalPointsLive??item.totalPoints);
+    });
+    const winner=['HOME','AWAY','TIE','UNDECIDED'].includes(current.winner)?
+      current.winner:null;
+    // Zero is a valid FINAL score but null is NOT a zero. Never turn an
+    // incomplete payload into an apparent score or a new final.
+    const hasScores=incomingScores.some(v=>v!==null);
+    if(!hasScores&&!FINAL.has(winner))continue;
+    if(FINAL.has(winner)&&incomingScores.some(v=>v===null))continue;
+    seen.add(id);matched++;
+    if(hasScores)scoredGames++;
+    for(let i=0;i<2;i++){
+      const side=['home','away'][i],value=incomingScores[i];
+      if(value!==null){target[side].points=value;verifiedSides++;}
+      const projection=validPoints(current[side].totalProjectedPointsLive);
+      if(projection!==null&&projection>0)target[side].projectedPoints=projection;
+    }
+    if(winner&&(FINAL.has(winner)||!FINAL.has(target.winner)))target.winner=winner;
+  }
+  if(!matched)throw Error('ESPN live response has no verified matching matchups');
+
+  const standings=existing.standings.map(t=>({...t}));
+  if(Array.isArray(fresh.teams)){
+    const teams=new Map(fresh.teams.filter(t=>t&&t.id!==null&&t.id!==undefined)
+      .map(t=>[String(t.id),t]));
+    for(const team of standings){
+      const official=teams.get(String(team.teamId))?.record?.overall;
+      if(!official)continue;
+      for(const field of ['wins','losses','ties']){
+        if(Number.isInteger(official[field])&&official[field]>=0&&official[field]<=22)
+          team[field]=official[field];
+      }
+    }
+  }
+  const expected=byId.size;
+  const incomingWeek=Number(fresh.status?.currentMatchupPeriod);
+  return {snapshot:{...existing,matchups,standings,
+      currentMatchupPeriod:Number.isInteger(incomingWeek)&&
+        incomingWeek>=week&&incomingWeek<=22?incomingWeek:existing.currentMatchupPeriod},
+    matched,expected,scoredGames,verifiedSides};
+}
+
+const api={validPoints,formatPoints,phase,scored,winnerSide,availableWeeks,record,initials,liveMatchupMerge};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 
@@ -58,7 +132,7 @@ const cards=$('espn-games'),weekSelect=$('espn-week-select'),previous=$('espn-we
   next=$('espn-week-next'),status=$('espn-status'),summary=$('espn-week-summary'),refresh=$('espn-week-refresh');
 if(!cards||!weekSelect||!previous||!next||!status||!summary||!refresh)return;
 
-let snapshot=null,selectedWeek=null,loading=false,liveCheckedAt=null,lastLiveAt=null,liveError='';
+let snapshot=null,selectedWeek=null,loading=false,liveCheckedAt=null,lastLiveAt=null,liveError='',liveCoverage='';
 const emblemSources=new Map();
 let emblemsLoading=null;
 const trustedESPNLogo=url=>typeof url==='string'&&/^https:\/\/(?:mystique-api\.fantasy\.espn\.com|g\.espncdn\.com|a\.espncdn\.com)\//.test(url);
@@ -202,7 +276,8 @@ function render(){
     ' · '+finals+' final'+(finals===1?'':'s')+
     (games.length!==Math.floor((snapshot.standings||[]).length/2)?' · ESPN schedule may be incomplete':'');
   status.textContent=liveCheckedAt?
-    'ESPN public API checked '+lastChecked(liveCheckedAt)+' · Best effort, not guaranteed real time · Scores and projections are distinct':
+    'ESPN public API checked '+lastChecked(liveCheckedAt)+(liveCoverage?' · '+liveCoverage:'')+
+    ' · Best effort, not guaranteed real time · Scores and projections are distinct':
     (lastLiveAt?'Last successful direct ESPN scores '+lastChecked(lastLiveAt):
       'Last published ESPN snapshot '+lastChecked(snapshot.fetchedAt))+
     ' · Live API unavailable'+(liveError?' ('+liveError+')':'')+
@@ -227,14 +302,10 @@ function populateWeeks(){
   }
 }
 
-const livePoints=side=>{
- const score=side?.totalPointsLive ?? side?.totalPoints;
- return validPoints(score);
-};
 async function checkLive(){
  const week=Number(snapshot?.currentMatchupPeriod)||selectedWeek;
  if(!Number.isInteger(week)||week<1||week>22)throw Error('Cannot determine current ESPN scoring week');
- const url=LIVE_BASE+'?view=mTeam&view=mMatchupScore&view=mScoreboard'+
+ const url=LIVE_BASE+'?view=mTeam&view=mMatchupScore&view=mScoreboard&view=mLiveScoring'+
    '&matchupPeriodId='+week+'&scoringPeriodId='+week+'&ts='+Date.now();
  const controller=new AbortController();
  const timer=root.setTimeout(()=>controller.abort(),12000);
@@ -244,38 +315,10 @@ async function checkLive(){
   if(!response.ok)throw Error('HTTP '+response.status);
   fresh=await response.json();
  }finally{root.clearTimeout(timer)}
- if(String(fresh?.id)!=='1413446022'||Number(fresh.seasonId)!==2026||!Array.isArray(fresh.schedule)||!fresh.schedule.length){
-   throw Error('ESPN response incomplete');
- }
- const lookup=new Map((snapshot.matchups||[]).map(g=>[String(g.id),g]));
- let verified=0;
- for(const game of fresh.schedule){
-   const target=lookup.get(String(game.id));
-   if(!target||Number(game.matchupPeriodId)!==Number(target.week))continue;
-   if(['HOME','AWAY','TIE','UNDECIDED'].includes(game.winner))target.winner=game.winner;
-   for(const side of ['home','away']){
-     const incoming=game[side],existing=target[side];
-     if(!incoming||!existing||String(incoming.teamId)!==String(existing.teamId))continue;
-     const score=livePoints(incoming);
-     if(score!==null)existing.points=score;
-     const projection=validPoints(incoming.totalProjectedPointsLive);
-     if(projection!==null&&projection>0)existing.projectedPoints=projection;
-   }
-   verified++;
- }
- if(!verified)throw Error('ESPN has not returned matching scored games');
- if(Array.isArray(fresh.teams)){
-  const teamMap=new Map(fresh.teams.map(t=>[String(t.id),t]));
-  for(const team of snapshot.standings){
-   const updated=teamMap.get(String(team.teamId))?.record?.overall;
-   if(!updated)continue;
-   if(Number.isInteger(updated.wins))team.wins=updated.wins;
-   if(Number.isInteger(updated.losses))team.losses=updated.losses;
-   if(Number.isInteger(updated.ties))team.ties=updated.ties;
-  }
- }
- const current=Number(fresh.status?.currentMatchupPeriod);
- if(Number.isInteger(current)&&current>=1&&current<=22)snapshot.currentMatchupPeriod=current;
+ const merged=liveMatchupMerge(snapshot,fresh,week);
+ snapshot=merged.snapshot;
+ liveCoverage=merged.matched+' / '+merged.expected+' week '+week+' matchups verified'+
+  (merged.matched<merged.expected?' (partial response)':'');
  liveCheckedAt=new Date();lastLiveAt=liveCheckedAt;liveError='';
 }
 async function load(){
@@ -324,8 +367,8 @@ next.addEventListener('click',()=>{
   if(i>=0&&i<w.length-1){selectedWeek=w[i+1];render()}
 });
 refresh.addEventListener('click',load);
-// The website is static and this rechecks the newest published data rather than
-// querying ESPN directly. The GitHub workflow updates the public snapshot daily.
+// Browser checks ESPN directly when CORS permits, and always keeps the
+// published, timestamped GitHub Pages snapshot as the honest fallback.
 const gamesActive=()=>snapshot?.matchups?.some(g=>
   Number(g.week)===Number(snapshot.currentMatchupPeriod)&&phase(g)==='SCORING REPORTED');
 root.setInterval(()=>{if(!doc.hidden&&gamesActive())load()},POLL_MS);
