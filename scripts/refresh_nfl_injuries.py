@@ -81,6 +81,7 @@ def normalize(payload, now=None, week=None):
     groups = {}
     excluded_active = 0
     source_entries = 0
+    attributable_entries = 0
     group_sizes = []
     for group in raw:
         if not isinstance(group, dict):
@@ -112,6 +113,7 @@ def normalize(payload, now=None, week=None):
             name = label(athlete.get("displayName") or athlete.get("fullName") or entry.get("name"))
             if not name:
                 continue
+            attributable_entries += 1
             position = position_label(athlete.get("position") or entry.get("position"))
             injury = label(entry.get("type") or entry.get("injury"))
             reported = label(entry.get("status"))
@@ -149,7 +151,7 @@ def normalize(payload, now=None, week=None):
                                           p["name"].lower()))
     # A genuine zero is valid: ESPN can have no significant QB/RB/WR/TE/K
     # listings. Do not misreport this as an API outage or invent injuries.
-    if not teams and source_entries==0:
+    if not teams and attributable_entries==0:
         # Schema-only diagnostics; never log player names or private fields.
         print("ESPN injury response keys:", sorted(payload.keys())[:25])
         print("ESPN injury group count:",len(raw))
