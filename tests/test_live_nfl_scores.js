@@ -63,4 +63,31 @@ test('only validated ESPN NFL week/season can be requested',()=>{
     'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=12&limit=100');
   assert.throws(()=>scores.endpoint(0,12));assert.throws(()=>scores.endpoint(2026,0));
 });
+test('live NFL updates require the same ESPN game and both opponent teams',()=>{
+  const published={id:'401',completed:false,home:{abbr:'NYG'},away:{abbr:'PHI'}};
+  const latest={id:'401',state:'in',period:2,completed:false,home:{abbr:'NYG',score:17},away:{abbr:'PHI',score:10}};
+  assert.equal(scores.verifiedGameUpdate(published,latest),true);
+  assert.equal(scores.verifiedGameUpdate(published,{...latest,id:'402'}),false);
+  assert.equal(scores.verifiedGameUpdate(published,{...latest,home:{abbr:'PHI',score:17}}),false);
+  assert.equal(scores.verifiedGameUpdate(published,{...latest,away:{abbr:'PHI',score:null}}),false);
+  assert.equal(scores.numericScore([]),null);
+  assert.equal(scores.numericScore({}),null);
+});
+test('a completed game never reverts to live or pregame',()=>{
+  const published={id:'401',completed:true,home:{abbr:'NYG'},away:{abbr:'PHI'}};
+  const final={id:'401',state:'post',completed:true,home:{abbr:'NYG',score:24},away:{abbr:'PHI',score:23}};
+  const old={id:'401',state:'in',completed:false,home:{abbr:'NYG',score:17},away:{abbr:'PHI',score:10}};
+  assert.equal(scores.verifiedGameUpdate(published,final),true);
+  assert.equal(scores.verifiedGameUpdate(published,old,final),false);
+  assert.equal(scores.verifiedGameUpdate({...published,completed:false},{...old,period:1},
+    {...old,period:3}),false);
+});
+test('ESPN post state without completed confirmation is not labeled FINAL',()=>{
+  const feed=event(88,'post','17','24',4,'0:00','Game over');
+  feed.status.type.completed=false;
+  const result=scores.parseGame(feed);
+  assert.equal(result.completed,false);
+  assert.match(scores.gameStatus(result),/confirmation pending/);
+});
+
 console.log('All ESPN live-score tests passed.');
