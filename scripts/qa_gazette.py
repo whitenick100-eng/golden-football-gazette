@@ -51,6 +51,15 @@ def validate():
     assert 'The Golden Football Gazette</h1>' in page
     assert 'Thanksgiving Week · 2026 NFL Season' in page
     assert 'A Gridiron Thanksgiving Special' in page
+    # Seasonal scenic artwork must be decorative and confined to the masthead.
+    assert page.count('class="thanksgiving-harvest-art"') == 1
+    assert 'id="harvest-pumpkin"' in page and 'id="harvest-bale"' in page
+    assert 'id="harvest-maple"' in page and 'id="harvest-oak"' in page
+    assert 'fill="url(#harvest-backdrop)"' in page
+    masthead=page.split('<header class="gazette-masthead thanksgiving-masthead">',1)[1].split('</header>',1)[0]
+    assert masthead.index('class="thanksgiving-harvest-art"') < masthead.index('class="masthead-side"')
+    assert 'pointer-events:none' in page and '.thanksgiving-masthead > .thanksgiving-harvest-art' in page
+    assert 'background:linear-gradient(160deg,rgba(28,12,10,.96)' in page
     assert '.gazette-masthead.thanksgiving-masthead h1' in page
     assert 'color:#fff7e5!important' in page
     assert '.gazette-masthead.thanksgiving-masthead .masthead-live-date' in page
