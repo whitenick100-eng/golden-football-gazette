@@ -67,5 +67,21 @@ jobs:
             except Exception as e:
               print("SOURCE FAILED",u,type(e).__name__,str(e)[:200])
           PY
+      - name: Probe offense first-string IDs and depthchart injury schemas
+        run: |
+          python - <<'PY'
+          import urllib.request,json
+          url='https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/1/depthcharts'
+          with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'}),timeout=20) as r:doc=json.load(r)
+          print('SEASON',doc.get('season'),'TIMESTAMP',doc.get('timestamp'))
+          for section in doc.get('depthchart',[]):
+            print('SECTION',section.get('name'))
+            for key,pos in (section.get('positions') or {}).items():
+              if key.lower().startswith(('qb','rb','wr','te','pk','k')) or key in ['hb','fb']:
+                names=pos.get('athletes') or []
+                print('POSITION',key,'KEYS',list(pos)[:15],'COUNT',len(names))
+                for rank,a in enumerate(names[:3],1):
+                  print('RANK',rank,'ID',a.get('id'),'NAME',a.get('displayName'),'INJURIES',[(x.get('status'),x.get('date'),x.get('type'),x.get('details')) for x in (a.get('injuries') or [])[:2]],'STATUS',a.get('status'))
+          PY
       - name: Run injury unit tests
         run: python -m unittest discover -s tests -p test_nfl_injuries.py -v
