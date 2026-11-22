@@ -1,0 +1,62 @@
+name: Verify Starter Injury Feed
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/verify-starter-injuries.yml'
+      - 'scripts/refresh_nfl_injuries.py'
+      - 'tests/test_nfl_injuries.py'
+      - 'index.html'
+      - 'scripts/qa_gazette.py'
+      - '.github/workflows/refresh-and-deploy.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: 
+          python-version: '3.12'
+      - name: Inspect ESPN live injury and depth chart fields
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          HEAD={"User-Agent":"Mozilla/5.0 GoldenFootballGazette/1.0","Accept":"application/json"}
+          urls=[
+            "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/6/depthcharts",
+            "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/1/depthcharts",
+            "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries",
+          ]
+          for u in urls:
+            try:
+              with urllib.request.urlopen(urllib.request.Request(u,headers=HEAD),timeout=25) as r:
+                d=json.load(r)
+              print("SOURCE",u, "root",list(d)[:24],flush=True)
+              if "depthcharts" in u:
+                for k,v in list(d.items())[:10]:
+                  print("ROOT",k, "type",type(v).__name__,"length",len(v) if isinstance(v,(list,dict)) else None)
+                chart=d.get('depthcharts') or d.get('depthCharts') or d.get('items')
+                if isinstance(chart,list):
+                  print("DEPTHCHART RECORDS",len(chart))
+                  for x in chart[:4]:
+                    print("CHART SAMPLE",str(x)[:1400])
+                if isinstance(chart,dict):
+                  print("CHART GROUP KEYS",list(chart)[:12], "FIRST",str(next(iter(chart.values())))[:1400])
+              else:
+                groups=d.get('injuries') or []
+                print("INJURY TEAM GROUP COUNT",len(groups))
+                for g in groups[:2]:
+                  print("INJURY TEAM",g.get('id'),g.get('displayName'),"group keys",list(g)[:18],
+                    "entries",len(g.get('injuries') or []))
+                  for p in (g.get('injuries') or [])[:2]:
+                    a=p.get('athlete') or {}
+                    print("INJURY SAMPLE",list(p),list(a)[:20], 'athleteID',a.get('id'),
+                      'position',a.get('position'), 'status',p.get('status'))
+            except Exception as e:
+              print("SOURCE FAILED",u,type(e).__name__,str(e)[:200])
+          PY
+      - name: Run injury unit tests
+        run: python -m unittest discover -s tests -p test_nfl_injuries.py -v
