@@ -147,6 +147,35 @@ const doc=root.document,bar=doc.getElementById('nfl-stat-track'),
   btn=doc.getElementById('nfl-stat-ticker-refresh');
 if(!bar||!status||!mode||!btn)return;
 let inFlight=false,timer=null,last=null,stop=false,season=null,week=null;
+// Rotate in newly recorded player performances before recycling old leaders.
+const previouslySeen=new Map();
+let previouslyFeatured=new Set();
+function newlyRecorded(players){
+ const changed=[];
+ const fresh=new Map();
+ for(const p of players){
+   const key=[p.gameId,p.kind,p.playerId||p.name].join(':');
+   const stat=[p.amount,p.touchdowns].join(':');
+   if(previouslySeen.get(key)!==stat)changed.push(p);
+   fresh.set(key,stat);
+ }
+ previouslySeen.clear();for(const [key,value] of fresh)previouslySeen.set(key,value);
+ const chosen=[];
+ for(const kind of ['passing','rushing','receiving']){
+   const eligible=players.filter(p=>p.kind===kind);
+   const changes=changed.filter(p=>p.kind===kind);
+   const sorter=(a,b)=>Number(b.phase==='LIVE')-Number(a.phase==='LIVE')||b.amount-a.amount;
+   const ordered=[...changes.filter(p=>!previouslyFeatured.has(p.playerId)),
+     ...changes.filter(p=>previouslyFeatured.has(p.playerId)),
+     ...eligible.filter(p=>!previouslyFeatured.has(p.playerId)),...eligible].sort(sorter);
+   const used=new Set();let total=0;
+   for(const p of ordered){const key=p.playerId||p.name;if(used.has(key))continue;
+     chosen.push(p);used.add(key);if(++total===4)break;}
+ }
+ previouslyFeatured=new Set(chosen.map(p=>p.playerId||p.name));
+ return {rows:chosen,changed:changed.length};
+}
+
 const finalBoxCache=new Map();
 const tag=(name,value,cls)=>{const element=doc.createElement(name);
   if(value!==undefined)element.textContent=String(value);
@@ -268,7 +297,7 @@ async function refresh(){
    const current=await latestWeek();
    if(current.season!==season||current.week!==week){
      // No last-week players should silently carry over to a new game week.
-     finalBoxCache.clear();last=null;
+     finalBoxCache.clear();previouslySeen.clear();previouslyFeatured.clear();
    }
    season=current.season;week=current.week;
    const board=await loadJSON(boardURL(season,week));
@@ -285,7 +314,8 @@ async function refresh(){
      const heading=selected.active?
        'NFL WEEK '+week+' · LIVE'+(hasFinal?' + FINAL':'')+' GAME STATS':
        'NFL WEEK '+week+' GAME STATS';
-     paint({rows:topByKind(rows,4),mode:heading,
+     const chosen=newlyRecorded(rows);
+     paint({rows:chosen.rows,mode:heading+(chosen.changed?' · NEW STATS':''),
        checked:new Date(),notes:'Passing · rushing · receiving · ESPN box scores · '+current.source,
        partial});
    }else{
