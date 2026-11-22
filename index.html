@@ -980,21 +980,11 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
        $(id).append(box);
      }
    };
-   let emblemManifest={};
-   try{emblemManifest=(await data('assets/fantasy-logos/manifest.json')).teams||{}}catch(e){/* Keep valid team names visible. */}
    const listing=(id,values)=>{
      $(id).replaceChildren();
      for(const t of values||[]){
        const row=txt('div',undefined,'bracket-entry');
        row.append(txt('span','#'+t.seed,'seed'));
-       const image=emblemManifest[String(t.teamId)];
-       const logoURL=image?.localUrl||image?.sourceUrl||t.logo;
-       if((typeof logoURL==='string')&&
-         (/^assets\/fantasy-logos\/team-\d+\.(?:png|jpg|svg|gif|webp)$/.test(logoURL)||
-          /^https:\/\/(?:g\.espncdn\.com|mystique-api\.fantasy\.espn\.com)\//.test(logoURL))){
-         const img=document.createElement('img');img.className='logo';img.alt=t.name+' ESPN emblem';
-         img.loading='lazy';img.onerror=()=>img.remove();img.src=logoURL;row.append(img);
-       }
        const club=txt('span',t.name);club.dataset.espnTeamId=String(t.teamId);
        row.append(club,txt('span',t.record,'entry-record'));
        $(id).append(row);
