@@ -1,0 +1,102 @@
+name: Verify NFL Player Stat Ticker and Roster Wire
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/nfl-player-ticker.js'
+      - 'scripts/build_public_site.py'
+      - 'scripts/qa_public_site.py'
+      - 'scripts/qa_gazette.py'
+      - 'tests/test_nfl_player_ticker.js'
+      - 'tests/test_public_security.py'
+      - '.github/workflows/verify-live-stat-ticker.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify season and live game statistics never get confused
+        run: |
+          node --check assets/nfl-player-ticker.js
+          node tests/test_nfl_player_ticker.js
+          python scripts/qa_gazette.py
+      - name: Verify live ESPN stat API CORS and player box-score schema
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          headers={'Origin':'https://whitenick100-eng.github.io','User-Agent':'Mozilla/5.0'}
+          base='https://site.api.espn.com/apis/site/v2/sports/football/nfl/'
+          def request(url):
+            req=urllib.request.Request(url,headers=headers)
+            with urllib.request.urlopen(req,timeout=23) as resp:
+              cors=resp.headers.get('Access-Control-Allow-Origin')
+              if cors not in ('*','https://whitenick100-eng.github.io'):
+                raise SystemExit('ESPN CORS would block browser access')
+              return json.load(resp)
+          scores=request(base+'scoreboard?dates=2026&seasontype=2&week=12&limit=100')
+          assert scores.get('events'), 'ESPN scoreboard empty'
+          source=[g for g in scores['events'] if g.get('status',{}).get('type',{}).get('state') in ('in','post')]
+          if not source:
+            previous=request(base+'scoreboard?dates=2026&seasontype=2&week=11&limit=100')
+            source=[g for g in previous['events'] if g.get('status',{}).get('type',{}).get('state')=='post']
+          if not source:
+            raise SystemExit('No ESPN active/completed game available to verify the boxscore')
+          event=source[0]
+          detail=request(base+'summary?event='+str(event['id']))
+          teams=(detail.get('boxscore') or {}).get('players') or []
+          if len(teams)<2:raise SystemExit('ESPN game summary omitted player boxscore')
+          position_types={s.get('name') for team in teams for s in team.get('statistics',[])}
+          assert {'passing','rushing','receiving'}.issubset(position_types),position_types
+          print('Verified ESPN scoreboard events:',len(scores['events']))
+          print('Verified player boxscore source event:',event['id'])
+          print('Verified per-game stat categories:',sorted(position_types))
+          print('ESPN browser CORS confirmed')
+          PY
+      - name: Check current published Roster Wire activation
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          site='https://whitenick100-eng.github.io/golden-football-gazette/data/nfl-transactions.json'
+          try:
+            req=urllib.request.Request(site,headers={'User-Agent':'Mozilla/5.0'})
+            with urllib.request.urlopen(req,timeout=20) as response:
+              d=json.load(response)
+            print('PRODUCTION ROSTER WIRE',json.dumps({
+              'status':d.get('status'),'curated':d.get('keyOnly'),
+              'verifiedAt':d.get('fetchedAt'),'featuredMoves':d.get('total'),
+              'allESPNMovesChecked':d.get('allESPNMovesChecked'),
+            }))
+          except Exception as e:
+            # Production is only advisory until this PR deploys successfully.
+            print('PRODUCTION ROSTER WIRE UNVERIFIED',type(e).__name__,str(e)[:180])
+          PY
+      - name: Validate security-scanned Pages bundle and inline browser syntax
+        run: |
+          python -m unittest discover -s tests -p 'test_public_security.py' -v
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+            def __init__(self):
+              super().__init__(convert_charrefs=False);self.active=False;self.body=[];self.parts=[]
+            def handle_starttag(self,tag,attrs):
+              if tag=='script' and 'src' not in dict(attrs):self.active=True;self.parts=[]
+            def handle_data(self,txt):
+              if self.active:self.parts.append(txt)
+            def handle_endtag(self,tag):
+              if tag=='script' and self.active:self.body.append(''.join(self.parts));self.active=False
+          p=P();p.feed(Path('index.html').read_text(encoding='utf-8'))
+          Path('/tmp/gazette-ticker-inline.js').write_text('\n'.join(p.body),encoding='utf-8')
+          print('Parsed',len(p.body),'inline browser scripts')
+          PY
+          node --check /tmp/gazette-ticker-inline.js
