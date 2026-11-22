@@ -1,0 +1,54 @@
+name: Gazette Required Security Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-gate:
+    name: Gazette security gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify versioned actions, trusted triggers and least-privilege tokens
+        run: python scripts/audit_ci_security.py
+
+      - name: Compile audited Python and check published JavaScript syntax
+        run: |
+          python -m py_compile scripts/*.py tests/*.py
+          node --check assets/live-nfl-scores.js
+          node --check assets/nfl-player-ticker.js
+          node --check assets/espn-matchups.js
+
+      - name: Validate public-site allowlist, credential scanning and security tests
+        run: |
+          python -m unittest discover -s tests -p 'test_public_security.py' -v
+          python -m unittest discover -s tests -p 'test_ci_security.py' -v
+          python scripts/qa_gazette.py
+          python scripts/build_public_site.py
+          python scripts/qa_public_site.py
+
+      - name: Confirm no private or operational files reached Pages build
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("public")
+          files={str(f.relative_to(p)) for f in p.rglob("*") if f.is_file()}
+          assert all(not x.startswith(("monitor/","tests/","docs/",".github/","scripts/")) for x in files)
+          assert not any(x.endswith((".pem",".key",".env",".py",".md",".yml")) for x in files)
+          print(f"Security gate passed: {len(files)} allowlisted public files")
+          PY
