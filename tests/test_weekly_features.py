@@ -88,6 +88,66 @@ class PlayoffCoverageTests(unittest.TestCase):
         for g in sample["matchups"]:g["winner"]="UNDECIDED"
         self.assertIsNone(stars.completed_week(sample))
 
+
+    def test_tuesday_morning_cutoff_is_eastern_and_dst_aware(self):
+        self.assertFalse(stars.tuesday_window_started(
+            dt.datetime(2026, 11, 23, 15, 0, tzinfo=dt.timezone.utc)))  # Monday
+        self.assertFalse(stars.tuesday_window_started(
+            dt.datetime(2026, 11, 24, 12, 59, tzinfo=dt.timezone.utc)))  # Tue 7:59 EST
+        self.assertTrue(stars.tuesday_window_started(
+            dt.datetime(2026, 11, 24, 13, 0, tzinfo=dt.timezone.utc)))  # Tue 8 EST
+        self.assertFalse(stars.tuesday_window_started(
+            dt.datetime(2026, 9, 8, 11, 59, tzinfo=dt.timezone.utc)))  # Tue 7:59 EDT
+        self.assertTrue(stars.tuesday_window_started(
+            dt.datetime(2026, 9, 8, 12, 0, tzinfo=dt.timezone.utc)))  # Tue 8 EDT
+
+    def test_keep_same_week_five_players_and_original_timestamp_on_daily_rebuild(self):
+        prior = stars.parse_boxscore(box(), league(), 10)
+        prior["fetchedAt"] = "2026-11-24T13:30:00+00:00"
+        candidate = dict(prior, fetchedAt="2026-11-25T13:17:00+00:00")
+        with tempfile.TemporaryDirectory() as d:
+            output=Path(d)/"top-performers.json"
+            with patch.object(stars,"OUT",output),\
+                 patch.object(stars,"load_previous",return_value=prior),\
+                 patch.object(stars,"refresh",return_value=candidate) as source:
+                stars.main(dt.datetime(2026,11,25,13,17,tzinfo=dt.timezone.utc))
+                published=json.loads(output.read_text("utf-8"))
+                self.assertEqual(published["fetchedAt"], prior["fetchedAt"])
+                self.assertEqual(published["week"],10)
+                source.assert_called_once()
+
+    def test_no_rerank_before_tuesday_morning(self):
+        prior=stars.parse_boxscore(box(), league(), 10)
+        with tempfile.TemporaryDirectory() as d:
+            output=Path(d)/"top-performers.json"
+            with patch.object(stars,"OUT",output),\
+                 patch.object(stars,"load_previous",return_value=prior),\
+                 patch.object(stars,"refresh") as source:
+                stars.main(dt.datetime(2026,11,23,22,0,tzinfo=dt.timezone.utc))
+                self.assertEqual(json.loads(output.read_text())["week"],10)
+                source.assert_not_called()
+
+    def test_new_week_replaces_previous_on_tuesday_after_espn_confirmation(self):
+        prior=stars.parse_boxscore(box(),league(),10)
+        current=dict(prior,week=11,fetchedAt="2026-11-24T13:17:00+00:00")
+        with tempfile.TemporaryDirectory() as d:
+            output=Path(d)/"top-performers.json"
+            with patch.object(stars,"OUT",output),\
+                 patch.object(stars,"load_previous",return_value=prior),\
+                 patch.object(stars,"refresh",return_value=current):
+                stars.main(dt.datetime(2026,11,24,13,17,tzinfo=dt.timezone.utc))
+                data=json.loads(output.read_text("utf-8"))
+                self.assertEqual(data["week"],11)
+                self.assertIn("Tuesday morning", data["refreshCadence"])
+
+    def test_weekly_data_validator_rejects_unverified_or_incomplete_five(self):
+        good=stars.parse_boxscore(box(),league(),10)
+        self.assertTrue(stars.verified_leaders(good))
+        invalid=dict(good,players=good["players"][:4])
+        self.assertFalse(stars.verified_leaders(invalid))
+        invalid=dict(good,season=2025)
+        self.assertFalse(stars.verified_leaders(invalid))
+
     def test_provisional_bracket_has_separate_championship_consolation(self):
         b=features.playoff_picture(league())
         self.assertEqual(b["playoffTeamCount"],4)

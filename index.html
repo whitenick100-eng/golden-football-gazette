@@ -784,7 +784,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 </div>
 </section>
 <section id="weekly-stars" class="hub-section">
-<h2>Five Leading Fantasy Performers</h2>
+<h2>Five Leading Fantasy Performers · Updated Tuesday Mornings</h2>
 <p class="hub-intro" id="player-star-meta">Checking ESPN's completed-week player scores for your league's rostered players, including bench players…</p>
 <div id="player-stars" class="player-leader-grid" aria-live="polite"></div>
 </section>
@@ -1057,9 +1057,18 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
   try{
    const d=await data('data/top-performers.json');
    if(d.status==='unavailable'||!Array.isArray(d.players)||d.players.length!==5)throw Error('No verified completed-week player scores');
-   const age=(Date.now()-new Date(d.fetchedAt).getTime())/3600000;
-   if(!Number.isFinite(age)||age<0||age>48)throw Error('Player scores have an outdated verification timestamp');
-   $('player-star-meta').textContent='Week '+d.week+' · Top five verified ESPN fantasy scores among rostered players (including benches) · Updated '+date(d.fetchedAt)+'. Players not rostered in this league are excluded.';
+   const verifiedAt=new Date(d.fetchedAt);
+   if(Number.isNaN(verifiedAt.getTime())||verifiedAt.getTime()>Date.now()+3600000)
+     throw Error('ESPN leaderboard has an invalid verification timestamp');
+   // This is a weekly award, not a live feed. Show the last verified ranking
+   // throughout the week instead of hiding it after 48 hours.
+   const ageDays=(Date.now()-verifiedAt.getTime())/86400000;
+   $('player-star-meta').textContent='Fantasy Week '+d.week+
+     ' · Five leading verified ESPN fantasy scores among rostered players (including benches)'+
+     ' · Last verified '+date(d.fetchedAt)+
+     ' · New rankings Tuesday mornings after the previous week is final'+
+     (ageDays>9?' · Previous verified edition — waiting for ESPN confirmation of a newer week':'')+
+     '. Players not rostered in this league are excluded.';
    $('player-stars').replaceChildren();
    d.players.forEach((p,i)=>{
      const card=txt('article',undefined,'player-leader');
@@ -1077,7 +1086,7 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
      $('player-stars').append(card);
    });
   }catch(e){
-   $('player-star-meta').textContent='Awaiting five verified player scores from a completed ESPN fantasy matchup week. No estimated player points will be shown.';
+   $('player-star-meta').textContent='Tuesday top five will appear when ESPN confirms five rostered player scores from a completed fantasy week. No estimates will be shown.';
    fail('player-stars','Top-five player scoring is unavailable until ESPN supplies completed-week box scores.');
    console.warn('Player leaderboard unavailable:',e);
   }

@@ -12,6 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 LEAGUE_FILE = ROOT / "data/league.json"
@@ -141,24 +142,126 @@ def refresh():
         payload=json.load(response)
     return parse_boxscore(payload,snapshot,week)
 
-def main():
-    OUT.parent.mkdir(parents=True,exist_ok=True)
-    try:
-        result=refresh()
-        OUT.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-        print("Verified top five ESPN fantasy players: week",result["week"],
-              "rostered player pool",result["eligiblePlayersWithScores"])
-        for i,p in enumerate(result["players"],1):
-            print(i,p["name"],p["points"],p["fantasyTeam"])
-    except (OSError,ValueError,KeyError,TypeError,json.JSONDecodeError,urllib.error.URLError) as exc:
-        print("Verified top-five players unavailable:",type(exc).__name__,str(exc)[:180])
-        if OUT.is_file():
-            print("Retaining prior top-five snapshot and original verification timestamp")
-        else:
-            OUT.write_text(json.dumps({
-                "status":"unavailable","message":"Five verified ESPN rostered player scores could not be retrieved",
-                "source":"ESPN fantasy mBoxscore",
-            },indent=2)+"\n",encoding="utf-8")
+# GitHub Pages publishes a fresh, temporary artifact each day rather than
+# committing generated data to the main branch. Reuse the previously published
+# verified leaderboard until ESPN confirms a NEW completed scoring week.
+PUBLISHED = "https://whitenick100-eng.github.io/golden-football-gazette/data/top-performers.json"
+EASTERN = ZoneInfo("America/New_York")
 
-if __name__=="__main__":
+
+def verified_leaders(data):
+    """Reject stale-format, incomplete or misidentified previous leaderboards."""
+    if not isinstance(data, dict):
+        return False
+    if str(data.get("leagueId")) != "1413446022" or data.get("season") != 2026:
+        return False
+    if not isinstance(data.get("week"), int) or not 1 <= data["week"] <= 22:
+        return False
+    try:
+        stamp = dt.datetime.fromisoformat(str(data["fetchedAt"]).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            return False
+    except (KeyError, ValueError, TypeError):
+        return False
+    players = data.get("players")
+    if not isinstance(players, list) or len(players) != 5:
+        return False
+    identities = set()
+    for player in players:
+        if not isinstance(player, dict):
+            return False
+        pid = player.get("playerId")
+        if not isinstance(pid, int) or pid <= 0 or pid in identities:
+            return False
+        identities.add(pid)
+        if not isinstance(player.get("name"), str) or not player["name"].strip():
+            return False
+        points = player.get("points")
+        if not isinstance(points, (int, float)) or isinstance(points, bool) or not math.isfinite(points) or not 0 <= points < 250:
+            return False
+    return True
+
+
+def load_previous():
+    options = []
+    if OUT.is_file():
+        try:
+            current = json.loads(OUT.read_text("utf-8"))
+            if verified_leaders(current):
+                options.append(current)
+        except (OSError, json.JSONDecodeError):
+            pass
+    try:
+        request = urllib.request.Request(
+            PUBLISHED, headers={"User-Agent": UA["User-Agent"], "Accept": "application/json"}
+        )
+        with urllib.request.urlopen(request, timeout=12) as response:
+            content = response.read(200_001)
+        if len(content) <= 200_000:
+            published = json.loads(content)
+            if verified_leaders(published):
+                options.append(published)
+    except (OSError, ValueError, json.JSONDecodeError, urllib.error.URLError):
+        print("Published weekly top-five backup unavailable; not assuming old data is current")
+    if not options:
+        return None
+    return max(options, key=lambda d: (
+        d["week"], dt.datetime.fromisoformat(d["fetchedAt"].replace("Z", "+00:00"))
+    ))
+
+
+def tuesday_window_started(now):
+    """No new week before Tuesday 8:00 a.m. Eastern after Monday's games."""
+    local = now.astimezone(EASTERN)
+    return local.weekday() not in (0,) and not (local.weekday() == 1 and local.hour < 8)
+
+
+def save(data):
+    OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def main(now=None):
+    now = now or dt.datetime.now(dt.timezone.utc)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    prior = load_previous()
+    if prior:
+        # Preserve the ORIGINAL ESPN verification timestamp when using this
+        # week's confirmed leaderboard on subsequent daily page deployments.
+        save(prior)
+
+    # Tuesday morning is the scheduled weekly refresh. If ESPN has not
+    # confirmed final matchups by then, daily checks may retry later in the
+    # week, but never replace the prior leaderboard with an older/same week.
+    if prior and not tuesday_window_started(now):
+        print("Keeping the previous verified top five until Tuesday morning ET")
+        return
+    try:
+        result = refresh()
+        if prior and result["week"] <= prior["week"]:
+            print("Current verified fantasy top five retained: ESPN has not confirmed a newer completed week")
+            return
+        if prior is None and not tuesday_window_started(now):
+            print("First-run top five is available but weekly rollover begins Tuesday morning")
+            # Bootstrap so the site's initial leaderboard is not blank.
+        result["refreshCadence"] = "Weekly Tuesday morning Eastern, after ESPN confirms completed matchups"
+        save(result)
+        print("Published new verified weekly top five: week", result["week"],
+              "rostered player pool", result["eligiblePlayersWithScores"])
+        for i, player in enumerate(result["players"], 1):
+            print(i, player["name"], player["points"], player["fantasyTeam"])
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError, urllib.error.URLError) as exc:
+        print("Weekly top-five refresh unavailable:", type(exc).__name__, str(exc)[:180])
+        if prior:
+            print("Keeping last confirmed weekly ESPN leaderboard with original timestamp")
+        elif OUT.is_file():
+            print("Retaining last output in this job")
+        else:
+            save({
+                "status": "unavailable",
+                "message": "Five verified ESPN rostered player scores could not be retrieved",
+                "source": "ESPN fantasy mBoxscore",
+            })
+
+
+if __name__ == "__main__":
     main()

@@ -141,6 +141,9 @@ def validate():
                    'id="championship-pairings"', 'id="consolation-pairings"'):
         assert marker in page, f"Missing automated newsroom element: {marker}"
     assert "data/weekly-features.json" in page and "data/top-performers.json" in page
+    assert "Five Leading Fantasy Performers · Updated Tuesday Mornings" in page
+    assert "age>48" not in page, "Weekly top five must not disappear after 48 hours"
+    assert "tuesday_window_started" in (ROOT/"scripts/refresh_player_leaders.py").read_text(encoding="utf-8")
     leaders=read_json("data/top-performers.json")
     if leaders:
         if leaders.get("status") == "unavailable":
