@@ -9,6 +9,7 @@ const PRE='pre', LIVE='in', POST='post';
 
 function numericScore(value){
   if(value===null||value===undefined||value==='')return null;
+  if(typeof value!=='number'&&typeof value!=='string')return null;
   const n=Number(value);
   return Number.isFinite(n)&&n>=0&&n<300?n:null;
 }
@@ -24,7 +25,8 @@ function parseGame(event){
   const sides={};
   for(const c of competition.competitors){
     if(c.homeAway==='home'||c.homeAway==='away'){
-      sides[c.homeAway]={score:state===PRE?null:numericScore(c.score)};
+      sides[c.homeAway]={score:state===PRE?null:numericScore(c.score),
+        abbr:String(c.team?.abbreviation||'').toUpperCase(),teamId:String(c.team?.id||'')};
     }
   }
   if(!sides.home||!sides.away)return null;
@@ -33,7 +35,7 @@ function parseGame(event){
   detail=detail.slice(0,70);
   const clock=typeof st.displayClock==='string'?st.displayClock.slice(0,14):'';
   const period=Number.isInteger(st.period)&&st.period>=0&&st.period<=9?st.period:0;
-  return {id:String(event.id),state,completed:state===POST && !!(type.completed||type.state===POST),
+  return {id:String(event.id),state,completed:state===POST && type.completed===true,
     period,clock,detail,home:sides.home,away:sides.away};
 }
 
@@ -47,6 +49,25 @@ function parseScoreboard(payload,year,week){
   }
   if(!games.size)throw Error('No NFL games found in scoreboard feed');
   return games;
+}
+
+function verifiedGameUpdate(original,latest,prior){
+ if(!original||!latest||String(original.id)!==String(latest.id))return false;
+ if(!['pre','in','post'].includes(latest.state))return false;
+ for(const side of ['home','away']){
+  if(!latest[side]||!original[side])return false;
+  const published=String(original[side].abbr||'').toUpperCase();
+  const live=String(latest[side].abbr||'').toUpperCase();
+  if(!published||!live||published!==live)return false;
+ }
+ if((original.completed||prior?.completed)&&!latest.completed)return false;
+ if(prior?.state==='in'&&latest.state==='pre')return false;
+ if(prior?.state==='in'&&latest.state==='in'&&
+    Number.isInteger(prior.period)&&latest.period<prior.period)return false;
+ if(latest.state==='post'&&!latest.completed)return false;
+ if(latest.state!=='pre'&&
+    (latest.home.score===null||latest.away.score===null))return false;
+ return true;
 }
 
 function gameStatus(game){
@@ -73,8 +94,8 @@ function scheduleFallback(item){
   const live=(!completed && (item.state==='in'||item.statusType==='in'||status.includes('progress')));
   return {id:String(item.id),state:completed?POST:live?LIVE:PRE,completed,period,clock,
     detail:String(item.status||'').slice(0,70),
-    away:{score:completed||live?numericScore(item.away?.score):null},
-    home:{score:completed||live?numericScore(item.home?.score):null}};
+    away:{score:completed||live?numericScore(item.away?.score):null,abbr:String(item.away?.abbr||'').toUpperCase()},
+    home:{score:completed||live?numericScore(item.home?.score):null,abbr:String(item.home?.abbr||'').toUpperCase()}};
 }
 function scheduleInterval(games,now){
   const n=now.getTime();
@@ -97,7 +118,7 @@ function endpoint(year,week){
   return BASE+'?dates='+year+'&seasontype=2&week='+week+'&limit=100';
 }
 
-const api={parseGame,parseScoreboard,gameStatus,scheduleFallback,scheduleInterval,endpoint,numericScore};
+const api={parseGame,parseScoreboard,gameStatus,scheduleFallback,scheduleInterval,endpoint,numericScore,verifiedGameUpdate};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 root.GazetteNFL=api;
@@ -126,7 +147,8 @@ function updateOne(card,item,verified){
    if(item.state===LIVE&&verified)status.classList.add('is-live');
  }
  const stamp=card.querySelector('[data-score-verification]');
- if(stamp)stamp.textContent=verified?'ESPN live scoreboard · last successful update':'Last published ESPN snapshot';
+ if(stamp)stamp.textContent=verified?'ESPN live scoreboard · last successful update':
+    feed.has(String(item.id))?'Last verified ESPN direct score':'Last published ESPN snapshot';
  if(link&&/^[0-9]+$/.test(item.id))link.href='https://www.espn.com/nfl/game/_/gameId/'+item.id;
 }
 function paint(verified){
@@ -166,17 +188,27 @@ async function refresh(){
    const current=parseScoreboard(await response.json());
    const ids=new Set((schedule.games||[]).map(g=>String(g.id)));
    // Reject a cross-week API response: never mislabel scores for another week.
-   const matches=[...current.keys()].filter(id=>ids.has(id));
-   if(matches.length===0)throw Error('No verified ESPN event IDs match this NFL week');
-   feed=current;
+   const validated=new Map(feed);
+   const matched=[];
+   for(const original of schedule.games){
+     const id=String(original.id),candidate=current.get(id);
+     if(!ids.has(id)||!candidate)continue;
+     if(!verifiedGameUpdate(original,candidate,feed.get(id)))continue;
+     validated.set(id,candidate);
+     matched.push(id);
+   }
+   if(!matched.length)throw Error('No ESPN NFL game has matching event/team IDs and valid final or live scores');
+   feed=validated;
    lastSuccess=new Date();
    paint(true);
-   const active=matches.filter(id=>current.get(id).state===LIVE).length;
+   const active=matched.filter(id=>current.get(id).state===LIVE).length;
+   const coverage=matched.length+' of '+ids.size+' NFL games checked';
    label((active?'● '+active+' NFL game'+(active===1?'':'s')+' live':'Scores checked')+
+     ' · '+coverage+(matched.length<ids.size?' (partial feed)':'')+
      ' · ESPN refreshed '+formatTime(lastSuccess)+
      ' · Automatic refresh when page is open');
  }catch(err){
-   paint(!!lastSuccess);
+   paint(false);
    const message=lastSuccess
        ?'Live scoreboard temporarily unreachable · Last successful ESPN check '+formatTime(lastSuccess)
        :'Live scoreboard unavailable · Showing the last published ESPN snapshot';
