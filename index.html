@@ -1057,14 +1057,13 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
  await Promise.allSettled([loadCoverage(),loadStars()]);
 })();
 </script><script>
-/* Curated NFL wire: ESPN-confirmed moves and independently verified key players. */
+/* Roster Wire heartbeat: source-verified activity, including days with zero big moves. */
 (async function(){
- const area=document.getElementById('transaction-items');
- const status=document.getElementById('transaction-freshness');
- const count=document.getElementById('transaction-summary');
- const filter=document.getElementById('transaction-filter');
- const search=document.getElementById('transaction-team-search');
- if(!area||!status||!count||!filter||!search)return;
+ const ids=['transaction-items','transaction-freshness','transaction-summary',
+     'transaction-filter','transaction-team-search',
+     'roster-wire-health','roster-wire-scan-details','roster-wire-refresh'];
+ const [area,status,count,filter,search,health,scan,recheck]=ids.map(id=>document.getElementById(id));
+ if(ids.some((id,i)=>![area,status,count,filter,search,health,scan,recheck][i]))return;
  const node=(tag,value,cls)=>{const n=document.createElement(tag);
    if(value!==undefined)n.textContent=String(value);
    if(cls)n.className=cls;return n};
@@ -1072,66 +1071,101 @@ if(league.status==='fulfilled'&&Array.isArray(league.value.standings)){const d=l
  const verified=m=>m&&typeof m.playerName==='string'&&m.playerName.trim()&&
    ['Trade','Released','Waived'].includes(m.type)&&
    ['ESPN NFL first-string depth chart','Rostered in Gridiron Giggles ESPN fantasy league'].includes(m.importanceBasis);
- try{
-   const r=await fetch('data/nfl-transactions.json?ts='+Date.now(),{cache:'no-store'});
-   if(!r.ok)throw Error('No published curated transaction snapshot');
-   const d=await r.json();
-   // Fail closed: never display the former all-NFL transactions cache.
-   if(d.status!=='available'||d.keyOnly!==true||
-      d.filter!=='verified-key-players-only'||!Array.isArray(d.moves)){
-     throw Error('Current curated NFL transaction feed unavailable');
+ let snapshot=null,busy=false;
+ const stampDate=when=>new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',
+   month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(when);
+ const setHealth=(value,label)=>{health.dataset.state=value;health.textContent=label};
+ function draw(){
+   if(!snapshot)return;
+   const d=snapshot;
+   const q=search.value.trim().toLowerCase();
+   const selected=filter.value;
+   const all=d.moves.filter(verified);
+   const eligible=all.filter(m=>(selected==='all'||m.type===selected)&&
+     (!q||[m.playerName,m.team,m.teamAbbr,m.position,m.description]
+       .filter(Boolean).join(' ').toLowerCase().includes(q)));
+   area.replaceChildren();
+   count.textContent=all.length+' significant verified move'+(all.length===1?'':'s')+
+     ' · '+d.windowStart+' to '+d.windowEnd+
+     ' · '+eligible.length+' displayed with current filters';
+   if(!eligible.length){
+     area.append(node('p',
+       all.length?'No key-player moves match these filters. Clear your search to see reported moves.':
+       'No major qualifying trades, releases, or waivers were found during this period. The ESPN feed was checked successfully; ordinary roster changes are hidden.',
+       'injury-empty'));
+     return;
    }
-   const when=new Date(d.fetchedAt);
-   if(Number.isNaN(when.getTime()))throw Error('Missing verification timestamp');
-   const hours=(Date.now()-when.getTime())/3600000;
-   status.textContent=(hours>36?'Previous verified key-player report; may be outdated':'Latest ESPN-verified key-player transactions')+
-     ' · Checked '+when.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})+
-     (d.playerCoverage?.coverageComplete?'':' · Some ESPN depth charts unavailable');
-   const moves=d.moves.filter(verified);
-   function draw(){
-     const q=search.value.trim().toLowerCase();
-     const selected=filter.value;
-     const eligible=moves.filter(m=>(selected==='all'||m.type===selected)&&
-       (!q||[m.playerName,m.team,m.teamAbbr,m.position,m.description]
-         .filter(Boolean).join(' ').toLowerCase().includes(q)));
-     area.replaceChildren();
-     count.textContent=eligible.length+' significant transaction'+(eligible.length===1?'':'s')+
-       ' · '+d.windowStart+' – '+d.windowEnd+' · Routine roster moves hidden';
-     if(!eligible.length){
-       area.append(node('p','No verified major player trades or releases match this selection. Check ESPN for the complete transactions list.','injury-empty'));
-       return;
+   for(const m of eligible.slice(0,8)){
+     const card=node('article',undefined,'transaction-card key-transaction-card');
+     if(safeLogo(m.teamLogo)){
+       const image=node('img');image.loading='lazy';image.alt=m.team+' NFL logo';
+       image.src=m.teamLogo;image.onerror=()=>image.remove();card.append(image);
      }
-     for(const m of eligible.slice(0,8)){
-       const card=node('article',undefined,'transaction-card key-transaction-card');
-       if(safeLogo(m.teamLogo)){
-         const image=node('img');image.loading='lazy';image.alt=m.team+' NFL logo';
-         image.src=m.teamLogo;image.onerror=()=>image.remove();card.append(image);
-       }
-       const body=node('div',undefined,'transaction-details');
-       const type=node('div',undefined,'transaction-meta');
-       type.append(node('span',m.type,'transaction-tag'),
-                   node('span',m.date+' · '+m.team));
-       body.append(type);
-       const head=node('h4',m.playerName,'transaction-player-name');
-       const pos=m.position?node('span',m.position,'transaction-position'):null;
-       if(pos)head.append(pos);
-       body.append(head,node('p',m.description));
-       if(Array.isArray(m.mentionedTeams)&&m.mentionedTeams.length>1)
-         body.append(node('div','Also reported by: '+m.mentionedTeams.slice(1).join(', '),'transaction-meta'));
-       body.append(node('div',
-         m.importanceBasis==='ESPN NFL first-string depth chart'?'ESPN depth-chart starter':'Rostered in Gridiron Giggles',
-         'transaction-verified'));
-       card.append(body);area.append(card);
-     }
-     if(eligible.length>8)area.append(node('p','Showing 8 featured moves. Use the search or filter to narrow the list.','hub-intro'));
+     const body=node('div',undefined,'transaction-details');
+     const type=node('div',undefined,'transaction-meta');
+     type.append(node('span',m.type,'transaction-tag'),node('span',m.date+' · '+m.team));
+     body.append(type);
+     const head=node('h4',m.playerName,'transaction-player-name');
+     if(m.position)head.append(node('span',m.position,'transaction-position'));
+     body.append(head,node('p',m.description));
+     if(Array.isArray(m.mentionedTeams)&&m.mentionedTeams.length>1)
+       body.append(node('div','Also reported by: '+m.mentionedTeams.slice(1).join(', '),'transaction-meta'));
+     body.append(node('div',
+       m.importanceBasis==='ESPN NFL first-string depth chart'?
+         'ESPN depth-chart starter':'Rostered in Gridiron Giggles',
+       'transaction-verified'));
+     card.append(body);area.append(card);
    }
-   filter.addEventListener('change',draw);search.addEventListener('input',draw);draw();
- }catch(error){
-   status.textContent='Curated NFL roster updates are temporarily unavailable.';
-   count.textContent='';
-   area.replaceChildren(node('p','No key-player transactions can currently be verified. The ESPN source link above remains available.','injury-empty'));
-   console.warn('Key player wire:',error.message);
+   if(eligible.length>8)area.append(node('p','Showing eight featured moves. Use search to narrow the list.','hub-intro'));
  }
+ async function refresh(){
+   if(busy)return;
+   busy=true;recheck.disabled=true;
+   try{
+     const response=await fetch('data/nfl-transactions.json?ts='+Date.now(),{cache:'no-store'});
+     if(!response.ok)throw Error('No published ESPN transaction report');
+     const d=await response.json();
+     // Must be a *curated* data set; refuse old all-NFL output.
+     if(d.status!=='available'||d.keyOnly!==true||
+       d.filter!=='verified-key-players-only'||!Array.isArray(d.moves)||
+       !d.fetchedAt||!d.windowStart||!d.windowEnd){
+       throw Error('Curated transaction refresh not yet published');
+     }
+     const when=new Date(d.fetchedAt);
+     if(Number.isNaN(when.getTime()))throw Error('Missing verified report time');
+     const stale=Date.now()-when.getTime()>36*3600000;
+     setHealth(stale?'stale':'active',stale?'EARLIER VERIFIED SCAN':'FEED ACTIVE');
+     const checked=Number.isInteger(d.allESPNMovesChecked)?d.allESPNMovesChecked:'unreported number of';
+     const chart=d.playerCoverage?.nflDepthChartsVerified;
+     const total=d.playerCoverage?.nflDepthChartsExpected;
+     scan.textContent='Last successful scan: '+stampDate(when)+' · '+checked+' ESPN moves checked'+
+       (Number.isInteger(chart)&&Number.isInteger(total)?' · '+chart+'/'+total+' team depth charts':'')+
+       ' · Data published on GitHub Pages';
+     status.textContent='ESPN key-player roster feed · '+(stale?'This snapshot may be outdated.':'Daily refresh scheduled.')+
+       ' Last verified '+stampDate(when)+'.';
+     snapshot=d;draw();
+   }catch(error){
+     if(snapshot){
+       setHealth('stale','USING LAST VERIFIED DATA');
+       scan.textContent='Latest recheck unavailable · Last good scan '+stampDate(new Date(snapshot.fetchedAt));
+     }else{
+       setHealth('unavailable','FEED NOT VERIFIED');
+       scan.textContent='No valid curated data published yet · Check GitHub Actions or ESPN source';
+       status.textContent='Cannot verify a recent key-player Roster Wire refresh.';
+       count.textContent='';
+       area.replaceChildren(node('p',
+         'Roster Wire data has not been verified. This is different from a confirmed day with no major trades. Open GitHub Actions to check the daily publish.',
+         'injury-empty'));
+     }
+     console.warn('Roster Wire fetch:',error.message);
+   }finally{busy=false;recheck.disabled=false}
+ }
+ filter.addEventListener('change',draw);
+ search.addEventListener('input',draw);
+ recheck.addEventListener('click',refresh);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+ setInterval(()=>{if(!document.hidden)refresh()},15*60*1000);
+ refresh();
 })();
 </script><script>
 /* Live masthead clock: the visitor's current Eastern time, not the article's data-refresh timestamp. */
