@@ -1,0 +1,65 @@
+name: TinyFish Post-deployment Website QA
+
+# Run only after the existing GitHub Pages publishing workflow finishes.
+on:
+  workflow_run:
+    workflows: ["Refresh ESPN and publish Gazette"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: gazette-postdeploy-qa
+  cancel-in-progress: false
+
+jobs:
+  live-site-check:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Read the approved test script
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check published Gazette with TinyFish
+        id: tinyfish
+        env:
+          TINYFISH_API_KEY: ${{ secrets.TINYFISH_API_KEY }}
+        run: python scripts/tinyfish_postdeploy_qa.py
+
+      - name: Publish QA results to job summary
+        if: always()
+        run: |
+          if [ -f qa-report.md ]; then
+            cat qa-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Open or update a GitHub issue for review on failure
+        if: failure() && steps.tinyfish.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -s qa-report.md ]; then
+            printf '# Gazette website QA did not complete\n\nCheck the Actions log.\n' > qa-report.md
+          fi
+          ISSUE="$(gh issue list --state open --limit 100 --json number,title --jq '.[] | select(.title == "Gazette post-deployment browser QA failed") | .number' | head -n 1)"
+          if [ -n "$ISSUE" ]; then
+            gh issue comment "$ISSUE" --body-file qa-report.md
+          else
+            gh issue create --title "Gazette post-deployment browser QA failed" --body-file qa-report.md
+          fi
+          echo "Review required: no code changes were made automatically."
