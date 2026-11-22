@@ -150,6 +150,8 @@ let inFlight=false,timer=null,last=null,stop=false,season=null,week=null;
 // Rotate in newly recorded player performances before recycling old leaders.
 const previouslySeen=new Map();
 let previouslyFeatured=new Set();
+let previouslyShown=[];
+const playerKey=p=>[p.gameId,p.kind,p.playerId||p.name].join(':');
 function newlyRecorded(players){
  const changed=[];
  const fresh=new Map();
@@ -160,19 +162,26 @@ function newlyRecorded(players){
    fresh.set(key,stat);
  }
  previouslySeen.clear();for(const [key,value] of fresh)previouslySeen.set(key,value);
+ if(!changed.length&&previouslyShown.length){
+   const latest=new Map(players.map(p=>[playerKey(p),p]));
+   const same=previouslyShown.map(p=>latest.get(playerKey(p))).filter(Boolean);
+   if(same.length)return {rows:same,changed:0};
+ }
  const chosen=[];
  for(const kind of ['passing','rushing','receiving']){
    const eligible=players.filter(p=>p.kind===kind);
    const changes=changed.filter(p=>p.kind===kind);
    const sorter=(a,b)=>Number(b.phase==='LIVE')-Number(a.phase==='LIVE')||b.amount-a.amount;
-   const ordered=[...changes.filter(p=>!previouslyFeatured.has(p.playerId)),
-     ...changes.filter(p=>previouslyFeatured.has(p.playerId)),
-     ...eligible.filter(p=>!previouslyFeatured.has(p.playerId)),...eligible].sort(sorter);
+   const ordered=[...changes.filter(p=>!previouslyFeatured.has(p.playerId)).sort(sorter),
+     ...changes.filter(p=>previouslyFeatured.has(p.playerId)).sort(sorter),
+     ...eligible.filter(p=>!previouslyFeatured.has(p.playerId)).sort(sorter),
+     ...eligible.sort(sorter)];
    const used=new Set();let total=0;
    for(const p of ordered){const key=p.playerId||p.name;if(used.has(key))continue;
      chosen.push(p);used.add(key);if(++total===4)break;}
  }
  previouslyFeatured=new Set(chosen.map(p=>p.playerId||p.name));
+ previouslyShown=chosen;
  return {rows:chosen,changed:changed.length};
 }
 
@@ -297,7 +306,7 @@ async function refresh(){
    const current=await latestWeek();
    if(current.season!==season||current.week!==week){
      // No last-week players should silently carry over to a new game week.
-     finalBoxCache.clear();previouslySeen.clear();previouslyFeatured.clear();
+     finalBoxCache.clear();previouslySeen.clear();previouslyFeatured.clear();previouslyShown=[];
    }
    season=current.season;week=current.week;
    const board=await loadJSON(boardURL(season,week));
