@@ -27,6 +27,13 @@ def validate():
         assert marker in page, f"Website missing required section: {marker}"
     assert "data/nfl-week.json" in page and "data/league.json" in page
     assert "40 — 50 — 40" not in page, "Old yard-number strip returned"
+    assert 'id="gazette-current-datetime"' in page, "Live Gazette date/time missing from masthead"
+    assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
+    assert "setInterval(refreshMastheadTime,60000)" in page, "Masthead clock must refresh every minute"
+    assert "Gridiron Giggles, the White/Wilcox Fantasy League" in page
+    assert "<h2>Our Fantasy League" not in page, "Former generic league header remains"
+    assert "Thursday, November 19, 2026 · Week 11 Daily Brief</div>" not in page, "Old static masthead date remains"
+
     league = read_json("data/league.json")
     if league:
         if league.get("status") == "unavailable":
