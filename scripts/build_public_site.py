@@ -34,6 +34,9 @@ STATIC_ASSETS = (
     "assets/nfl-player-ticker.js",
     "assets/espn-matchups.js",
     "assets/espn-team-logos.json",
+    # Reviewed, owner-supplied Thanksgiving masthead artwork.
+    "assets/turkey-left.webp",
+    "assets/turkey-right.webp",
 )
 IMAGE_EXTENSIONS = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg"}
 MAX_IMAGE_BYTES = 2_000_000
