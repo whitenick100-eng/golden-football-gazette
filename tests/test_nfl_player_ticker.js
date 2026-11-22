@@ -56,13 +56,16 @@ test('season scoreboard leaders must remain separate from game boxes',()=>{
  // A live game state never changes the season metric's source label.
  assert.notEqual(values[0].phase,'LIVE');
 });
-test('mixed scoreboard only selects in-progress and completed game IDs',()=>{
+test('live stat ribbon excludes finished games while any NFL game is in progress',()=>{
  const events=[{id:'1',state:'pre',date:'2026-11-22T18:00:00Z'},
  {id:'2',state:'in',date:'2026-11-22T18:00:00Z'},
  {id:'3',state:'post',date:'2026-11-19T20:00:00Z'}];
- const choose=t.selectGames(events);
- assert.deepEqual(choose.games.map(x=>x.id),['2','3']);
- assert.equal(choose.active,1);
+ const active=t.selectGames(events);
+ assert.deepEqual(active.games.map(x=>x.id),['2']);
+ assert.equal(active.active,1);
+ const final=t.selectGames(events.filter(x=>x.state!=='in'));
+ assert.deepEqual(final.games.map(x=>x.id),['3']);
+ assert.equal(final.active,0);
 });
 test('numbers reject missing/invalid stats instead of inventing points',()=>{
  for(const value of ['',undefined,null,'NaN',{},[]]){
