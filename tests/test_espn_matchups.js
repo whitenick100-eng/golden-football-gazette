@@ -88,6 +88,8 @@ check('Direct ESPN merge validates league identity and exact scoring period',()=
       home:{teamId:1,totalPointsLive:37.25,totalProjectedPointsLive:145},
       away:{teamId:2,totalPointsLive:21.55,totalProjectedPointsLive:132}}]};
   const update=matchups.liveMatchupMerge(base,fresh,11);
+  const optionalSeason={...fresh};delete optionalSeason.seasonId;
+  assert.equal(matchups.liveMatchupMerge(base,optionalSeason,11).matched,1);
   assert.equal(update.matched,1);
   assert.equal(update.snapshot.matchups[0].home.points,37.25);
   assert.equal(update.snapshot.matchups[0].away.points,21.55);
