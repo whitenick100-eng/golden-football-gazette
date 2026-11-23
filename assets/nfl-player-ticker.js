@@ -14,10 +14,11 @@ const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
-// A fixed animation duration makes a 7-sport news ticker race when headlines
-// multiply. Scroll at a readable ~25px/s, with a generous minimum duration.
+// Scale the marquee to its content width so 8-sport headlines don't race.
+// ~30px/s with a 100-second minimum is between the previous 25px/s
+// (minimum 120s) and the original much-faster 65-second loop.
 function tickerScrollSeconds(groupWidth){
- return Math.max(120,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/25));
+ return Math.max(100,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/30));
 }
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 
