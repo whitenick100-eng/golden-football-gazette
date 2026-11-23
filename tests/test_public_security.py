@@ -66,7 +66,7 @@ class PublicSiteSecurityTests(unittest.TestCase):
         published = (self.root / "public/data/league.json").read_text(encoding="utf-8")
         self.assertEqual(json.loads(published), value)
         self.assertLess(len(published.encode("utf-8")), len(source.encode("utf-8")))
-        self.assertNotIn("  \\"standings\\"", published)
+        self.assertNotIn('\\n  "standings":', published)
 
     def test_inline_scripts_allowed_by_hash_but_no_unsafe_inline_js(self):
         original=(self.root/"index.html").read_text()
