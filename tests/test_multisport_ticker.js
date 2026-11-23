@@ -196,7 +196,7 @@ test('hostile article and game URLs are rejected',()=>{
 test('mixed ticker gives each sport fair placement instead of NBA-only coverage',()=>{
  const feeds=Object.fromEntries(multi.SPORTS.map(s=>[
    s.id,{scores:[{sport:s.id,kind:'score',name:'Score'}],
-         news:[{sport:s.id,kind:'news',name:'Headline'}]}]));
+         news:[{sport:s.id,kind:'news',name:'Headline',href:s.page}]}]));
  const mixed=multi.mixRows(feeds);
  assert.equal(mixed.length,16);
  assert.deepEqual(mixed.slice(0,4).map(r=>r.sport),['NBA','NBA','WNBA','WNBA']);
