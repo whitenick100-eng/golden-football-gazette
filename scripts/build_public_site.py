@@ -30,6 +30,7 @@ PUBLIC_DATA = (
 )
 STATIC_ASSETS = (
     "assets/stadium-late-fall.webp",
+    "assets/stadium-nfl-unbranded.webp",
     "assets/live-nfl-scores.js",
     "assets/nfl-player-ticker.js",
     "assets/multisport-ticker.js",
