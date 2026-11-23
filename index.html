@@ -115,16 +115,16 @@ body:before{background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.12) 60%
 html{background:#081722}
 body{
  background-color:#081722!important;
- background-image:linear-gradient(180deg,rgba(2,9,21,.25) 0%,rgba(2,13,21,.16) 42%,rgba(1,14,12,.25) 100%),url('assets/stadium-late-fall.webp')!important;
+ background-image:linear-gradient(180deg,rgba(2,9,21,.12) 0%,rgba(2,13,21,.08) 42%,rgba(1,14,12,.16) 100%),url('assets/stadium-late-fall.webp')!important;
  background-position:center center!important;
  background-size:cover!important;
  background-attachment:fixed!important;
 }
-body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 60%,rgba(4,32,9,.16))!important}
+body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04) 60%,rgba(4,32,9,.09))!important}
 .gazette-masthead,.page,.hub-section,.breaking,#espn-live,.nfl-banner,.archive{
  background:rgba(3,14,24,.32)!important;
- backdrop-filter:blur(3px)!important;
- -webkit-backdrop-filter:blur(3px)!important;
+ backdrop-filter:blur(1px)!important;
+ -webkit-backdrop-filter:blur(1px)!important;
  border-color:rgba(239,194,119,.72)!important;
 }
 .gazette-masthead{background:rgba(3,13,24,.38)!important}
@@ -134,7 +134,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
  margin:14px 0;
  border:2px double rgba(242,209,151,.85);
  background:rgba(4,19,23,.45);
- backdrop-filter:blur(3px);
+ backdrop-filter:blur(1px);
  padding:16px 18px;
 }
 .league-logos-feature h2{font-variant:small-caps;letter-spacing:.045em;color:#ffdb9d;font-size:1.45rem;margin:0 0 10px;text-align:center}
@@ -242,12 +242,14 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
     height: 100dvh;
     z-index: -1;
     pointer-events: none;
-    background-image: linear-gradient(180deg,rgba(2,9,20,.08) 0%,rgba(2,10,19,.08) 55%,rgba(2,20,11,.12) 100%),url("assets/stadium-late-fall.webp") !important;
+    background-image: linear-gradient(180deg,rgba(2,9,20,.04) 0%,rgba(2,10,19,.04) 55%,rgba(2,20,11,.07) 100%),url("assets/stadium-late-fall.webp") !important;
     background-position: center center !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-attachment: scroll !important;
     transform: translateZ(0);
+    /* Subtle photo-layer clarity enhancement without changing text. */
+    filter: contrast(1.07) saturate(1.05) brightness(1.02);
   }
   .gazette-masthead,.page,.hub-section,.breaking,#espn-live,.nfl-banner,.archive,
   .league-logos-feature,header {
@@ -459,7 +461,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 .ticker-player-name{font-weight:800;color:#ffecc0}
 .ticker-player-team{font-size:.65rem;color:#c8ddd1}
 .ticker-player-stat{font-weight:700;font-variant-numeric:tabular-nums;color:#fff5d8}
-.nfl-stat-track.ticker-animate{animation:gz-nfl-marquee var(--gz-ticker-duration,100s) linear infinite}
+.nfl-stat-track.ticker-animate{animation:gz-nfl-marquee var(--gz-ticker-duration,95s) linear infinite}
 .nfl-stat-ticker:hover .ticker-animate,
 .nfl-stat-ticker:focus-within .ticker-animate{animation-play-state:paused}
 @keyframes gz-nfl-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
