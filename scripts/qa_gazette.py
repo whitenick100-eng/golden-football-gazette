@@ -232,6 +232,13 @@ def validate():
                         "Rostered in Gridiron Giggles ESPN fantasy league")
                     assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
                     assert isinstance(move.get("mentionedTeams"),list)
+    # Verify public league identity and sharp stadium source remain reviewable.
+    assert page.count("Gridiron Giggles Fantasy Football League") >= 2
+    assert "The White / Wilcox / Hulsey / Homan Fantasy Football League" not in page
+    assert 'league-identity-family">Fantasy Football League</span>' in page
+    assert "photo-1781650104690-a5309d91a26b" in page
+    assert "w=3200&q=88" in page and "w=1800&q=88" in page
+    assert "assets/stadium-late-fall.webp" in page, "Local stadium fallback missing"
     # In-browser, auto-refreshed NFL scores supplement the daily static snapshot.
     for required in ('id="nfl-stat-ticker"', 'id="nfl-stat-track"',
                       'id="nfl-stat-ticker-mode"', 'id="nfl-stat-ticker-status"',
