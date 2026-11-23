@@ -373,7 +373,22 @@ async function refresh(force=false){
    updateSportTabs(liveGameMode);
    if(!liveGameMode){
      if(!root.GazetteMultiSport)throw Error('Multi-sport news module is unavailable');
-     const latest=await root.GazetteMultiSport.load(root,force,selectedSport);
+     let latest;
+     try{
+       latest=await root.GazetteMultiSport.load(root,force,selectedSport);
+     }catch(feedError){
+       // NFL games are confirmed idle; never leave stale *live NFL stats*
+       // visible simply because a different sport's feed is unreachable.
+       last=null;
+       bar.replaceChildren(tag('span','Selected sports feed temporarily unavailable.','ticker-empty'));
+       bar.classList.remove('ticker-animate');
+       if(titleText)titleText.textContent=selectedSport==='ALL'?
+         'Across Sports · Scores & News':selectedSport+' · Scores & News';
+       mode.textContent='SPORTS DATA TEMPORARILY UNAVAILABLE';
+       status.textContent='NFL has no live games · Could not verify selected ESPN scores/news. Retrying shortly.';
+       next(60000);
+       return;
+     }
      if(!latest.rows.length){
        paint({rows:[],modeKind:'multi',mode:'SPORTS SCORES + NEWS',
          checked:latest.checked,partial:latest.partial,
