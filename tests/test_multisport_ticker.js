@@ -109,7 +109,7 @@ test('mixed ticker gives each sport fair placement instead of NBA-only coverage'
 async function offlineIntegration(){
  const fake={
   fetch:async url=>{
-    if(url.includes('/basketball/nba/scoreboard'))return {ok:true,json:async()=>teams()};
+    if(url.includes('/basketball/nba/scoreboard'))return {ok:true,json:async()=>teams('post',new Date(Date.now()-12*60*60*1000).toISOString())};
     if(url.includes('/basketball/nba/news'))return {ok:true,json:async()=>({
       articles:[{headline:'Verified NBA headline',
       published:new Date(Date.now()-60*60*1000).toISOString(),
