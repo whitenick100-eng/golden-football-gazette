@@ -14,6 +14,11 @@ const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
+// A fixed animation duration makes a 7-sport news ticker race when headlines
+// multiply. Scroll at a readable ~25px/s, with a generous minimum duration.
+function tickerScrollSeconds(groupWidth){
+ return Math.max(120,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/25));
+}
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 
 function reuseWeekMetadata(checkedAt,now){
@@ -150,7 +155,7 @@ function summaryURL(id){
  return BASE+'summary?event='+id;
 }
 const api={numeric,statEntry,gameBoxStats,scoreboardLeaders,topByKind,boardEvents,
-           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata,nflGameInProgress};
+           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata,nflGameInProgress,tickerScrollSeconds};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 root.GazetteStatTicker=api;
@@ -247,7 +252,9 @@ function paint(data){
    const clone=tag('div',undefined,'nfl-stat-group');
    clone.setAttribute('aria-hidden','true');
    for(const p of data.rows)clone.append(makeCard(p,true));
-   bar.append(clone);bar.classList.add('ticker-animate');
+   bar.append(clone);
+   bar.style.setProperty('--gz-ticker-duration',tickerScrollSeconds(first.scrollWidth)+'s');
+   bar.classList.add('ticker-animate');
  }else bar.classList.remove('ticker-animate');
  mode.textContent=data.mode;
  status.textContent=(data.stale?'Last verified':'ESPN checked')+' '+dateLabel(data.checked)+
