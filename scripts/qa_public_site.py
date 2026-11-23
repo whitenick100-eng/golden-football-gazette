@@ -36,6 +36,7 @@ def check(root=ROOT, output=OUT):
     public_files={str(p.relative_to(output)) for p in output.rglob("*") if p.is_file()}
     required={"index.html",".nojekyll",
               "assets/stadium-late-fall.webp",
+              "assets/stadium-nfl-unbranded.webp",
               "assets/live-nfl-scores.js",
               "assets/nfl-player-ticker.js",
               "assets/multisport-ticker.js",
