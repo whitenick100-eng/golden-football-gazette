@@ -226,6 +226,12 @@ def build(root: Path = ROOT, output: Path | None = None) -> list[str]:
             if not isinstance(value, dict):
                 raise ValueError(f"Unexpected public JSON object: {relative}")
             checked_copy(root, output, relative)
+            # Preserve the exact JSON data while omitting whitespace that
+            # browsers otherwise download on every Pages data revalidation.
+            (output / relative).write_text(
+                json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
     editorial = root / "editorial/latest.json"
     if editorial.is_file():
         doc = json.loads(editorial.read_text("utf-8"))
