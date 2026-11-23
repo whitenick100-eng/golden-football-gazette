@@ -135,14 +135,21 @@ test('invalid game box stats cannot inject unrealistic TD or yardage totals',()=
  assert.equal(t.statEntry(section,athlete(7,'Example',['121','1.5']), 'KC', event),null);
 });
 
-test('ticker scrolls at a readable faster pace and sport tabs do not pause it',()=>{
- // About 44px/s, minimum 72 seconds: faster but still readable.
- assert.equal(t.tickerScrollSeconds(1000),72);
- assert.equal(t.tickerScrollSeconds(3000),72);
+test('all sport tabs scroll at exactly the same pixel velocity as All Sports',()=>{
+ // The former fixed 72s minimum made short one-sport lists crawl.
+ // The scroll is now always ~44 CSS px/s across every sport.
+ assert.equal(t.tickerScrollSeconds(1000),23);
+ assert.equal(t.tickerScrollSeconds(3000),69);
  assert.equal(t.tickerScrollSeconds(4000),91);
  assert.equal(t.tickerScrollSeconds(8000),182);
- assert.equal(t.tickerScrollSeconds(0),72);
- assert.equal(t.tickerScrollSeconds(NaN),72);
+ assert.equal(t.tickerScrollSeconds(0),69);
+ assert.equal(t.tickerScrollSeconds(NaN),69);
+ assert.equal(t.tickerRepeatCount(1000,1100),2);
+ assert.equal(t.tickerRepeatCount(300,900),3);
+ assert.equal(t.tickerRepeatCount(2500,900),1);
+ assert.equal(t.tickerRepeatCount(100,10000),32);
+ assert.equal(t.tickerRepeatCount(0,900),1);
+ assert.equal(t.tickerRepeatCount(400,0),1);
  assert.ok(t.tickerScrollSeconds(8000)>t.tickerScrollSeconds(4000));
  const fs=require('node:fs');
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
@@ -165,6 +172,11 @@ test('ticker scrolls at a readable faster pace and sport tabs do not pause it',(
  assert.ok(html.includes("url('assets/stadium-late-fall.webp')"));
  const tickerSource=fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8');
  assert.ok(tickerSource.includes("tickerScrollSeconds(first.scrollWidth)"));
+ assert.ok(tickerSource.includes("tickerRepeatCount(first.scrollWidth,tickerWindow?.clientWidth||bar.clientWidth)"));
+ assert.ok(tickerSource.includes("for(let copy=1;copy<repeats;copy++)"));
+ assert.ok(tickerSource.includes("for(let copy=0;copy<repeats;copy++)"));
+ assert.ok(!tickerSource.includes("if(data.rows.length>1)"),'Single-item sport filters must still scroll');
+ assert.ok(tickerSource.includes("selectedSport"),'Previous sport selection remains unchanged');
  assert.ok(tickerSource.includes("if(last?.modeKind==='multi')"));
  assert.ok(tickerSource.includes("mode.textContent='NFL STATUS UNVERIFIED'"));
  assert.ok(tickerSource.includes('updateSportTabs(liveGameMode)'));
