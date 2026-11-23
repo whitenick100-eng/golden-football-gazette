@@ -188,6 +188,20 @@ test('verified game scores are prioritized ahead of major news per sport',()=>{
  assert.equal(rows[0].sport,'NBA');
  assert.equal(rows[2].sport,'NBA');
 });
+test('all nine leagues fit in the complete score/news rotation',()=>{
+ const rows=multi.mixRows(Object.fromEntries(multi.SPORTS.map(s=>[
+   s.id,{
+     scores:Array.from({length:3},(_,i)=>({
+       sport:s.id,kind:'score',name:s.id+' verified score '+i,
+       date:now-i*1000,href:s.page
+     })),
+     news:[{sport:s.id,kind:'news',name:'Significant '+s.id+' headline',href:s.page+'/story/123'}]
+   }
+ ])));
+ assert.equal(rows.length,36);
+ assert.equal(rows.some(r=>r.sport==='NASCAR'&&r.kind==='news'),true);
+ assert.equal(rows.some(r=>r.sport==='NFL'&&r.kind==='score'),true);
+});
 test('hostile article and game URLs are rejected',()=>{
  for(const bad of ['javascript:alert(1)','https://www.espn.com.evil.test/x',
                    'http://www.espn.com/x','https://evil.test/x']){
