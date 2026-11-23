@@ -32,6 +32,7 @@ jobs:
           python -m py_compile scripts/*.py tests/*.py
           node --check assets/live-nfl-scores.js
           node --check assets/nfl-player-ticker.js
+          node --check assets/multisport-ticker.js
           node --check assets/espn-matchups.js
 
       - name: Validate public-site allowlist, credential scanning and security tests
