@@ -239,6 +239,12 @@ def validate():
                       'id="roster-wire-scan-details"', 'id="roster-wire-refresh"'):
         assert required in page, f"Ticker or roster health element missing: {required}"
     assert '<script src="assets/nfl-player-ticker.js"></script>' in page
+    assert 'id="nfl-stat-ticker-title"' in page
+    assert '<script src="assets/multisport-ticker.js"></script>' in page
+    assert page.index('<script src="assets/multisport-ticker.js"></script>') < page.index('<script src="assets/nfl-player-ticker.js"></script>')
+    multi=ROOT/"assets/multisport-ticker.js"
+    assert multi.is_file() and "GazetteMultiSport" in multi.read_text(encoding="utf-8")
+    assert "nflGameInProgress" in (ROOT/"assets/nfl-player-ticker.js").read_text(encoding="utf-8")
     ticker=ROOT/"assets/nfl-player-ticker.js"
     assert ticker.is_file(), "NFL ticker script not present"
     tick=ticker.read_text(encoding="utf-8")
