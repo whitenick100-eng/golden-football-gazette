@@ -87,6 +87,14 @@ test('direct ESPN scoreboard automatically detects next regular-season week',()=
  assert.throws(()=>t.currentWeek({season:{year:2026,type:3},week:{number:1}}));
  assert.throws(()=>t.currentWeek({season:{year:2026,type:2},week:{number:null}}));
 });
+test('current NFL week metadata is reused briefly, never indefinitely',()=>{
+ const now=1700000000000,ttl=5*60*1000;
+ assert.equal(t.reuseWeekMetadata(0,now),false);
+ assert.equal(t.reuseWeekMetadata(now-1000,now),true);
+ assert.equal(t.reuseWeekMetadata(now-ttl+1,now),true);
+ assert.equal(t.reuseWeekMetadata(now-ttl,now),false);
+ assert.equal(t.reuseWeekMetadata(now+1000,now),false);
+});
 test('numbers reject missing/invalid stats instead of inventing points',()=>{
  for(const value of ['',undefined,null,'NaN',{},[]]){
    assert.equal(t.numeric(value),null);

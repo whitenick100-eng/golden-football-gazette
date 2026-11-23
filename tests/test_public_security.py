@@ -51,6 +51,23 @@ class PublicSiteSecurityTests(unittest.TestCase):
             self.assertNotIn(excluded,published)
             self.assertFalse((self.root/"public"/excluded).exists())
 
+    def test_public_json_is_compact_and_preserves_every_field(self):
+        value = {
+            "leagueId": "1413446022",
+            "fetchedAt": "2026-11-23T13:00:00Z",
+            "standings": [{"teamId": 1, "name": "The Golden Football", "points": 128.25}],
+            "matchups": [],
+            "description": "Verified ESPN scores only — never estimated",
+        }
+        path = self.root / "data/league.json"
+        source = json.dumps(value, indent=2, ensure_ascii=False) + "\n"
+        path.write_text(source, encoding="utf-8")
+        build.build(self.root)
+        published = (self.root / "public/data/league.json").read_text(encoding="utf-8")
+        self.assertEqual(json.loads(published), value)
+        self.assertLess(len(published.encode("utf-8")), len(source.encode("utf-8")))
+        self.assertNotIn('  "standings":', published)
+
     def test_inline_scripts_allowed_by_hash_but_no_unsafe_inline_js(self):
         original=(self.root/"index.html").read_text()
         secured=build.secure_html(original)

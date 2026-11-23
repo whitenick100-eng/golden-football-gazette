@@ -8,7 +8,12 @@ const LEAGUE_URL='https://fantasy.espn.com/football/league?leagueId=1413446022';
 const FINAL=new Set(['HOME','AWAY','TIE']);
 const LIVE_BASE='https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/segments/0/leagues/1413446022';
 const POLL_MS=30000; // Best-effort checks; ESPN may throttle or prohibit browser CORS.
+const PUBLISHED_SNAPSHOT_TTL_MS=5*60*1000; // Revalidate static fallback at most once per five minutes.
 
+function shouldRefreshPublishedSnapshot(lastChecked,now,force=false){
+  return force||!Number.isFinite(lastChecked)||lastChecked<=0||
+    now<lastChecked||now-lastChecked>=PUBLISHED_SNAPSHOT_TTL_MS;
+}
 function validPoints(value) {
   return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<1000 ? value : null;
 }
@@ -123,7 +128,7 @@ function liveMatchupMerge(existing,fresh,week) {
     matched,expected,scoredGames,verifiedSides};
 }
 
-const api={validPoints,formatPoints,phase,scored,winnerSide,availableWeeks,record,initials,liveMatchupMerge};
+const api={validPoints,formatPoints,phase,scored,winnerSide,availableWeeks,record,initials,liveMatchupMerge,shouldRefreshPublishedSnapshot};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 
@@ -134,6 +139,7 @@ const cards=$('espn-games'),weekSelect=$('espn-week-select'),previous=$('espn-we
 if(!cards||!weekSelect||!previous||!next||!status||!summary||!refresh)return;
 
 let snapshot=null,selectedWeek=null,loading=false,liveCheckedAt=null,lastLiveAt=null,liveError='',liveCoverage='';
+let lastPublishedSnapshotCheck=0;
 const emblemSources=new Map();
 let emblemsLoading=null;
 const trustedESPNLogo=url=>typeof url==='string'&&/^https:\/\/(?:mystique-api\.fantasy\.espn\.com|g\.espncdn\.com|a\.espncdn\.com)\//.test(url);
@@ -322,29 +328,33 @@ async function checkLive(){
   (merged.matched<merged.expected?' (partial response)':'');
  liveCheckedAt=new Date();lastLiveAt=liveCheckedAt;liveError='';
 }
-async function load(){
+async function load(forcePublishedSnapshot=false){
  if(loading)return;
  loading=true;refresh.disabled=true;
  status.textContent='Checking the latest published ESPN scores and attempting a direct ESPN refresh…';
- try{
-  // Refresh the static verified fallback on every manual and automatic check.
-  const response=await root.fetch('data/league.json?ts='+Date.now(),{cache:'no-store'});
-  if(!response.ok)throw Error('No ESPN snapshot published');
-  const data=await response.json();
-  if(String(data.leagueId)!=='1413446022'||data.season!==2026||
-     data.status==='unavailable'||!data.fetchedAt||
-     !Array.isArray(data.matchups)||!Array.isArray(data.standings)){
-    throw Error('Current verified ESPN league snapshot unavailable');
-  }
-  // Never regress a more recent successful live score to a delayed daily snapshot.
-  if(!lastLiveAt||!snapshot||new Date(data.fetchedAt)>lastLiveAt)snapshot=data;
-  populateWeeks();
- }catch(error){
-  if(!snapshot){
-   cards.replaceChildren(tag('p','ESPN matchup scores could not be verified. Try again or open the ESPN league.','espn-no-matchups'));
-   summary.textContent='Scoreboard unavailable';
-   status.textContent='No verified ESPN scoreboard snapshot available.';
-   loading=false;refresh.disabled=false;return;
+ // ESPN live scoring is checked every poll, but the published fallback changes
+ // only on Pages deployment. Revalidate it every five minutes or on manual refresh.
+ if(!snapshot||shouldRefreshPublishedSnapshot(lastPublishedSnapshotCheck,Date.now(),forcePublishedSnapshot)){
+  try{
+   const response=await root.fetch('data/league.json',{cache:'no-cache'});
+   if(!response.ok)throw Error('No ESPN snapshot published');
+   const data=await response.json();
+   if(String(data.leagueId)!=='1413446022'||data.season!==2026||
+      data.status==='unavailable'||!data.fetchedAt||
+      !Array.isArray(data.matchups)||!Array.isArray(data.standings)){
+     throw Error('Current verified ESPN league snapshot unavailable');
+   }
+   lastPublishedSnapshotCheck=Date.now();
+   // Never regress a more recent successful live score to a delayed daily snapshot.
+   if(!lastLiveAt||!snapshot||new Date(data.fetchedAt)>lastLiveAt)snapshot=data;
+   populateWeeks();
+  }catch(error){
+   if(!snapshot){
+    cards.replaceChildren(tag('p','ESPN matchup scores could not be verified. Try again or open the ESPN league.','espn-no-matchups'));
+    summary.textContent='Scoreboard unavailable';
+    status.textContent='No verified ESPN scoreboard snapshot available.';
+    loading=false;refresh.disabled=false;return;
+   }
   }
  }
  try{await checkLive()}
@@ -367,7 +377,7 @@ next.addEventListener('click',()=>{
   const w=availableWeeks(snapshot),i=w.indexOf(selectedWeek);
   if(i>=0&&i<w.length-1){selectedWeek=w[i+1];render()}
 });
-refresh.addEventListener('click',load);
+refresh.addEventListener('click',()=>load(true));
 // Browser checks ESPN directly when CORS permits, and always keeps the
 // published, timestamped GitHub Pages snapshot as the honest fallback.
 const gamesActive=()=>snapshot?.matchups?.some(g=>

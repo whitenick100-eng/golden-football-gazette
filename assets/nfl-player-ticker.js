@@ -13,8 +13,13 @@ const MAX_GAMES=18;
 const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
+const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 
+function reuseWeekMetadata(checkedAt,now){
+  return Number.isFinite(checkedAt)&&checkedAt>0&&now>=checkedAt&&
+    now-checkedAt<WEEK_METADATA_TTL_MS;
+}
 function numeric(v){
  if(typeof v!=='number'&&typeof v!=='string')return null;
  if(String(v).trim()==='')return null;
@@ -142,7 +147,7 @@ function summaryURL(id){
  return BASE+'summary?event='+id;
 }
 const api={numeric,statEntry,gameBoxStats,scoreboardLeaders,topByKind,boardEvents,
-           selectGames,currentWeek,boardURL,summaryURL};
+           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 root.GazetteStatTicker=api;
@@ -152,6 +157,7 @@ const doc=root.document,bar=doc.getElementById('nfl-stat-track'),
   btn=doc.getElementById('nfl-stat-ticker-refresh');
 if(!bar||!status||!mode||!btn)return;
 let inFlight=false,timer=null,last=null,stop=false,season=null,week=null;
+let cachedWeekMetadata=null,lastWeekMetadataCheck=0;
 // Rotate in newly recorded player performances before recycling old leaders.
 const previouslySeen=new Map();
 let previouslyFeatured=new Set();
@@ -248,7 +254,7 @@ function next(ms){
  if(!stop)timer=root.setTimeout(refresh,ms);
 }
 async function fallbackFantasy(){
- const r=await root.fetch('data/top-performers.json?ts='+Date.now(),{cache:'no-store'});
+ const r=await root.fetch('data/top-performers.json',{cache:'no-cache'});
  if(!r.ok)throw Error('No published fantasy leaderboard');
  const data=await r.json();
  if(data.leagueId!==1413446022||data.season!==season||!Array.isArray(data.players))throw Error('No verified fantasy leaderboard');
@@ -263,12 +269,20 @@ async function fallbackFantasy(){
 // Resolve the week from ESPN at runtime: the ticker can roll into the next
 // week's games even before the daily GitHub Pages data publication completes.
 async function latestWeek(){
+ // Avoid downloading the unscoped NFL scoreboard every 90 seconds just to
+ // rediscover the season/week. The scoped weekly scoreboard still refreshes
+ // normally, so in-progress game statistics are not delayed.
+ if(cachedWeekMetadata&&reuseWeekMetadata(lastWeekMetadataCheck,Date.now()))
+   return cachedWeekMetadata;
  try{
-   return {...currentWeek(await loadJSON(CURRENT_BOARD_URL,12000)),
+   const verified={...currentWeek(await loadJSON(CURRENT_BOARD_URL,12000)),
      source:'ESPN current week'};
+   cachedWeekMetadata=verified;
+   lastWeekMetadataCheck=Date.now();
+   return verified;
  }catch(_){
    // The scheduled daily publication is an explicit, verified fallback.
-   const snap=await loadJSON('data/nfl-week.json?ts='+Date.now());
+   const snap=await loadJSON('data/nfl-week.json');
    if(!Number.isInteger(snap.season)||snap.season<2024||snap.season>2100||
       !Number.isInteger(snap.week)||snap.week<1||snap.week>22){
      throw Error('No verified NFL week');

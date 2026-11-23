@@ -13,6 +13,16 @@ check('ESPN scores and projections do not become zero when unavailable',()=>{
   assert.equal(matchups.formatPoints(121.5),'121.50');
   assert.equal(matchups.formatPoints(0),'0.00');
 });
+check('Published snapshot revalidation is throttled, but manual refresh bypasses the TTL',()=>{
+  const fiveMinutes=5*60*1000,now=1700000000000;
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(0,now),true);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(now-1000,now),false);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(now-fiveMinutes+1,now),false);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(now-fiveMinutes,now),true);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(now-1000,now,true),true);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(now+1000,now),true);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(NaN,now),true);
+});
 check('Upcoming matchup never fabricates a winning team or live score',()=>{
   const game={winner:'UNDECIDED',home:{points:0,projectedPoints:145},
     away:{points:0,projectedPoints:null}};
