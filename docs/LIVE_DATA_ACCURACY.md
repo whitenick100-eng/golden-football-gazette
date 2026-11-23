@@ -57,3 +57,14 @@ does not own ESPN's scoring data or operate a real-time server.
   and normal PR owner approval are preserved.
 - No private ESPN cookies, credentials, paid agents or TinyFish integration
   are introduced. There are **no layout redesigns**.
+
+## Top ticker: NFL-exclusive mode and seven-sport scores/news (November 23, 2026)
+
+- **NFL is live:** At each visible-page check, the ticker first requests ESPN's NFL scoreboard. A game with ESPN `status.type.state === "in"` activates **NFL-only game statistics**. The original ESPN per-game box-score verification, timed final-stat rechecks, formatting, and marquee remain in place. Previous multi-sport cards are cleared before NFL game stats load.
+- **NFL is not live:** If the scoreboard successfully confirms no in-progress NFL event, the same top ticker displays ESPN-reported NBA, WNBA, PGA, NCAA men's basketball, NCAA women's basketball, MLB, and NASCAR results plus their most recent ESPN headlines. This is not a redesign or an additional section.
+- **Switching:** The page rechecks the NFL scoreboard about once a minute outside NFL games; during active games it uses the existing ~90-second player-stat refresh. Switching is automatic without a GitHub deployment.
+- **Sources:** All seven scoreboard and league-specific news feeds use `https://site.api.espn.com/apis/site/v2/sports/`. Team scores must have both competitors and explicit ESPN numeric scores with an `in` or `post` event status. Golf/NASCAR leaders must have an explicit ESPN position of 1; PGA also requires a published score. Results older than 72 hours and headlines older than seven days are excluded.
+- **Headlines:** Display verbatim (truncated) ESPN headlines as links to ESPN, marked **LATEST NEWS** unless ESPN labels the article as breaking or uses a breaking headline. Do not fabricate headlines or mislabel every recent article as breaking.
+- **Data limits:** Unofficial ESPN endpoints can change, rate-limit or deny CORS. Feeds are best effort, checked only when the webpage is open, and reused for up to five minutes. Unavailable sports are skipped and partial feed coverage is disclosed. If NFL live status cannot be verified, do not assume there is no active NFL game.
+- **Security:** Existing CSP still limits fetch destinations to ESPN and self, external article links are restricted to `https://www.espn.com/`, and the new script is in the security-reviewed public-site allowlist. No keys, cookies, new server, third-party scraping service, automatic design updates, or TinyFish.
+- **Tests:** `node tests/test_multisport_ticker.js` and `node tests/test_nfl_player_ticker.js`, plus the existing required GitHub security gate and public-site tests.
