@@ -492,7 +492,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04)
 @media(hover:hover){
  .nfl-stat-ticker-window:hover .ticker-animate{animation-play-state:paused}
 }
-.nfl-stat-ticker-window:focus-within .ticker-animate{animation-play-state:paused}
+.nfl-stat-ticker-window:has(a:focus-visible) .ticker-animate{animation-play-state:paused}
 @keyframes gz-nfl-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .nfl-ticker-source{font:500 .65rem/1.35 system-ui,sans-serif;color:#d9c9a9;padding:3px 12px 6px;margin:0!important}
 .ticker-empty{padding:8px 12px;color:#e8cf9f;font:.75rem system-ui,sans-serif}
