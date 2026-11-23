@@ -418,7 +418,15 @@ async function refresh(force=false){
    }
    next(REFRESH_GAME_MS);
  }catch(e){
-   if(last){
+   if(last?.modeKind==='multi'){
+     // Fail closed: when ESPN cannot confirm NFL game status, do not keep
+     // other sports on-screen because an NFL game may have just started.
+     last=null;
+     bar.replaceChildren(tag('span','Checking ESPN NFL live status…','ticker-empty'));
+     bar.classList.remove('ticker-animate');
+     mode.textContent='NFL STATUS UNVERIFIED';
+     status.textContent='Unable to confirm whether NFL games are in progress. Retrying shortly.';
+   }else if(last){
      paint({...last,stale:true,notes:'NFL live status or source temporarily unverified · '+(last.notes||'')});
    }else{
      // No confirmed non-NFL mode: do not falsely claim there is no live NFL.
