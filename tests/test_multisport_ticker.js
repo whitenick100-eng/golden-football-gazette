@@ -74,7 +74,7 @@ test('NASCAR race leader requires ESPN position 1, not a guessed winner',()=>{
 });
 test('news is dated, article-linked and never automatically miscalled breaking',()=>{
  const doc={articles:[{
-  headline:'Star player moves to new team',type:'HeadlineNews',
+  headline:'Star player traded to a new team',type:'HeadlineNews',
   published:'2026-11-23T15:00:00Z',
   links:{web:{href:'https://www.espn.com/nba/story/_/id/123/star-player'}}
  },{
@@ -86,13 +86,13 @@ test('news is dated, article-linked and never automatically miscalled breaking',
  }]};
  const rows=multi.newsRows(doc,sport('NBA'),now);
  assert.equal(rows.length,2);
- assert.equal(rows[0].team,'LATEST NEWS');
- assert.equal(rows[1].team,'BREAKING');
+ assert.equal(rows[0].team,'BREAKING');
+ assert.equal(rows[1].team,'MAJOR NEWS');
  assert.ok(rows[0].text.includes('Nov 23'));
 });
 test('news keeps its sport badge but corrects cross-listed ESPN article topics',()=>{
  const article=(href,extra={})=>({
-  headline:'A confirmed sports update',
+  headline:'A confirmed major trade',
   published:'2026-11-23T17:00:00Z',
   links:{web:{href}},...extra
  });
@@ -115,18 +115,18 @@ test('news keeps its sport badge but corrects cross-listed ESPN article topics',
  assert.equal(crossListed.length,1);
  assert.equal(crossListed[0].sport,'NCAA FB');
  assert.equal(crossListed[0].kind,'news');
- assert.equal(crossListed[0].name,'A confirmed sports update');
+ assert.equal(crossListed[0].name,'A confirmed major trade');
 });
 test('off-NFL ticker does not disguise cross-posted NFL stories as NBA',()=>{
  const rows=multi.newsRows({articles:[
   {headline:'NFL breaking story',published:'2026-11-23T18:00:00Z',
    links:{web:{href:'https://www.espn.com/nfl/story/_/id/7'}}},
-  {headline:'Actual basketball story',published:'2026-11-23T17:00:00Z',
+  {headline:'NBA star injured ahead of playoffs',published:'2026-11-23T17:00:00Z',
    links:{web:{href:'https://www.espn.com/nba/story/_/id/8'}}}
  ]},sport('NBA'),now);
  assert.equal(rows.length,1);
  assert.equal(rows[0].sport,'NBA');
- assert.equal(rows[0].name,'Actual basketball story');
+ assert.equal(rows[0].name,'NBA star injured ahead of playoffs');
 });
 test('cross-listed identical articles appear only once in mixed sport rotation',()=>{
  const href='https://www.espn.com/wnba/story/_/id/12345';
@@ -137,6 +137,46 @@ test('cross-listed identical articles appear only once in mixed sport rotation',
  };
  const result=multi.mixRows(feeds);
  assert.equal(result.filter(r=>r.href===href).length,1);
+});
+test('late-breaking high-impact stories outrank unrelated or week-old filler',()=>{
+ const mk=(headline,ageHours,type='HeadlineNews')=>({
+  headline,type,
+  published:new Date(now-ageHours*60*60*1000).toISOString(),
+  links:{web:{href:'https://www.espn.com/nba/story/_/id/'+
+    (headline.length*13+Math.round(ageHours*10))+'/'+encodeURIComponent(headline)}}
+ });
+ const rows=multi.newsRows({articles:[
+   mk('Weekend podcast: predictions and odds',1),
+   mk('NBA superstar signs record contract',9),
+   mk('All-time player traded in blockbuster deal',3),
+   mk('Breaking: playoff contender fires head coach',2,'BreakingNews'),
+   mk('Rookie injured ahead of championship final',55),
+   mk('Power rankings and preview',1)
+ ]},sport('NBA'),now);
+ assert.equal(rows.length,2);
+ assert.equal(rows[0].team,'BREAKING');
+ assert.equal(rows[0].name,'Breaking: playoff contender fires head coach');
+ assert.equal(rows[1].name,'All-time player traded in blockbuster deal');
+ assert.ok(rows.every(row=>row.sport==='NBA'&&row.date>=now-48*60*60*1000));
+ assert.equal(multi.newsImportance(mk('Random podcast recap',1),now),null);
+ assert.equal(multi.newsImportance(mk('Player signs new deal',55),now),null);
+ assert.equal(multi.newsImportance(mk('One ordinary game was played',2),now),null);
+});
+test('verified game scores are prioritized ahead of major news per sport',()=>{
+ const feeds={
+  NBA:{
+   scores:[{sport:'NBA',kind:'score',name:'LAL 111 — BOS 110'},
+           {sport:'NBA',kind:'score',name:'NYK 99 — MIA 98'},
+           {sport:'NBA',kind:'score',name:'ORL 102 — CHI 100'}],
+   news:[{sport:'NBA',kind:'news',href:'https://www.espn.com/nba/story/_/id/5',
+    name:'Breaking: major roster trade'}]
+  }
+ };
+ const rows=multi.mixRows(feeds);
+ assert.deepEqual(rows.slice(0,4).map(x=>x.kind),
+  ['score','score','news','score']);
+ assert.equal(rows[0].sport,'NBA');
+ assert.equal(rows[2].sport,'NBA');
 });
 test('hostile article and game URLs are rejected',()=>{
  for(const bad of ['javascript:alert(1)','https://www.espn.com.evil.test/x',
@@ -166,7 +206,7 @@ async function offlineIntegration(){
       return {ok:true,json:async()=>teams('post',new Date(Date.now()-8*60*60*1000).toISOString())};
     }
     if(url.includes('/basketball/nba/news'))return {ok:true,json:async()=>({
-      articles:[{headline:'Verified NBA headline',
+      articles:[{headline:'NBA superstar signs record contract',
       published:new Date(Date.now()-60*60*1000).toISOString(),
       links:{web:{href:'https://www.espn.com/nba/story/_/id/12345/verified'}}}]
     })};
