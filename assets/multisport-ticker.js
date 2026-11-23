@@ -1,4 +1,4 @@
-/* Golden Football Gazette — source-verified non-NFL scores and news.
+/* Golden Football Gazette — source-verified off-live-NFL scores and news.
  * Loaded only when the official NFL scoreboard confirms no games in progress.
  * Every sport uses an ESPN scoreboard and news feed; no estimates or fabricated
  * headlines, winners, scores, or racing/golf positions are allowed.
@@ -7,6 +7,7 @@
 'use strict';
 const BASE='https://site.api.espn.com/apis/site/v2/sports/';
 const SPORTS=Object.freeze([
+  {id:'NFL',path:'football/nfl',kind:'team',page:'https://www.espn.com/nfl/'},
   {id:'NBA',path:'basketball/nba',kind:'team',page:'https://www.espn.com/nba/'},
   {id:'WNBA',path:'basketball/wnba',kind:'team',page:'https://www.espn.com/wnba/'},
   {id:'PGA',path:'golf/pga',kind:'golf',page:'https://www.espn.com/golf/'},
@@ -21,7 +22,10 @@ const MAX_NEWS_AGE_MS=48*60*60*1000; // Late-breaking stories only: no week-old 
 const FETCH_TIMEOUT_MS=9000;
 const MAX_PARALLEL=4;
 const CACHE_MS=5*60*1000;
-let cached=null,cachedAt=0;
+// Cache each league independently so selecting one sport does not refetch all.
+const leagueCache=new Map();
+const SPORT_IDS=Object.freeze(['ALL',...SPORTS.map(s=>s.id)]);
+function validSportSelection(id){return SPORT_IDS.includes(id)}
 
 function espnLink(raw){
  if(typeof raw!=='string')return null;
@@ -180,8 +184,8 @@ function newsRows(data,sport,now=Date.now()){
    const link=espnLink(article?.links?.web?.href);
    if(!signal||!link||used.has(link))continue;
    const storySport=classifyNewsSport(article,sport);
-   // Never disguise unsupported NFL/NHL/soccer stories with another sport
-   // badge. Live NFL mode is handled exclusively by the NFL ticker.
+   // NFL news is allowed here only when NFL games are idle; other unknown
+   // sports cannot be cross-listed as supported news.
    if(!SPORTS.some(available=>available.id===storySport))continue;
    used.add(link);
    rows.push({sport:storySport,kind:'news',name:article.headline.trim().slice(0,110),
@@ -214,7 +218,8 @@ function mixRows(perSport){
    append(feed.news[0]);
    append(feed.scores[2]);
  }
- return rows.slice(0,32);
+ // Nine leagues can each contribute three verified scores and a major story.
+ return rows.slice(0,36);
 }
 async function fetchJSON(root,url){
  const controller=new AbortController();
@@ -226,37 +231,63 @@ async function fetchJSON(root,url){
    return await response.json();
  }finally{root.clearTimeout(timeout)}
 }
-async function load(rootWindow=root,force=false){
+async function load(rootWindow=root,force=false,selected='ALL'){
  const now=Date.now();
- if(!force&&cached&&now>=cachedAt&&now-cachedAt<CACHE_MS)return cached;
+ if(!validSportSelection(selected))throw Error('Unknown sports ticker filter');
  if(!rootWindow?.fetch)throw Error('Browser fetch unavailable');
- const perSport=Object.fromEntries(SPORTS.map(s=>[s.id,{scores:[],news:[]}]));
- const tasks=SPORTS.flatMap(s=>[{sport:s,kind:'score'},{sport:s,kind:'news'}]);
- let cursor=0,failures=0,successes=0;
+ const requested=selected==='ALL'?SPORTS:SPORTS.filter(s=>s.id===selected);
+ const perSport={};
+ const tasks=[];
+ const checks={};
+ let failures=0,successes=0;
+ for(const sport of requested){
+   const fromCache=leagueCache.get(sport.id);
+   if(!force&&fromCache&&now-fromCache.at<CACHE_MS&&now>=fromCache.at){
+     perSport[sport.id]=fromCache.feed;
+     failures+=fromCache.failures;
+     successes+=fromCache.successes;
+   }else{
+     perSport[sport.id]={scores:[],news:[]};
+     checks[sport.id]={failures:0,successes:0};
+     tasks.push({sport,kind:'score'},{sport,kind:'news'});
+   }
+ }
+ let cursor=0;
  async function worker(){
    while(cursor<tasks.length){
      const task=tasks[cursor++];
-     // Group 80 covers FBS college football; other leagues keep their usual feed.
-     const endpoint=task.kind==='score'?(task.sport.scoreboardQuery||'scoreboard?limit=35'):'news?limit=20';
+     const endpoint=task.kind==='score'?
+       (task.sport.scoreboardQuery||'scoreboard?limit=35'):'news?limit=20';
      const url=BASE+task.sport.path+'/'+endpoint;
      try{
        const data=await fetchJSON(rootWindow,url);
        if(task.kind==='score')perSport[task.sport.id].scores=scoreRows(data,task.sport,now);
        else perSport[task.sport.id].news=newsRows(data,task.sport,now);
-       successes++;
-     }catch(_){failures++}
+       checks[task.sport.id].successes++;successes++;
+     }catch(_){
+       checks[task.sport.id].failures++;failures++;
+     }
    }
  }
- await Promise.all(Array.from({length:MAX_PARALLEL},()=>worker()));
- const result={rows:mixRows(perSport),checked:new Date(),partial:failures>0,
-   sourcesAvailable:successes,mode:'NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR SCORES + NEWS',
+ await Promise.all(Array.from({length:Math.min(MAX_PARALLEL,tasks.length)},()=>worker()));
+ for(const sport of requested){
+   const check=checks[sport.id];
+   // An outage cannot become a trusted, empty news/score cache entry.
+   if(check?.successes)leagueCache.set(sport.id,{
+     feed:perSport[sport.id],at:Date.now(),
+     failures:check.failures,successes:check.successes
+   });
+ }
+ // Selected league gets only its own verified scores and article topics.
+ const rows=mixRows(perSport).filter(row=>selected==='ALL'||row.sport===selected);
+ return {rows,checked:new Date(),partial:failures>0,sourcesAvailable:successes,
+   selectedSport:selected,
+   mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR SCORES + NEWS':
+     selected+' · VERIFIED SCORES + MAJOR NEWS',
    notes:failures?'Some ESPN feeds unavailable · Verified scores and major news only':
-     'Live and final scores · ranked major ESPN headlines from the last 48h'};
- // Don't cache complete outages; allow the next visible poll to retry.
- if(successes){cached=result;cachedAt=Date.now();}
- return result;
+     'Live and final scores · significant ESPN headlines from the last 48h'};
 }
-const api={SPORTS,asScore,espnLink,activeOrFinal,scoreRows,newsRows,mixRows,classifyNewsSport,newsImportance,load};
+const api={SPORTS,SPORT_IDS,validSportSelection,asScore,espnLink,activeOrFinal,scoreRows,newsRows,mixRows,classifyNewsSport,newsImportance,load};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(root&&root.document)root.GazetteMultiSport=api;
 })(typeof window!=='undefined'?window:null);

@@ -1,4 +1,4 @@
-/* Offline regression tests: NFL-exclusive live mode and eight-sport fallback. */
+/* Offline regression tests: NFL-exclusive live mode and nine-league selectable scores/news. */
 'use strict';
 const assert=require('node:assert/strict');
 const multi=require('../assets/multisport-ticker.js');
@@ -15,8 +15,13 @@ const teams=(state='post',date='2026-11-22T23:00:00Z')=>({
 function test(name,run){run();console.log('PASS',name)}
 test('all requested sports are included exactly once',()=>{
  assert.deepEqual(multi.SPORTS.map(s=>s.id),[
-  'NBA','WNBA','PGA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB','NASCAR']);
- assert.equal(new Set(multi.SPORTS.map(s=>s.path)).size,8);
+  'NFL','NBA','WNBA','PGA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB','NASCAR']);
+ assert.equal(new Set(multi.SPORTS.map(s=>s.path)).size,9);
+ assert.deepEqual(multi.SPORT_IDS,['ALL',...multi.SPORTS.map(s=>s.id)]);
+ assert.equal(multi.validSportSelection('NFL'),true);
+ assert.equal(multi.validSportSelection('ALL'),true);
+ assert.equal(multi.validSportSelection('NBA; DROP TABLE'),false);
+ assert.equal(sport('NFL').path,'football/nfl');
  assert.equal(sport('NCAA FB').kind,'team');
  assert.equal(sport('NCAA FB').path,'football/college-football');
  assert.equal(sport('NCAA FB').scoreboardQuery,'scoreboard?groups=80&limit=100');
@@ -34,7 +39,7 @@ test('only a real in-progress NFL game activates NFL-exclusive mode',()=>{
  assert.equal(nfl.nflGameInProgress(null),false);
 });
 test('NBA/WNBA/NCAA/MLB scores require actual ESPN scores and live/final state',()=>{
- for(const id of ['NBA','WNBA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB']){
+ for(const id of ['NFL','NBA','WNBA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB']){
   const rows=multi.scoreRows(teams(),sport(id),now);
   assert.equal(rows.length,1,id);
   assert.equal(rows[0].name,'AWY 109 — HME 102');
@@ -117,16 +122,16 @@ test('news keeps its sport badge but corrects cross-listed ESPN article topics',
  assert.equal(crossListed[0].kind,'news');
  assert.equal(crossListed[0].name,'A confirmed major trade');
 });
-test('off-NFL ticker does not disguise cross-posted NFL stories as NBA',()=>{
+test('cross-posted NFL news gets its own accurate NFL badge, never a false NBA badge',()=>{
  const rows=multi.newsRows({articles:[
-  {headline:'NFL breaking story',published:'2026-11-23T18:00:00Z',
+  {headline:'Breaking: NFL quarterback traded',type:'BreakingNews',published:'2026-11-23T18:00:00Z',
    links:{web:{href:'https://www.espn.com/nfl/story/_/id/7'}}},
   {headline:'NBA star injured ahead of playoffs',published:'2026-11-23T17:00:00Z',
    links:{web:{href:'https://www.espn.com/nba/story/_/id/8'}}}
  ]},sport('NBA'),now);
- assert.equal(rows.length,1);
- assert.equal(rows[0].sport,'NBA');
- assert.equal(rows[0].name,'NBA star injured ahead of playoffs');
+ assert.equal(rows.length,2);
+ assert.equal(rows.find(x=>x.sport==='NFL').team,'BREAKING');
+ assert.equal(rows.find(x=>x.sport==='NBA').name,'NBA star injured ahead of playoffs');
 });
 test('cross-listed identical articles appear only once in mixed sport rotation',()=>{
  const href='https://www.espn.com/wnba/story/_/id/12345';
@@ -183,6 +188,20 @@ test('verified game scores are prioritized ahead of major news per sport',()=>{
  assert.equal(rows[0].sport,'NBA');
  assert.equal(rows[2].sport,'NBA');
 });
+test('all nine leagues fit in the complete score/news rotation',()=>{
+ const rows=multi.mixRows(Object.fromEntries(multi.SPORTS.map(s=>[
+   s.id,{
+     scores:Array.from({length:3},(_,i)=>({
+       sport:s.id,kind:'score',name:s.id+' verified score '+i,
+       date:now-i*1000,href:s.page
+     })),
+     news:[{sport:s.id,kind:'news',name:'Significant '+s.id+' headline',href:s.page+'/story/123'}]
+   }
+ ])));
+ assert.equal(rows.length,36);
+ assert.equal(rows.some(r=>r.sport==='NASCAR'&&r.kind==='news'),true);
+ assert.equal(rows.some(r=>r.sport==='NFL'&&r.kind==='score'),true);
+});
 test('hostile article and game URLs are rejected',()=>{
  for(const bad of ['javascript:alert(1)','https://www.espn.com.evil.test/x',
                    'http://www.espn.com/x','https://evil.test/x']){
@@ -198,10 +217,48 @@ test('mixed ticker gives each sport fair placement instead of NBA-only coverage'
    s.id,{scores:[{sport:s.id,kind:'score',name:'Score'}],
          news:[{sport:s.id,kind:'news',name:'Headline',href:s.page}]}]));
  const mixed=multi.mixRows(feeds);
- assert.equal(mixed.length,16);
- assert.deepEqual(mixed.slice(0,4).map(r=>r.sport),['NBA','NBA','WNBA','WNBA']);
- assert.deepEqual(new Set(mixed.map(r=>r.sport)).size,8);
+ assert.equal(mixed.length,18);
+ assert.deepEqual(mixed.slice(0,4).map(r=>r.sport),['NFL','NFL','NBA','NBA']);
+ assert.deepEqual(new Set(mixed.map(r=>r.sport)).size,9);
 });
+async function selectedSportIntegration(){
+ const calls=[];
+ const recent=new Date(Date.now()-60*60*1000).toISOString();
+ const mock={
+  fetch:async url=>{
+   calls.push(url);
+   if(url.includes('/football/nfl/scoreboard'))return {ok:true,json:async()=>teams('post',recent)};
+   if(url.includes('/football/nfl/news'))return {ok:true,json:async()=>({
+     articles:[{headline:'Breaking: NFL team fires coach',type:'BreakingNews',published:recent,
+       links:{web:{href:'https://www.espn.com/nfl/story/_/id/541/coach'}}}]
+   })};
+   if(url.includes('/basketball/nba/scoreboard'))return {ok:true,json:async()=>teams('post',recent)};
+   if(url.includes('/basketball/nba/news'))return {ok:true,json:async()=>({
+     articles:[{headline:'NBA star traded in major deal',published:recent,
+       links:{web:{href:'https://www.espn.com/nba/story/_/id/542/trade'}}}]
+   })};
+   throw Error('unexpected sport requested: '+url);
+  },setTimeout,clearTimeout
+ };
+ const nflOnly=await multi.load(mock,true,'NFL');
+ assert.equal(nflOnly.selectedSport,'NFL');
+ assert.equal(nflOnly.partial,false);
+ assert.equal(nflOnly.sourcesAvailable,2);
+ assert.equal(calls.length,2,'Selecting NFL should fetch NFL only, not all nine leagues');
+ assert.ok(calls.every(x=>x.includes('/football/nfl/')));
+ assert.equal(nflOnly.rows.length,2);
+ assert.ok(nflOnly.rows.some(x=>x.kind==='score'&&x.sport==='NFL'&&x.team==='FINAL'));
+ assert.ok(nflOnly.rows.some(x=>x.kind==='news'&&x.sport==='NFL'&&x.team==='BREAKING'));
+ const count=calls.length;
+ const cached=await multi.load(mock,false,'NFL');
+ assert.equal(calls.length,count,'Selecting an unchanged league must reuse its fresh ESPN cache');
+ assert.equal(cached.rows.length,2);
+ const nbaOnly=await multi.load(mock,true,'NBA');
+ assert.equal(calls.length,4,'Selecting NBA must fetch only its own two ESPN feeds');
+ assert.ok(nbaOnly.rows.length>0&&nbaOnly.rows.every(x=>x.sport==='NBA'));
+ await assert.rejects(multi.load(mock,true,'NFL<script>'),/Unknown sports ticker filter/);
+ console.log('PASS sport buttons select and cache only requested ESPN league feeds');
+}
 async function offlineIntegration(){
  const fake={
   fetch:async url=>{
@@ -227,4 +284,4 @@ async function offlineIntegration(){
  assert.equal(result.rows.every(r=>r.href.startsWith('https://www.espn.com/')),true);
  console.log('PASS partial outages keep verified items, without fabricated fillers');
 }
-offlineIntegration().catch(err=>{console.error(err);process.exitCode=1});
+selectedSportIntegration().then(offlineIntegration).catch(err=>{console.error(err);process.exitCode=1});

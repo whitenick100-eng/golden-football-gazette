@@ -123,7 +123,9 @@ test('wrong event summary is excluded and final corrections are not permanently 
  const source=fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8');
  assert.ok(source.includes('FINAL_BOX_RECHECK_MS'));
  assert.ok(source.includes('checkedAt:Date.now()'));
- assert.ok(source.includes('scoreboardLeaders(board)'));
+ assert.ok(source.includes("boardEvents(board).filter(g=>g.state==='in')"));
+ assert.ok(source.includes('NFL LIVE GAME STATS · LOADING'));
+ assert.ok(!source.includes('const leaders=scoreboardLeaders(board)'));
  assert.ok(!source.includes('NFL SEASON LEADERS'));
 });
 test('invalid game box stats cannot inject unrealistic TD or yardage totals',()=>{
@@ -156,6 +158,16 @@ test('ticker scrolls slightly faster but remains readable for long multi-sport h
  assert.ok(tickerSource.includes("tickerScrollSeconds(first.scrollWidth)"));
  assert.ok(tickerSource.includes("if(last?.modeKind==='multi')"));
  assert.ok(tickerSource.includes("mode.textContent='NFL STATUS UNVERIFIED'"));
+ assert.ok(tickerSource.includes('updateSportTabs(liveGameMode)'));
+ assert.ok(tickerSource.includes('root.GazetteMultiSport.load(root,force,selectedSport)'));
+ const tabMarkup=html.match(/<div id="sports-ticker-tabs"[\s\S]*?<\/div>/)?.[0]||'';
+ assert.equal((tabMarkup.match(/class="sports-ticker-tab"/g)||[]).length,10);
+ assert.ok(tabMarkup.includes('data-sport="NFL"'));
+ assert.ok(tabMarkup.includes('aria-pressed="true"'));
+ assert.ok(html.indexOf('id="espn-live"')<html.indexOf('id="playoff-picture"'));
+ assert.ok(html.indexOf('id="playoff-picture"')<html.indexOf('id="auto-coverage"'));
+ assert.equal((html.match(/id="playoff-picture"/g)||[]).length,1);
+ assert.equal((html.match(/id="consolation-bracket"/g)||[]).length,1);
 });
 
 console.log('All NFL player-stat ticker tests passed.');

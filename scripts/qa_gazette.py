@@ -247,6 +247,12 @@ def validate():
         assert required in page, f"Ticker or roster health element missing: {required}"
     assert '<script src="assets/nfl-player-ticker.js"></script>' in page
     assert 'id="nfl-stat-ticker-title"' in page
+    assert page.count('class="sports-ticker-tab"')==10
+    assert 'id="sports-ticker-tabs"' in page
+    for sport in ('ALL','NFL','NBA','WNBA','PGA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB','NASCAR'):
+        assert 'data-sport="'+sport+'"' in page
+    assert page.index('id="espn-live"') < page.index('id="playoff-picture"') < page.index('id="auto-coverage"')
+    assert page.count('id="playoff-picture"')==1 and page.count('id="consolation-bracket"')==1
     assert '<script src="assets/multisport-ticker.js"></script>' in page
     assert page.index('<script src="assets/multisport-ticker.js"></script>') < page.index('<script src="assets/nfl-player-ticker.js"></script>')
     multi=ROOT/"assets/multisport-ticker.js"
@@ -256,7 +262,9 @@ def validate():
     assert ticker.is_file(), "NFL ticker script not present"
     tick=ticker.read_text(encoding="utf-8")
     assert "summary?event=" in tick and "gameBoxStats" in tick
-    assert "ESPN NFL SCOREBOARD LEADERS" in tick and "not verified season totals" in tick
+    assert "boardEvents(board).filter(g=>g.state==='in')" in tick
+    assert "NFL LIVE GAME STATS · LOADING" in tick
+    assert "const leaders=scoreboardLeaders(board)" not in tick, "Live NFL mode cannot show unverified season leaders"
     assert "FINAL_BOX_RECHECK_MS" in tick, "Final-game statistics must allow ESPN corrections"
     assert "verifiedGameUpdate" in (ROOT/"assets/live-nfl-scores.js").read_text(encoding="utf-8")
     assert "liveMatchupMerge" in (ROOT/"assets/espn-matchups.js").read_text(encoding="utf-8")
