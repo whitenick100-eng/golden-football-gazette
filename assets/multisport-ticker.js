@@ -161,12 +161,12 @@ function newsImportance(article,now=Date.now(),sourceIndex=0){
  const published=Date.parse(article?.published||article?.lastModified||'');
  if(!headline||!Number.isFinite(published)||published>now+60*60*1000||
    now-published>MAX_NEWS_AGE_MS)return null;
- const breaking=/breaking/i.test(String(article?.type||''))||
-   /^breaking(?:[:\s-]|$)/i.test(headline);
+ const age=now-published;
+ const breaking=(/breaking/i.test(String(article?.type||''))||
+   /^breaking(?:[:\s-]|$)/i.test(headline))&&age<=12*60*60*1000;
  // ESPN article position is a modest editorial signal, but not proof of views.
  const major=MAJOR_NEWS.test(headline),extra=EXTRA_MAJOR.test(headline);
  if((LOW_VALUE_NEWS.test(headline)&&!breaking)||(!major&&!extra&&!breaking))return null;
- const age=now-published;
  const priority=(breaking?16:0)+(major?5:0)+(extra?4:0)+
    (age<=6*60*60*1000?6:age<=18*60*60*1000?4:age<=30*60*60*1000?2:0)+
    Math.max(0,3-Math.max(0,sourceIndex));
