@@ -12,7 +12,7 @@ const PUBLISHED_SNAPSHOT_TTL_MS=5*60*1000; // Revalidate static fallback at most
 
 function shouldRefreshPublishedSnapshot(lastChecked,now,force=false){
   return force||!Number.isFinite(lastChecked)||lastChecked<=0||
-    now-lastChecked>=PUBLISHED_SNAPSHOT_TTL_MS;
+    now<lastChecked||now-lastChecked>=PUBLISHED_SNAPSHOT_TTL_MS;
 }
 function validPoints(value) {
   return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<1000 ? value : null;
