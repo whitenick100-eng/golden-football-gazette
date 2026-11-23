@@ -133,4 +133,20 @@ test('invalid game box stats cannot inject unrealistic TD or yardage totals',()=
  assert.equal(t.statEntry(section,athlete(7,'Example',['121','1.5']), 'KC', event),null);
 });
 
+test('ticker scrolls slowly and scales animation time to content length',()=>{
+ // 25px/s, minimum 120 seconds: longer multi-sport news keeps readable speed.
+ assert.equal(t.tickerScrollSeconds(1000),120);
+ assert.equal(t.tickerScrollSeconds(3000),120);
+ assert.equal(t.tickerScrollSeconds(4000),160);
+ assert.equal(t.tickerScrollSeconds(8000),320);
+ assert.equal(t.tickerScrollSeconds(0),120);
+ assert.equal(t.tickerScrollSeconds(NaN),120);
+ assert.ok(t.tickerScrollSeconds(8000)>t.tickerScrollSeconds(4000));
+ const fs=require('node:fs');
+ const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
+ assert.ok(html.includes('var(--gz-ticker-duration,120s)'));
+ assert.ok(fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8')
+    .includes("tickerScrollSeconds(first.scrollWidth)"));
+});
+
 console.log('All NFL player-stat ticker tests passed.');
