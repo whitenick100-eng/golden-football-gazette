@@ -249,7 +249,8 @@ def validate():
     assert 'id="nfl-stat-ticker-title"' in page
     assert page.count('class="sports-ticker-tab"')==10
     assert ".nfl-stat-ticker:focus-within .ticker-animate" not in page, "Sport tab focus must never freeze the marquee"
-    assert ".nfl-stat-ticker-window:focus-within .ticker-animate" in page
+    assert ".nfl-stat-ticker-window:focus-within .ticker-animate" not in page
+    assert ".nfl-stat-ticker-window:has(a:focus-visible) .ticker-animate" in page
     assert "var(--gz-ticker-duration,72s)" in page
     assert 'id="sports-ticker-tabs"' in page
     for sport in ('ALL','NFL','NBA','WNBA','PGA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB','NASCAR'):
