@@ -67,11 +67,11 @@ def validate():
     assert '@media(prefers-reduced-motion:reduce)' in page
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
     assert "setInterval(refreshMastheadTime,60000)" in page, "Masthead clock must refresh every minute"
-    # New league identity must be presented consistently in the emblem gallery
-    # and ESPN matchup center, without losing any of the four families.
-    full_name = "Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League"
-    assert full_name in page, "Full league name missing from accessible heading"
-    assert page.count("The White / Wilcox / Hulsey / Homan Fantasy Football League") >= 4
+    # The owner chose a concise, consistent league identity across both the
+    # records directory and the ESPN matchup center.
+    full_name = "Gridiron Giggles Fantasy Football League"
+    assert page.count(full_name) >= 2, "Full league name missing from accessible headings"
+    assert "The White / Wilcox / Hulsey / Homan Fantasy Football League" not in page
     assert 'class="league-identity-heading"' in page
     assert 'class="league-identity-brand"' in page
     assert 'class="league-identity-family"' in page
