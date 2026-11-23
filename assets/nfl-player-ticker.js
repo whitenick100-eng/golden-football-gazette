@@ -14,10 +14,11 @@ const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
-// A fixed animation duration makes a 7-sport news ticker race when headlines
-// multiply. Scroll at a readable ~25px/s, with a generous minimum duration.
+// Scale the marquee to its content width so 8-sport headlines don't race.
+// ~30px/s with a 100-second minimum is between the previous 25px/s
+// (minimum 120s) and the original much-faster 65-second loop.
 function tickerScrollSeconds(groupWidth){
- return Math.max(120,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/25));
+ return Math.max(100,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/30));
 }
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 
@@ -417,7 +418,15 @@ async function refresh(force=false){
    }
    next(REFRESH_GAME_MS);
  }catch(e){
-   if(last){
+   if(last?.modeKind==='multi'){
+     // Fail closed: when ESPN cannot confirm NFL game status, do not keep
+     // other sports on-screen because an NFL game may have just started.
+     last=null;
+     bar.replaceChildren(tag('span','Checking ESPN NFL live status…','ticker-empty'));
+     bar.classList.remove('ticker-animate');
+     mode.textContent='NFL STATUS UNVERIFIED';
+     status.textContent='Unable to confirm whether NFL games are in progress. Retrying shortly.';
+   }else if(last){
      paint({...last,stale:true,notes:'NFL live status or source temporarily unverified · '+(last.notes||'')});
    }else{
      // No confirmed non-NFL mode: do not falsely claim there is no live NFL.

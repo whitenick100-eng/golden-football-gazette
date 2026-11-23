@@ -10,6 +10,7 @@ const SPORTS=Object.freeze([
   {id:'NBA',path:'basketball/nba',kind:'team',page:'https://www.espn.com/nba/'},
   {id:'WNBA',path:'basketball/wnba',kind:'team',page:'https://www.espn.com/wnba/'},
   {id:'PGA',path:'golf/pga',kind:'golf',page:'https://www.espn.com/golf/'},
+  {id:'NCAA FB',path:'football/college-football',kind:'team',page:'https://www.espn.com/college-football/',scoreboardQuery:'scoreboard?groups=80&limit=100'},
   {id:'NCAA MEN',path:'basketball/mens-college-basketball',kind:'team',page:'https://www.espn.com/mens-college-basketball/'},
   {id:'NCAA WOMEN',path:'basketball/womens-college-basketball',kind:'team',page:'https://www.espn.com/womens-college-basketball/'},
   {id:'MLB',path:'baseball/mlb',kind:'team',page:'https://www.espn.com/mlb/'},
@@ -157,7 +158,9 @@ async function load(rootWindow=root,force=false){
  async function worker(){
    while(cursor<tasks.length){
      const task=tasks[cursor++];
-     const url=BASE+task.sport.path+'/'+(task.kind==='score'?'scoreboard?limit=35':'news?limit=8');
+     // Group 80 covers FBS college football; other leagues keep their usual feed.
+     const endpoint=task.kind==='score'?(task.sport.scoreboardQuery||'scoreboard?limit=35'):'news?limit=8';
+     const url=BASE+task.sport.path+'/'+endpoint;
      try{
        const data=await fetchJSON(rootWindow,url);
        if(task.kind==='score')perSport[task.sport.id].scores=scoreRows(data,task.sport,now);
@@ -168,7 +171,7 @@ async function load(rootWindow=root,force=false){
  }
  await Promise.all(Array.from({length:MAX_PARALLEL},()=>worker()));
  const result={rows:mixRows(perSport),checked:new Date(),partial:failures>0,
-   sourcesAvailable:successes,mode:'NBA · WNBA · PGA · NCAA · MLB · NASCAR SCORES + NEWS',
+   sourcesAvailable:successes,mode:'NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR SCORES + NEWS',
    notes:failures?'Some ESPN feeds unavailable · Showing verified items only':
      'Live and final scores · recent ESPN headlines · automatic updates'};
  // Don't cache complete outages; allow the next visible poll to retry.

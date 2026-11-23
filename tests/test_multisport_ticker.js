@@ -1,4 +1,4 @@
-/* Offline regression tests: NFL-exclusive live mode and seven-sport fallback. */
+/* Offline regression tests: NFL-exclusive live mode and eight-sport fallback. */
 'use strict';
 const assert=require('node:assert/strict');
 const multi=require('../assets/multisport-ticker.js');
@@ -15,8 +15,11 @@ const teams=(state='post',date='2026-11-22T23:00:00Z')=>({
 function test(name,run){run();console.log('PASS',name)}
 test('all requested sports are included exactly once',()=>{
  assert.deepEqual(multi.SPORTS.map(s=>s.id),[
-  'NBA','WNBA','PGA','NCAA MEN','NCAA WOMEN','MLB','NASCAR']);
- assert.equal(new Set(multi.SPORTS.map(s=>s.path)).size,7);
+  'NBA','WNBA','PGA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB','NASCAR']);
+ assert.equal(new Set(multi.SPORTS.map(s=>s.path)).size,8);
+ assert.equal(sport('NCAA FB').kind,'team');
+ assert.equal(sport('NCAA FB').path,'football/college-football');
+ assert.equal(sport('NCAA FB').scoreboardQuery,'scoreboard?groups=80&limit=100');
 });
 test('only a real in-progress NFL game activates NFL-exclusive mode',()=>{
  const status=state=>({events:[{id:'4019901',status:{type:{state}}}]});
@@ -31,7 +34,7 @@ test('only a real in-progress NFL game activates NFL-exclusive mode',()=>{
  assert.equal(nfl.nflGameInProgress(null),false);
 });
 test('NBA/WNBA/NCAA/MLB scores require actual ESPN scores and live/final state',()=>{
- for(const id of ['NBA','WNBA','NCAA MEN','NCAA WOMEN','MLB']){
+ for(const id of ['NBA','WNBA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB']){
   const rows=multi.scoreRows(teams(),sport(id),now);
   assert.equal(rows.length,1,id);
   assert.equal(rows[0].name,'AWY 109 — HME 102');
@@ -102,14 +105,18 @@ test('mixed ticker gives each sport fair placement instead of NBA-only coverage'
    s.id,{scores:[{sport:s.id,kind:'score',name:'Score'}],
          news:[{sport:s.id,kind:'news',name:'Headline'}]}]));
  const mixed=multi.mixRows(feeds);
- assert.equal(mixed.length,14);
+ assert.equal(mixed.length,16);
  assert.deepEqual(mixed.slice(0,4).map(r=>r.sport),['NBA','NBA','WNBA','WNBA']);
- assert.deepEqual(new Set(mixed.map(r=>r.sport)).size,7);
+ assert.deepEqual(new Set(mixed.map(r=>r.sport)).size,8);
 });
 async function offlineIntegration(){
  const fake={
   fetch:async url=>{
     if(url.includes('/basketball/nba/scoreboard'))return {ok:true,json:async()=>teams('post',new Date(Date.now()-12*60*60*1000).toISOString())};
+    if(url.includes('/football/college-football/scoreboard')){
+      assert.ok(url.includes('groups=80'),'Fetch FBS scoreboard for NCAA football');
+      return {ok:true,json:async()=>teams('post',new Date(Date.now()-8*60*60*1000).toISOString())};
+    }
     if(url.includes('/basketball/nba/news'))return {ok:true,json:async()=>({
       articles:[{headline:'Verified NBA headline',
       published:new Date(Date.now()-60*60*1000).toISOString(),
@@ -120,7 +127,8 @@ async function offlineIntegration(){
   setTimeout,clearTimeout
  };
  const result=await multi.load(fake,true);
- assert.equal(result.sourcesAvailable,2);
+ assert.equal(result.sourcesAvailable,3);
+ assert.equal(result.rows.some(r=>r.sport==='NCAA FB'&&r.kind==='score'),true);
  assert.equal(result.partial,true);
  assert.equal(result.rows.some(r=>r.sport==='NBA'&&r.kind==='news'),true);
  assert.equal(result.rows.every(r=>r.href.startsWith('https://www.espn.com/')),true);
