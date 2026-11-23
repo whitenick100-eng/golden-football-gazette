@@ -4,6 +4,8 @@ on:
     paths:
       - 'index.html'
       - 'assets/nfl-player-ticker.js'
+      - 'assets/multisport-ticker.js'
+      - 'tests/test_multisport_ticker.js'
       - 'scripts/build_public_site.py'
       - 'scripts/qa_public_site.py'
       - 'scripts/qa_gazette.py'
@@ -26,7 +28,9 @@ jobs:
       - name: Verify season and live game statistics never get confused
         run: |
           node --check assets/nfl-player-ticker.js
+          node --check assets/multisport-ticker.js
           node tests/test_nfl_player_ticker.js
+          node tests/test_multisport_ticker.js
           python scripts/qa_gazette.py
       - name: Verify live ESPN stat API CORS and player box-score schema
         run: |

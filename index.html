@@ -841,7 +841,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.12),rgba(2,17,15,.1) 
 <div class="topline"><span>Est. 2026 · The Golden Football Gazette</span><span>ESPN Fantasy League #1413446022</span></div>
 <section id="nfl-stat-ticker" class="nfl-stat-ticker" aria-label="Rolling NFL player statistics">
   <div class="nfl-stat-heading">
-    <span class="nfl-ticker-title"><span class="nfl-ticker-dot" aria-hidden="true">●</span> NFL Player Stat Tracker</span>
+    <span class="nfl-ticker-title"><span class="nfl-ticker-dot" aria-hidden="true">●</span> <span id="nfl-stat-ticker-title">NFL Player Stat Tracker</span></span>
     <span id="nfl-stat-ticker-mode" class="nfl-ticker-mode">Checking ESPN game statistics</span>
     <button id="nfl-stat-ticker-refresh" type="button" class="nfl-ticker-refresh" title="Refresh ESPN NFL player stats" aria-label="Refresh player statistics">↻ Refresh</button>
   </div>
@@ -1440,6 +1440,7 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
   });
 })();
 </script>
+<script src="assets/multisport-ticker.js"></script>
 <script src="assets/nfl-player-ticker.js"></script>
 </body>
 </html>

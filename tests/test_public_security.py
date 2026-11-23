@@ -22,6 +22,7 @@ class PublicSiteSecurityTests(unittest.TestCase):
         (self.root/"assets/turkey-right.webp").write_bytes(b"RIFF----WEBP")
         (self.root/"assets/live-nfl-scores.js").write_text("console.log('ok')\n")
         (self.root/"assets/nfl-player-ticker.js").write_text("console.log('verified ticker')\n")
+        (self.root/"assets/multisport-ticker.js").write_text("console.log('verified multi-sport ticker')\n")
         (self.root/"assets/espn-matchups.js").write_text("console.log('scoreboard')\n")
         (self.root/"assets/espn-team-logos.json").write_text("{}")
         (self.root/".github/workflows").mkdir(parents=True)
