@@ -111,13 +111,14 @@ body:before{background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.12) 60%
 .page,.hub-section,.breaking,#espn-live,.nfl-banner,.gazette-masthead{background:rgba(4,15,21,.36)!important;backdrop-filter:blur(2px)!important}
 @media(max-width:700px){.gazette-masthead{grid-template-columns:65px minmax(0,1fr) 65px;gap:4px;padding:10px 5px!important}.masthead-trophy{height:94px}.masthead-side{font-size:.55rem}.gazette-masthead h1{font-size:clamp(1.25rem,5vw,2.4rem)!important}.gazette-masthead .sub{font-size:.58rem!important;padding:5px!important}}
 
-/* High-resolution stadium photography from Scott Greer on Unsplash (free license):
-   https://unsplash.com/photos/a-crowded-football-stadium-at-night-under-bright-lights-b_XhrmGQnyc
-   Keep the existing locally hosted stadium asset below as a visual fallback. */
+/* Original unbranded professional American-football stadium artwork,
+   locally hosted and optimized as WebP. No franchise logos, team names,
+   sponsorship marks or remote image dependencies are needed.
+   The prior local stadium is a resilient secondary fallback. */
 html{background:#081722}
 body{
  background-color:#081722!important;
- background-image:linear-gradient(180deg,rgba(2,9,21,.09) 0%,rgba(2,13,21,.06) 42%,rgba(1,14,12,.12) 100%),url('https://images.unsplash.com/photo-1781650104690-a5309d91a26b?auto=format&fit=crop&w=3200&q=88'),url('assets/stadium-late-fall.webp')!important;
+ background-image:linear-gradient(180deg,rgba(2,9,21,.09) 0%,rgba(2,13,21,.06) 42%,rgba(1,14,12,.12) 100%),url('assets/stadium-nfl-unbranded.webp'),url('assets/stadium-late-fall.webp')!important;
  background-position:center center!important;
  background-size:cover!important;
  background-attachment:fixed!important;
@@ -244,7 +245,7 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04)
     height: 100dvh;
     z-index: -1;
     pointer-events: none;
-    background-image: linear-gradient(180deg,rgba(2,9,20,.035) 0%,rgba(2,10,19,.04) 55%,rgba(2,20,11,.07) 100%),url("https://images.unsplash.com/photo-1781650104690-a5309d91a26b?auto=format&fit=crop&w=1800&q=88"),url("assets/stadium-late-fall.webp") !important;
+    background-image: linear-gradient(180deg,rgba(2,9,20,.035) 0%,rgba(2,10,19,.04) 55%,rgba(2,20,11,.07) 100%),url("assets/stadium-nfl-unbranded.webp"),url("assets/stadium-late-fall.webp") !important;
     background-position: center center !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
@@ -485,9 +486,13 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04)
 .ticker-player-name{font-weight:800;color:#ffecc0}
 .ticker-player-team{font-size:.65rem;color:#c8ddd1}
 .ticker-player-stat{font-weight:700;font-variant-numeric:tabular-nums;color:#fff5d8}
-.nfl-stat-track.ticker-animate{animation:gz-nfl-marquee var(--gz-ticker-duration,95s) linear infinite}
-.nfl-stat-ticker:hover .ticker-animate,
-.nfl-stat-ticker:focus-within .ticker-animate{animation-play-state:paused}
+.nfl-stat-track.ticker-animate{animation:gz-nfl-marquee var(--gz-ticker-duration,72s) linear infinite}
+/* Keep accessible pauses on ticker headlines, not the blue sport buttons.
+   Button focus previously paused the whole ticker until another click. */
+@media(hover:hover){
+ .nfl-stat-ticker-window:hover .ticker-animate{animation-play-state:paused}
+}
+.nfl-stat-ticker-window:has(a:focus-visible) .ticker-animate{animation-play-state:paused}
 @keyframes gz-nfl-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .nfl-ticker-source{font:500 .65rem/1.35 system-ui,sans-serif;color:#d9c9a9;padding:3px 12px 6px;margin:0!important}
 .ticker-empty{padding:8px 12px;color:#e8cf9f;font:.75rem system-ui,sans-serif}

@@ -18,6 +18,7 @@ class PublicSiteSecurityTests(unittest.TestCase):
         self.root=Path(tmp.name)
         (self.root/"assets").mkdir()
         (self.root/"assets/stadium-late-fall.webp").write_bytes(b"RIFF----WEBP")
+        (self.root/"assets/stadium-nfl-unbranded.webp").write_bytes(b"RIFF----WEBP")
         (self.root/"assets/turkey-left.webp").write_bytes(b"RIFF----WEBP")
         (self.root/"assets/turkey-right.webp").write_bytes(b"RIFF----WEBP")
         (self.root/"assets/live-nfl-scores.js").write_text("console.log('ok')\n")
@@ -43,6 +44,7 @@ class PublicSiteSecurityTests(unittest.TestCase):
     def test_public_artifact_contains_only_allowlisted_files(self):
         published=build.build(self.root)
         self.assertIn("index.html",published)
+        self.assertIn("assets/stadium-nfl-unbranded.webp",published)
         self.assertIn("assets/turkey-left.webp",published)
         self.assertIn("assets/turkey-right.webp",published)
         self.assertIn("data/league.json",published)

@@ -135,22 +135,31 @@ test('invalid game box stats cannot inject unrealistic TD or yardage totals',()=
  assert.equal(t.statEntry(section,athlete(7,'Example',['121','1.5']), 'KC', event),null);
 });
 
-test('ticker scrolls slightly faster but remains readable for long multi-sport headlines',()=>{
- // About 32px/s, minimum 95 seconds: slightly faster than 30px/s/100s,
- // still slower than the original fixed 65-second marquee.
- assert.equal(t.tickerScrollSeconds(1000),95);
- assert.equal(t.tickerScrollSeconds(3000),95);
- assert.equal(t.tickerScrollSeconds(4000),125);
- assert.equal(t.tickerScrollSeconds(8000),250);
- assert.equal(t.tickerScrollSeconds(0),95);
- assert.equal(t.tickerScrollSeconds(NaN),95);
+test('ticker scrolls at a readable faster pace and sport tabs do not pause it',()=>{
+ // About 44px/s, minimum 72 seconds: faster but still readable.
+ assert.equal(t.tickerScrollSeconds(1000),72);
+ assert.equal(t.tickerScrollSeconds(3000),72);
+ assert.equal(t.tickerScrollSeconds(4000),91);
+ assert.equal(t.tickerScrollSeconds(8000),182);
+ assert.equal(t.tickerScrollSeconds(0),72);
+ assert.equal(t.tickerScrollSeconds(NaN),72);
  assert.ok(t.tickerScrollSeconds(8000)>t.tickerScrollSeconds(4000));
  const fs=require('node:fs');
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
- assert.ok(html.includes('var(--gz-ticker-duration,95s)'));
+ assert.ok(html.includes('var(--gz-ticker-duration,72s)'));
+ assert.ok(!html.includes('.nfl-stat-ticker:focus-within .ticker-animate'));
+ assert.ok(!html.includes('.nfl-stat-ticker-window:focus-within .ticker-animate'));
+ assert.ok(html.includes('.nfl-stat-ticker-window:has(a:focus-visible) .ticker-animate'));
+ assert.ok(html.includes('.nfl-stat-ticker-window:hover .ticker-animate'));
  assert.ok(html.includes('rgba(2,9,21,.09)'));
- assert.ok(html.includes('photo-1781650104690-a5309d91a26b'));
- assert.ok(html.includes('w=3200&q=88'));
+ assert.ok(!html.includes('photo-1781650104690-a5309d91a26b'));
+ assert.ok(html.includes("url('assets/stadium-nfl-unbranded.webp')"));
+ assert.ok(html.includes('url("assets/stadium-nfl-unbranded.webp")'));
+ assert.ok(fs.existsSync(require.resolve('../assets/stadium-nfl-unbranded.webp')));
+ const unbranded=fs.readFileSync(require.resolve('../assets/stadium-nfl-unbranded.webp'));
+ assert.ok(unbranded.length>250000 && unbranded.length<2000000);
+ assert.equal(unbranded.toString('ascii',0,4),'RIFF');
+ assert.equal(unbranded.toString('ascii',8,12),'WEBP');
  assert.ok(html.includes('rgba(2,9,20,.035)'));
  assert.ok(html.includes('filter: contrast(1.07) saturate(1.05) brightness(1.02)'));
  assert.ok(html.includes("url('assets/stadium-late-fall.webp')"));

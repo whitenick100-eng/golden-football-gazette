@@ -236,8 +236,8 @@ def validate():
     assert page.count("Gridiron Giggles Fantasy Football League") >= 2
     assert "The White / Wilcox / Hulsey / Homan Fantasy Football League" not in page
     assert 'league-identity-family">Fantasy Football League</span>' in page
-    assert "photo-1781650104690-a5309d91a26b" in page
-    assert "w=3200&q=88" in page and "w=1800&q=88" in page
+    assert page.count("assets/stadium-nfl-unbranded.webp") >= 2, "Unbranded NFL-style stadium missing from desktop/mobile CSS"
+    assert "photo-1781650104690-a5309d91a26b" not in page, "Old team-specific remote stadium must not remain"
     assert "assets/stadium-late-fall.webp" in page, "Local stadium fallback missing"
     # In-browser, auto-refreshed NFL scores supplement the daily static snapshot.
     for required in ('id="nfl-stat-ticker"', 'id="nfl-stat-track"',
@@ -248,6 +248,10 @@ def validate():
     assert '<script src="assets/nfl-player-ticker.js"></script>' in page
     assert 'id="nfl-stat-ticker-title"' in page
     assert page.count('class="sports-ticker-tab"')==10
+    assert ".nfl-stat-ticker:focus-within .ticker-animate" not in page, "Sport tab focus must never freeze the marquee"
+    assert ".nfl-stat-ticker-window:focus-within .ticker-animate" not in page
+    assert ".nfl-stat-ticker-window:has(a:focus-visible) .ticker-animate" in page
+    assert "var(--gz-ticker-duration,72s)" in page
     assert 'id="sports-ticker-tabs"' in page
     for sport in ('ALL','NFL','NBA','WNBA','PGA','NCAA FB','NCAA MEN','NCAA WOMEN','MLB','NASCAR'):
         assert 'data-sport="'+sport+'"' in page

@@ -14,11 +14,12 @@ const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
-// Scale the marquee to its content width so 8-sport headlines don't race.
-// ~32px/s with a 95-second minimum: a small increase from the
-// 30px/s setting, still slower than the original fixed 65-second loop.
+// Scroll at a comfortable, readable ~44 CSS pixels/second and scale
+// duration to real content width, even across the full nine-sport rotation.
+// This is ~38% faster than the previous 32px/s pace; still smooth/legible.
+// A 72-second minimum prevents short selections from whipping past.
 function tickerScrollSeconds(groupWidth){
- return Math.max(95,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/32));
+ return Math.max(72,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/44));
 }
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 

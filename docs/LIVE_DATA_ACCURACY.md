@@ -102,3 +102,11 @@ does not own ESPN's scoring data or operate a real-time server.
 - ESPN feeds cache independently for up to five minutes while the browser is open; changing sports does not reload every other league's news. The NFL scoreboard is checked first at each refresh so the live-only override remains authoritative.
 - **Playoff Picture & Consolation Ladder** remains a single functional section, now immediately beneath the **ESPN Fantasy Matchup Center**, retaining all bracket and status element IDs, data logic and notices.
 - No stadium image, masthead, typography, league records, or fantasy-playoff data are modified.
+
+## Smooth, readable ticker and original unbranded NFL-style background (November 23, 2026)
+
+- **Scroll speed:** The top tracker uses a content-width-adjusted speed of approximately **44 CSS pixels/second**, with a minimum **72-second** full scroll. The previous setting was 32px/s with a 95-second minimum. Applies to both multi-sport scores/news and live NFL player stats.
+- **No second click after choosing a sport:** Earlier CSS paused animation whenever any descendant of the sticky ticker had focus, including the blue sport selection buttons. Pause selectors now apply only to the scrolling-content window. Hover pause works for hover-capable pointers, while keyboard users retain pause when focus is visibly on a linked headline/stat card. Clicking a blue sport tab no longer freezes the animation.
+- **Neutral professional NFL-style stadium:** The repo now contains original, locally hosted **assets/stadium-nfl-unbranded.webp**, a high-detail 1672×941 stadium scene with professional American-football field markings, stadium lights, packed seating and no franchise names, logos or sponsor marks. It depicts a generic professional football venue, not an assertion that it is a specific existing NFL stadium. Desktop and mobile CSS both load this asset in place of the old remote Unsplash photo.
+- The previous local assets/stadium-late-fall.webp remains as a fallback. The new roughly **403 KB WebP** is included in the reviewed public-site allowlist and secure-build regression tests.
+- The Thanksgiving masthead, editorial design, accessible reduced-motion preference, verified sports feeds, and the rule of *NFL in-progress game player stats only* remain unchanged.
