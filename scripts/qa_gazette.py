@@ -67,11 +67,11 @@ def validate():
     assert '@media(prefers-reduced-motion:reduce)' in page
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
     assert "setInterval(refreshMastheadTime,60000)" in page, "Masthead clock must refresh every minute"
-    # New league identity must be presented consistently in the emblem gallery
-    # and ESPN matchup center, without losing any of the four families.
-    full_name = "Gridiron Giggles The White / Wilcox / Hulsey / Homan Fantasy Football League"
-    assert full_name in page, "Full league name missing from accessible heading"
-    assert page.count("The White / Wilcox / Hulsey / Homan Fantasy Football League") >= 4
+    # The owner chose a concise, consistent league identity across both the
+    # records directory and the ESPN matchup center.
+    full_name = "Gridiron Giggles Fantasy Football League"
+    assert page.count(full_name) >= 2, "Full league name missing from accessible headings"
+    assert "The White / Wilcox / Hulsey / Homan Fantasy Football League" not in page
     assert 'class="league-identity-heading"' in page
     assert 'class="league-identity-brand"' in page
     assert 'class="league-identity-family"' in page
@@ -232,6 +232,13 @@ def validate():
                         "Rostered in Gridiron Giggles ESPN fantasy league")
                     assert transactions["windowStart"]<=move.get("date","")<=transactions["windowEnd"]
                     assert isinstance(move.get("mentionedTeams"),list)
+    # Verify public league identity and sharp stadium source remain reviewable.
+    assert page.count("Gridiron Giggles Fantasy Football League") >= 2
+    assert "The White / Wilcox / Hulsey / Homan Fantasy Football League" not in page
+    assert 'league-identity-family">Fantasy Football League</span>' in page
+    assert "photo-1781650104690-a5309d91a26b" in page
+    assert "w=3200&q=88" in page and "w=1800&q=88" in page
+    assert "assets/stadium-late-fall.webp" in page, "Local stadium fallback missing"
     # In-browser, auto-refreshed NFL scores supplement the daily static snapshot.
     for required in ('id="nfl-stat-ticker"', 'id="nfl-stat-track"',
                       'id="nfl-stat-ticker-mode"', 'id="nfl-stat-ticker-status"',

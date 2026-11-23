@@ -146,8 +146,10 @@ test('ticker scrolls slightly faster but remains readable for long multi-sport h
  const fs=require('node:fs');
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
  assert.ok(html.includes('var(--gz-ticker-duration,95s)'));
- assert.ok(html.includes('rgba(2,9,21,.12)'));
- assert.ok(html.includes('rgba(2,9,20,.04)'));
+ assert.ok(html.includes('rgba(2,9,21,.09)'));
+ assert.ok(html.includes('photo-1781650104690-a5309d91a26b'));
+ assert.ok(html.includes('w=3200&q=88'));
+ assert.ok(html.includes('rgba(2,9,20,.035)'));
  assert.ok(html.includes('filter: contrast(1.07) saturate(1.05) brightness(1.02)'));
  assert.ok(html.includes("url('assets/stadium-late-fall.webp')"));
  const tickerSource=fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8');
