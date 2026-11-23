@@ -68,3 +68,10 @@ does not own ESPN's scoring data or operate a real-time server.
 - **Data limits:** Unofficial ESPN endpoints can change, rate-limit or deny CORS. Feeds are best effort, checked only when the webpage is open, and reused for up to five minutes. Unavailable sports are skipped and partial feed coverage is disclosed. If NFL live status cannot be verified, do not assume there is no active NFL game.
 - **Security:** Existing CSP still limits fetch destinations to ESPN and self, external article links are restricted to `https://www.espn.com/`, and the new script is in the security-reviewed public-site allowlist. No keys, cookies, new server, third-party scraping service, automatic design updates, or TinyFish.
 - **Tests:** `node tests/test_multisport_ticker.js` and `node tests/test_nfl_player_ticker.js`, plus the existing required GitHub security gate and public-site tests.
+
+## NCAA football and intermediate scroll speed (November 23, 2026)
+
+- When ESPN confirms **no NFL games are in progress**, the same off-NFL ticker includes **NCAA FBS football** game scores and ESPN football headlines, in addition to the seven previously supported sports. College football uses ESPN's `football/college-football` feed and the FBS group (`groups=80`) for its scoreboard. It only displays current/recent verified live or final scores, never estimates.
+- **Strict live NFL override remains:** ESPN's NFL scoreboard is consulted before requesting or displaying off-NFL content. Any verified in-progress NFL game keeps the ticker **NFL-player-stats-only**, including while college football is live.
+- **Moderate scrolling speed:** The marquee scrolls at approximately 30 pixels per second (minimum 100-second loop), between the original fast 65-second loop and the slower previous 25 pixels per second (minimum 120 seconds). Animation still adjusts to the real content width, pauses on hover/focus and respects reduced-motion settings.
+- Missing or stale college football data is omitted instead of being invented. Source failures are disclosed; the website's existing ESPN-only CSP and security workflows are unchanged.
