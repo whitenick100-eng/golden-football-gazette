@@ -262,6 +262,17 @@ def validate():
     multi=ROOT/"assets/multisport-ticker.js"
     assert multi.is_file() and "GazetteMultiSport" in multi.read_text(encoding="utf-8")
     assert "nflGameInProgress" in (ROOT/"assets/nfl-player-ticker.js").read_text(encoding="utf-8")
+    # A short selected sport must move at the same px/sec as the long All Sports
+    # rotation, even when the feed has only one item.
+    ticker_src=(ROOT/"assets/nfl-player-ticker.js").read_text(encoding="utf-8")
+    assert "const TICKER_PX_PER_SEC=44" in ticker_src
+    assert "tickerRepeatCount(first.scrollWidth,tickerWindow?.clientWidth||bar.clientWidth)" in ticker_src
+    assert "if(data.rows.length>1)" not in ticker_src, "Single-item sports must scroll"
+    multi_src=multi.read_text(encoding="utf-8")
+    assert "MAX_NEWS_AGE_MS=30*24*60*60*1000" in multi_src
+    assert "MAX_SCORE_AGE_MS=8*24*60*60*1000" in multi_src
+    assert "routine.slice(0,2)" in multi_src and "feed.news[3]" in multi_src
+    assert "nflGameInProgress(nflBoard)" in ticker_src, "NFL live-only game statistics remain mandatory"
     ticker=ROOT/"assets/nfl-player-ticker.js"
     assert ticker.is_file(), "NFL ticker script not present"
     tick=ticker.read_text(encoding="utf-8")
