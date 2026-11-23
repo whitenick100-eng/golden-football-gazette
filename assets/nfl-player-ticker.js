@@ -116,6 +116,9 @@ function boardEvents(board){
    date:e.date
  })).filter(e=>/^\d+$/.test(e.id));
 }
+function nflGameInProgress(board){
+ return Array.isArray(board?.events)&&boardEvents(board).some(g=>g.state==='in');
+}
 function selectGames(events){
  // Keep all games already underway or finished from the *same NFL week*.
  // Never mix these per-game box scores with scoreboard season-leader totals.
@@ -147,7 +150,7 @@ function summaryURL(id){
  return BASE+'summary?event='+id;
 }
 const api={numeric,statEntry,gameBoxStats,scoreboardLeaders,topByKind,boardEvents,
-           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata};
+           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata,nflGameInProgress};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 root.GazetteStatTicker=api;
@@ -157,6 +160,9 @@ const doc=root.document,bar=doc.getElementById('nfl-stat-track'),
   btn=doc.getElementById('nfl-stat-ticker-refresh');
 if(!bar||!status||!mode||!btn)return;
 let inFlight=false,timer=null,last=null,stop=false,season=null,week=null;
+const titleText=doc.getElementById('nfl-stat-ticker-title');
+const tickerRegion=doc.getElementById('nfl-stat-ticker');
+const tickerWindow=doc.querySelector('.nfl-stat-ticker-window');
 let cachedWeekMetadata=null,lastWeekMetadataCheck=0;
 // Rotate in newly recorded player performances before recycling old leaders.
 const previouslySeen=new Map();
@@ -206,14 +212,17 @@ function dateLabel(date){
 }
 function makeCard(player,duplicate){
  const link=tag('a',undefined,'nfl-player-ticker-item');
- if(/^\d+$/.test(player.playerId||'')){
+ const safeHeadlineLink=typeof player.href==='string'&&
+   /^https:\/\/www\.espn\.com\//.test(player.href)?player.href:null;
+ if(safeHeadlineLink)link.href=safeHeadlineLink;
+ else if(/^\d+$/.test(player.playerId||'')){
    link.href='https://www.espn.com/nfl/player/_/id/'+player.playerId;
-   link.target='_blank';link.rel='noopener noreferrer';
  }else{
    link.removeAttribute('href');link.classList.add('not-linked');
  }
+ if(link.hasAttribute('href')){link.target='_blank';link.rel='noopener noreferrer';}
  if(duplicate)link.tabIndex=-1;
- const kind=tag('span',CATEGORIES[player.kind]?.short||'NFL','ticker-stat-kind');
+ const kind=tag('span',player.sport||CATEGORIES[player.kind]?.short||'NFL','ticker-stat-kind');
  link.append(kind,tag('strong',player.name,'ticker-player-name'),
   tag('span',player.team,'ticker-player-team'),
   tag('span',player.text,'ticker-player-stat'));
@@ -221,6 +230,11 @@ function makeCard(player,duplicate){
 }
 function paint(data){
  last=data;
+ const multi=data.modeKind==='multi';
+ if(titleText)titleText.textContent=multi?'Across Sports · Scores & News':'NFL Player Stat Tracker';
+ if(tickerRegion)tickerRegion.setAttribute('aria-label',multi?'Latest non-NFL scores and sports news':'Rolling NFL player statistics');
+ if(tickerWindow)tickerWindow.setAttribute('aria-label',multi?'Sports scores and headlines; pause scrolling on hover or focus':'NFL statistical leaders; pause scrolling on hover or focus');
+ bar.setAttribute('aria-label',multi?'Verified sports scores and headlines':'Player statistics');
  bar.replaceChildren();
  if(!data.rows.length){
    bar.append(tag('span','Verified player statistics are not available yet.','ticker-empty'));
@@ -318,19 +332,59 @@ async function fetchWeeklyBoxes(games){
  await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_BOX_SCORES,games.length)},()=>worker()));
  return result;
 }
-async function refresh(){
+async function refresh(force=false){
  if(inFlight||stop)return;
- if(doc.hidden){next(REFRESH_OTHER_MS);return}
+ if(doc.hidden&&!force){next(REFRESH_OTHER_MS);return}
  inFlight=true;btn.disabled=true;
  try{
-   const current=await latestWeek();
-   if(current.season!==season||current.week!==week){
-     // No last-week players should silently carry over to a new game week.
-     finalBoxCache.clear();previouslySeen.clear();previouslyFeatured.clear();previouslyShown=[];
+   // The ESPN NFL scoreboard is the authoritative mode switch. Never decide
+   // based on kickoff estimates, stale week metadata, or the presence of finals.
+   const nflBoard=await loadJSON(CURRENT_BOARD_URL,12000);
+   if(!Array.isArray(nflBoard.events))throw Error('Cannot verify whether NFL games are live');
+   if(!nflGameInProgress(nflBoard)){
+     if(!root.GazetteMultiSport)throw Error('Multi-sport news module is unavailable');
+     const latest=await root.GazetteMultiSport.load(root,force);
+     if(!latest.rows.length){
+       paint({rows:[],modeKind:'multi',mode:'SPORTS SCORES + NEWS',
+         checked:latest.checked,partial:latest.partial,
+         notes:'No recent ESPN scores or headlines verified for the selected sports'});
+     }else{
+       paint({...latest,modeKind:'multi',stale:false});
+     }
+     // Check NFL state more frequently than the relatively stable sports feeds,
+     // so a new NFL kickoff automatically restores the original stat ticker.
+     next(60000);
+     return;
    }
-   season=current.season;week=current.week;
-   const board=await loadJSON(boardURL(season,week));
-   if(!Array.isArray(board.events)||!board.events.length)throw Error('ESPN NFL scoreboard has no events');
+
+   // When a live NFL game starts, never leave other sports visible while
+   // its box scores load. Preserve the existing NFL stat rendering thereafter.
+   if(last?.modeKind==='multi'){
+     last=null;
+     bar.replaceChildren(tag('span','Loading ESPN NFL live game statistics…','ticker-empty'));
+     bar.classList.remove('ticker-animate');
+     if(titleText)titleText.textContent='NFL Player Stat Tracker';
+     mode.textContent='NFL LIVE GAME STATS';
+   }
+   let current={source:'ESPN verified live NFL scoreboard'};
+   let board=nflBoard;
+   try{
+     current=await latestWeek();
+     if(current.season!==season||current.week!==week){
+       finalBoxCache.clear();previouslySeen.clear();previouslyFeatured.clear();previouslyShown=[];
+     }
+     season=current.season;week=current.week;
+     // Prefer complete current-week events; if ESPN omits the live event
+     // from this scoped view, retain the verified unscoped live scoreboard.
+     const scoped=await loadJSON(boardURL(season,week));
+     if(Array.isArray(scoped.events)&&nflGameInProgress(scoped))board=scoped;
+   }catch(_){
+     // Postseason or league metadata errors must not hide genuine live NFL
+     // games. ESPN's verified event IDs still identify individual box scores.
+     current={source:'ESPN verified live NFL scoreboard'};
+     if(Number.isInteger(nflBoard?.season?.year))season=nflBoard.season.year;
+     if(Number.isInteger(nflBoard?.week?.number))week=nflBoard.week.number;
+   }
    const selected=selectGames(boardEvents(board));
    const results=await fetchWeeklyBoxes(selected.games);
    let rows=[],partial=selected.partial;
@@ -341,8 +395,8 @@ async function refresh(){
    if(rows.length){
      const hasFinal=selected.games.some(g=>g.state==='post');
      const heading=selected.active?
-       'NFL WEEK '+week+' · LIVE'+(hasFinal?' + FINAL':'')+' GAME STATS':
-       'NFL WEEK '+week+' GAME STATS';
+       'NFL'+(week?' WEEK '+week:'')+' · LIVE'+(hasFinal?' + FINAL':'')+' GAME STATS':
+       'NFL GAME STATS';
      const chosen=newlyRecorded(rows);
      paint({rows:chosen.rows,mode:heading+(chosen.changed?' · NEW STATS':''),
        checked:new Date(),notes:'Passing · rushing · receiving · ESPN game box scores · '+current.source,
@@ -351,24 +405,23 @@ async function refresh(){
      const leaders=scoreboardLeaders(board);
      if(!leaders.length)throw Error('ESPN player stats unavailable');
      paint({rows:leaders,mode:'ESPN NFL SCOREBOARD LEADERS',
-       checked:new Date(),notes:selected.active?
-          'Game box scores pending · ESPN scoreboard figures; not verified season totals · '+current.source:
-          'ESPN scoreboard figures · not independently verified season totals · '+current.source,
+       checked:new Date(),notes:'Game box scores pending · ESPN scoreboard figures; not verified season totals',
        partial:!!selected.games.length});
    }
-   next(selected.active?REFRESH_GAME_MS:REFRESH_OTHER_MS);
+   next(REFRESH_GAME_MS);
  }catch(e){
    if(last){
-     paint({...last,stale:true,notes:'Source temporarily unavailable · '+(last.notes||'')});
+     paint({...last,stale:true,notes:'NFL live status or source temporarily unverified · '+(last.notes||'')});
    }else{
-     try{paint(await fallbackFantasy())}
-     catch(_){status.textContent='ESPN stat feed temporarily unavailable';mode.textContent='NFL PLAYER STATS'}
+     // No confirmed non-NFL mode: do not falsely claim there is no live NFL.
+     mode.textContent='SPORTS DATA TEMPORARILY UNAVAILABLE';
+     status.textContent='Unable to verify NFL game status. Retrying the ESPN feed.';
    }
-   next(REFRESH_OTHER_MS);
-   console.warn('Gazette NFL stat ticker:',e.message);
+   next(60000);
+   console.warn('Gazette sports ticker:',e.message);
  }finally{inFlight=false;btn.disabled=false}
 }
-btn.addEventListener('click',refresh);
+btn.addEventListener('click',()=>refresh(true));
 doc.addEventListener('visibilitychange',()=>{if(!doc.hidden)refresh()});
 root.addEventListener('online',refresh);
 refresh();
