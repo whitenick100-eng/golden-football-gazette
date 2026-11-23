@@ -14,12 +14,20 @@ const MAX_PARALLEL_BOX_SCORES=4;
 const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
-// Scroll at a comfortable, readable ~44 CSS pixels/second and scale
-// duration to real content width, even across the full nine-sport rotation.
-// This is ~38% faster than the previous 32px/s pace; still smooth/legible.
-// A 72-second minimum prevents short selections from whipping past.
+// Same ~44 CSS-pixels-per-second velocity for All Sports, every individual
+// sport tab, and the live-NFL stats-only override. The old 72s floor made
+// short single-sport lists crawl even though All Sports moved at 44px/s.
+const TICKER_PX_PER_SEC=44;
 function tickerScrollSeconds(groupWidth){
- return Math.max(72,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/44));
+ const width=Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000;
+ return Math.max(8,Math.ceil(width/TICKER_PX_PER_SEC));
+}
+// Fill at least one viewport before duplicating the track for a seamless loop.
+// With only one score/headline, its decorative repeats must remain unfocusable.
+function tickerRepeatCount(groupWidth,viewportWidth){
+ if(!Number.isFinite(groupWidth)||groupWidth<=0||
+    !Number.isFinite(viewportWidth)||viewportWidth<=0)return 1;
+ return Math.min(32,Math.max(1,Math.ceil(viewportWidth/groupWidth)));
 }
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 
@@ -157,7 +165,7 @@ function summaryURL(id){
  return BASE+'summary?event='+id;
 }
 const api={numeric,statEntry,gameBoxStats,scoreboardLeaders,topByKind,boardEvents,
-           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata,nflGameInProgress,tickerScrollSeconds};
+           selectGames,currentWeek,boardURL,summaryURL,reuseWeekMetadata,nflGameInProgress,tickerScrollSeconds,tickerRepeatCount};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root||!root.document||!root.fetch)return;
 root.GazetteStatTicker=api;
@@ -254,12 +262,12 @@ function paint(data){
  if(titleText)titleText.textContent=multi?
    (data.selectedSport==='ALL'?'Across Sports · Scores & News':data.selectedSport+' · Scores & News'):
    'NFL Live Game Stat Tracker';
- if(tickerRegion)tickerRegion.setAttribute('aria-label',multi?'Latest verified sports scores and major news':'Rolling live NFL player game statistics');
+ if(tickerRegion)tickerRegion.setAttribute('aria-label',multi?'Latest verified sports scores and news':'Rolling live NFL player game statistics');
  if(tickerWindow)tickerWindow.setAttribute('aria-label',multi?'Sports scores and headlines; pause scrolling on hover or focus':'NFL statistical leaders; pause scrolling on hover or focus');
  bar.setAttribute('aria-label',multi?'Verified sports scores and headlines':'Player statistics');
  bar.replaceChildren();
  if(!data.rows.length){
-   bar.append(tag('span',multi?'No recent ESPN scores or major headlines verified for this selection.':
+   bar.append(tag('span',multi?'No recent verified ESPN scores or headlines available for this selection.':
      'Verified NFL live-game player statistics are not available yet.','ticker-empty'));
    bar.classList.remove('ticker-animate');
    mode.textContent=data.mode;
@@ -270,14 +278,20 @@ function paint(data){
  const first=tag('div',undefined,'nfl-stat-group');
  for(const p of data.rows)first.append(makeCard(p,false));
  bar.append(first);
- if(data.rows.length>1){
-   const clone=tag('div',undefined,'nfl-stat-group');
-   clone.setAttribute('aria-hidden','true');
+ // Use true pixel velocity, not a fixed minimum time per tab. When a selected
+ // sport has only one item, repeat it just enough to span the viewport.
+ const repeats=tickerRepeatCount(first.scrollWidth,tickerWindow?.clientWidth||bar.clientWidth);
+ for(let copy=1;copy<repeats;copy++){
+   for(const p of data.rows)first.append(makeCard(p,true));
+ }
+ const clone=tag('div',undefined,'nfl-stat-group');
+ clone.setAttribute('aria-hidden','true');
+ for(let copy=0;copy<repeats;copy++){
    for(const p of data.rows)clone.append(makeCard(p,true));
-   bar.append(clone);
-   bar.style.setProperty('--gz-ticker-duration',tickerScrollSeconds(first.scrollWidth)+'s');
-   bar.classList.add('ticker-animate');
- }else bar.classList.remove('ticker-animate');
+ }
+ bar.append(clone);
+ bar.style.setProperty('--gz-ticker-duration',tickerScrollSeconds(first.scrollWidth)+'s');
+ bar.classList.add('ticker-animate');
  mode.textContent=data.mode;
  status.textContent=(data.stale?'Last verified':'ESPN checked')+' '+dateLabel(data.checked)+
   (data.partial?' · Partial game coverage':'')+
