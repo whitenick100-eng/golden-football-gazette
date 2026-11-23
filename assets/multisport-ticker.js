@@ -17,8 +17,10 @@ const SPORTS=Object.freeze([
   {id:'MLB',path:'baseball/mlb',kind:'team',page:'https://www.espn.com/mlb/'},
   {id:'NASCAR',path:'racing/nascar-premier',kind:'racing',page:'https://www.espn.com/racing/nascar/'}
 ]);
-const MAX_SCORE_AGE_MS=72*60*60*1000;
-const MAX_NEWS_AGE_MS=48*60*60*1000; // Late-breaking stories only: no week-old filler.
+const MAX_SCORE_AGE_MS=8*24*60*60*1000; // Weekly leagues still show last weekend's final.
+const MAX_NEWS_AGE_MS=30*24*60*60*1000; // Clearly date older, offseason headlines.
+const FRESH_NEWS_AGE_MS=48*60*60*1000;
+const REGULAR_NEWS_AGE_MS=14*24*60*60*1000;
 const FETCH_TIMEOUT_MS=9000;
 const MAX_PARALLEL=4;
 const CACHE_MS=5*60*1000;
@@ -115,7 +117,8 @@ function teamScore(event,sport,state,now){
  if(h===null||a===null||!hname||!aname)return null;
  return {sport:sport.id,kind:'score',name:String(aname).slice(0,20)+' '+a+
    ' — '+String(hname).slice(0,20)+' '+h,
-   team:state==='in'?'LIVE':'FINAL',text:'ESPN verified '+(state==='in'?'live score':'final score'),
+   team:state==='in'?'LIVE':'FINAL',text:state==='in'?'ESPN verified live score':
+     'FINAL · '+new Date(event.date).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'}),
    href:eventLink(event,sport),date:Date.parse(event.date),checked:now};
 }
 function individualResult(event,sport,state,now){
@@ -164,17 +167,23 @@ function newsImportance(article,now=Date.now(),sourceIndex=0){
  const headline=String(article?.headline||'').trim();
  const published=Date.parse(article?.published||article?.lastModified||'');
  if(!headline||!Number.isFinite(published)||published>now+60*60*1000||
-   now-published>MAX_NEWS_AGE_MS)return null;
+    now-published>MAX_NEWS_AGE_MS)return null;
  const age=now-published;
  const breaking=(/breaking/i.test(String(article?.type||''))||
-   /^breaking(?:[:\s-]|$)/i.test(headline))&&age<=12*60*60*1000;
- // ESPN article position is a modest editorial signal, but not proof of views.
- const major=MAJOR_NEWS.test(headline),extra=EXTRA_MAJOR.test(headline);
- if((LOW_VALUE_NEWS.test(headline)&&!breaking)||(!major&&!extra&&!breaking))return null;
- const priority=(breaking?16:0)+(major?5:0)+(extra?4:0)+
-   (age<=6*60*60*1000?6:age<=18*60*60*1000?4:age<=30*60*60*1000?2:0)+
-   Math.max(0,3-Math.max(0,sourceIndex));
- return {priority,breaking,published};
+    /^breaking(?:[:\s-]|$)/i.test(headline))&&age<=12*60*60*1000;
+ // Avoid predictions, gambling links and other low-value filler even when
+ // regular sports headlines are requested.
+ if(LOW_VALUE_NEWS.test(headline)&&!breaking)return null;
+ const featured=age<=FRESH_NEWS_AGE_MS&&
+   (breaking||MAJOR_NEWS.test(headline)||EXTRA_MAJOR.test(headline));
+ const recency=age<=6*60*60*1000?24:age<=24*60*60*1000?18:
+   age<=72*60*60*1000?12:age<=REGULAR_NEWS_AGE_MS?6:1;
+ const priority=(breaking?120:featured?60:0)+recency+
+   Math.max(0,5-Math.max(0,sourceIndex));
+ const label=breaking?'BREAKING':featured?'MAJOR NEWS':
+   age<=72*60*60*1000?'LATEST NEWS':
+   age<=REGULAR_NEWS_AGE_MS?'RECENT NEWS':'OLDER NEWS';
+ return {priority,breaking,featured,published,age,label};
 }
 function newsRows(data,sport,now=Date.now()){
  if(!Array.isArray(data?.articles))return [];
@@ -184,21 +193,38 @@ function newsRows(data,sport,now=Date.now()){
    const link=espnLink(article?.links?.web?.href);
    if(!signal||!link||used.has(link))continue;
    const storySport=classifyNewsSport(article,sport);
-   // NFL news is allowed here only when NFL games are idle; other unknown
-   // sports cannot be cross-listed as supported news.
+   // News retains its canonical ESPN sport badge; never borrow another
+   // sport's story to fill the current tab.
    if(!SPORTS.some(available=>available.id===storySport))continue;
    used.add(link);
    rows.push({sport:storySport,kind:'news',name:article.headline.trim().slice(0,110),
-     team:signal.breaking?'BREAKING':'MAJOR NEWS',
+     team:signal.label,featured:signal.featured,
      text:'ESPN · '+new Date(signal.published).toLocaleDateString('en-US',{month:'short',day:'numeric'}),
      href:link,date:signal.published,priority:signal.priority,checked:now});
  }
- return rows.sort((a,b)=>b.priority-a.priority||b.date-a.date).slice(0,2);
+ // The current fortnight is preferred; if a sport is off-season, allow its
+ // latest available (clearly labeled older) ESPN news instead of an empty tab.
+ const preferred=rows.some(row=>now-row.date<=REGULAR_NEWS_AGE_MS)?
+   rows.filter(row=>now-row.date<=REGULAR_NEWS_AGE_MS):rows;
+ const byPriority=(a,b)=>b.priority-a.priority||b.date-a.date;
+ const top=preferred.filter(row=>row.featured).sort(byPriority);
+ const routine=preferred.filter(row=>!row.featured).sort(byPriority);
+ // A breaking story must not displace all ordinary news. Reserve up to two
+ // additional slots for regular headlines, and fill remaining slots from
+ // whatever verified and relevant articles the selected sport has.
+ const chosen=[...top.slice(0,2),...routine.slice(0,2)];
+ const selectedLinks=new Set(chosen.map(row=>row.href));
+ for(const row of [...top.slice(2),...routine.slice(2)]){
+   if(chosen.length>=4)break;
+   if(!selectedLinks.has(row.href)){chosen.push(row);selectedLinks.add(row.href);}
+ }
+ return chosen.slice(0,4);
 }
-function mixRows(perSport){
+function mixRows(perSport,selected='ALL'){
  const rows=[],seenNews=new Set(),seenScores=new Set();
  function append(row){
    if(!row)return;
+   if(selected!=='ALL'&&row.sport!==selected)return;
    if(row.kind==='news'){
      if(!row.href||seenNews.has(row.href))return;
      seenNews.add(row.href);
@@ -209,17 +235,23 @@ function mixRows(perSport){
    }
    rows.push(row);
  }
- // Lead with verified scores for *each* sport, then one ranked major news
- // headline. This prevents weak stories from crowding out current results.
+ // All Sports remains compact (three scores + two news per league).
+ // Individual tabs show up to three scores and FOUR headlines, including
+ // regular reporting even when one or two breaking stories are available.
  for(const sport of SPORTS){
+   if(selected!=='ALL'&&sport.id!==selected)continue;
    const feed=perSport[sport.id]||{scores:[],news:[]};
    append(feed.scores[0]);
    append(feed.scores[1]);
    append(feed.news[0]);
    append(feed.scores[2]);
+   append(feed.news[1]);
+   if(selected!=='ALL'){
+     append(feed.news[2]);
+     append(feed.news[3]);
+   }
  }
- // Nine leagues can each contribute three verified scores and a major story.
- return rows.slice(0,36);
+ return rows.slice(0,selected==='ALL'?45:7);
 }
 async function fetchJSON(root,url){
  const controller=new AbortController();
@@ -279,13 +311,13 @@ async function load(rootWindow=root,force=false,selected='ALL'){
    });
  }
  // Selected league gets only its own verified scores and article topics.
- const rows=mixRows(perSport).filter(row=>selected==='ALL'||row.sport===selected);
+ const rows=mixRows(perSport,selected);
  return {rows,checked:new Date(),partial:failures>0,sourcesAvailable:successes,
    selectedSport:selected,
    mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR SCORES + NEWS':
-     selected+' · VERIFIED SCORES + MAJOR NEWS',
-   notes:failures?'Some ESPN feeds unavailable · Verified scores and major news only':
-     'Live and final scores · significant ESPN headlines from the last 48h'};
+     selected+' · VERIFIED SCORES + NEWS',
+   notes:failures?'Some ESPN feeds unavailable · Showing confirmed scores and available ESPN news':
+     'Scores from the past 8 days · breaking, major and regular dated ESPN headlines'};
 }
 const api={SPORTS,SPORT_IDS,validSportSelection,asScore,espnLink,activeOrFinal,scoreRows,newsRows,mixRows,classifyNewsSport,newsImportance,load};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
