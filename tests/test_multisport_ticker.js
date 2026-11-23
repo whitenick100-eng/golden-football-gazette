@@ -143,7 +143,7 @@ test('cross-listed identical articles appear only once in mixed sport rotation',
  const result=multi.mixRows(feeds);
  assert.equal(result.filter(r=>r.href===href).length,1);
 });
-test('late-breaking high-impact stories outrank unrelated or week-old filler',()=>{
+test('breaking stories stay prominent while ordinary recent news also appears',()=>{
  const mk=(headline,ageHours,type='HeadlineNews')=>({
   headline,type,
   published:new Date(now-ageHours*60*60*1000).toISOString(),
@@ -158,19 +158,79 @@ test('late-breaking high-impact stories outrank unrelated or week-old filler',()
    mk('Rookie injured ahead of championship final',55),
    mk('Power rankings and preview',1)
  ]},sport('NBA'),now);
- assert.equal(rows.length,2);
+ assert.equal(rows.length,4);
  assert.equal(rows[0].team,'BREAKING');
  assert.equal(rows[0].name,'Breaking: playoff contender fires head coach');
  assert.equal(rows[1].name,'All-time player traded in blockbuster deal');
- assert.ok(rows.every(row=>row.sport==='NBA'&&row.date>=now-48*60*60*1000));
+ assert.equal(rows[2].name,'Rookie injured ahead of championship final');
+ assert.equal(rows[2].team,'LATEST NEWS'); // >48h: notable but no longer fresh breaking.
+ assert.equal(rows[3].name,'NBA superstar signs record contract');
+ assert.ok(rows.every(row=>row.sport==='NBA'&&row.date>=now-30*24*60*60*1000));
  assert.equal(multi.newsImportance(mk('Random podcast recap',1),now),null);
- assert.equal(multi.newsImportance(mk('Player signs new deal',55),now),null);
- assert.equal(multi.newsImportance(mk('One ordinary game was played',2),now),null);
+ assert.equal(multi.newsImportance(mk('Player signs new deal',55),now).label,'LATEST NEWS');
+ assert.equal(multi.newsImportance(mk('One ordinary game was played',2),now).label,'LATEST NEWS');
  const yesterday=multi.newsImportance(mk('Breaking: player signs record contract',22,'BreakingNews'),now);
  assert.ok(yesterday);
  assert.equal(yesterday.breaking,false,'Old alerts must not stay labeled breaking');
  const fresh=multi.newsImportance(mk('Breaking: star traded',2,'BreakingNews'),now);
  assert.equal(fresh.breaking,true);
+});
+test('ordinary sport reporting displays even when no major news is available',()=>{
+ const article=(headline,days,id)=>({
+   headline,published:new Date(now-days*24*60*60*1000).toISOString(),
+   links:{web:{href:'https://www.espn.com/wnba/story/_/id/'+id+'/verified'}}});
+ const onlyRegular={articles:[
+  article('Roster outlook before next season',2,1),
+  article('Team announces new home schedule',8,2),
+  article('Community programs growing through basketball',12,3),
+  article('WNBA player interview following training',31,4)
+ ]};
+ const rows=multi.newsRows(onlyRegular,sport('WNBA'),now);
+ assert.equal(rows.length,3);
+ assert.deepEqual(rows.map(x=>x.team),['LATEST NEWS','RECENT NEWS','RECENT NEWS']);
+ assert.ok(rows.every(x=>x.sport==='WNBA'));
+ assert.ok(rows.every(x=>x.href.startsWith('https://www.espn.com/wnba/')));
+});
+test('offseason older news remains labeled and sourced instead of fabricated',()=>{
+ const article=(headline,days,id)=>({
+  headline,published:new Date(now-days*24*60*60*1000).toISOString(),
+  links:{web:{href:'https://www.espn.com/wnba/story/_/id/'+id+'/story'}}});
+ const feed={articles:[
+  article('League announces updated season plans',21,1),
+  article('Team reflects on season achievements',26,2),
+  article('Retired player looks back on career',45,3)
+ ]};
+ const rows=multi.newsRows(feed,sport('WNBA'),now);
+ assert.equal(rows.length,2);
+ assert.ok(rows.every(x=>x.team==='OLDER NEWS'));
+ assert.ok(rows.every(x=>x.text.includes('ESPN ·')));
+});
+test('weekly sports still show actual final scores with event date',()=>{
+ const weekly=multi.scoreRows(teams('post','2026-11-17T23:00:00Z'),sport('NCAA FB'),now);
+ assert.equal(weekly.length,1);
+ assert.equal(weekly[0].team,'FINAL');
+ assert.ok(weekly[0].text.includes('Nov 17'));
+ const tooOld=multi.scoreRows(teams('post','2026-11-14T23:00:00Z'),sport('NCAA FB'),now);
+ assert.equal(tooOld.length,0);
+});
+test('selected tabs show up to 3 scores plus 4 news, All Sports has a shorter mix',()=>{
+ const news=Array.from({length:4},(_,i)=>({
+  sport:'NBA',kind:'news',name:'ESPN verified story '+i,
+  href:'https://www.espn.com/nba/story/_/id/'+(9000+i)
+ }));
+ const scores=Array.from({length:3},(_,i)=>({
+  sport:'NBA',kind:'score',name:'Verified NBA score '+i,
+  date:now-i*1000,href:'https://www.espn.com/nba/game/_/gameId/'+(8000+i)
+ }));
+ const feed={NBA:{news,scores}};
+ const selected=multi.mixRows(feed,'NBA');
+ assert.equal(selected.length,7);
+ assert.equal(selected.filter(row=>row.kind==='score').length,3);
+ assert.equal(selected.filter(row=>row.kind==='news').length,4);
+ assert.deepEqual([...new Set(selected.map(r=>r.sport))],['NBA']);
+ const all=multi.mixRows(feed);
+ assert.equal(all.length,5);
+ assert.equal(all.filter(row=>row.kind==='news').length,2);
 });
 test('verified game scores are prioritized ahead of major news per sport',()=>{
  const feeds={
