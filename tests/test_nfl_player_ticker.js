@@ -146,8 +146,10 @@ test('ticker scrolls at a balanced consistent reading speed',()=>{
  const fs=require('node:fs');
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
  assert.ok(html.includes('var(--gz-ticker-duration,100s)'));
- assert.ok(fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8')
-    .includes("tickerScrollSeconds(first.scrollWidth)"));
+ const tickerSource=fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8');
+ assert.ok(tickerSource.includes("tickerScrollSeconds(first.scrollWidth)"));
+ assert.ok(tickerSource.includes("if(last?.modeKind==='multi')"));
+ assert.ok(tickerSource.includes("mode.textContent='NFL STATUS UNVERIFIED'"));
 });
 
 console.log('All NFL player-stat ticker tests passed.');
