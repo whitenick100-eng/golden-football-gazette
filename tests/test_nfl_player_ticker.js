@@ -148,7 +148,8 @@ test('ticker scrolls at a readable faster pace and sport tabs do not pause it',(
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
  assert.ok(html.includes('var(--gz-ticker-duration,72s)'));
  assert.ok(!html.includes('.nfl-stat-ticker:focus-within .ticker-animate'));
- assert.ok(html.includes('.nfl-stat-ticker-window:focus-within .ticker-animate'));
+ assert.ok(!html.includes('.nfl-stat-ticker-window:focus-within .ticker-animate'));
+ assert.ok(html.includes('.nfl-stat-ticker-window:has(a:focus-visible) .ticker-animate'));
  assert.ok(html.includes('.nfl-stat-ticker-window:hover .ticker-animate'));
  assert.ok(html.includes('rgba(2,9,21,.09)'));
  assert.ok(!html.includes('photo-1781650104690-a5309d91a26b'));
