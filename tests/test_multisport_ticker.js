@@ -161,6 +161,11 @@ test('late-breaking high-impact stories outrank unrelated or week-old filler',()
  assert.equal(multi.newsImportance(mk('Random podcast recap',1),now),null);
  assert.equal(multi.newsImportance(mk('Player signs new deal',55),now),null);
  assert.equal(multi.newsImportance(mk('One ordinary game was played',2),now),null);
+ const yesterday=multi.newsImportance(mk('Breaking: player signs record contract',22,'BreakingNews'),now);
+ assert.ok(yesterday);
+ assert.equal(yesterday.breaking,false,'Old alerts must not stay labeled breaking');
+ const fresh=multi.newsImportance(mk('Breaking: star traded',2,'BreakingNews'),now);
+ assert.equal(fresh.breaking,true);
 });
 test('verified game scores are prioritized ahead of major news per sport',()=>{
  const feeds={
