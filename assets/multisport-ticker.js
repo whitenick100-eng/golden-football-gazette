@@ -218,7 +218,8 @@ function mixRows(perSport){
    append(feed.news[0]);
    append(feed.scores[2]);
  }
- return rows.slice(0,32);
+ // Nine leagues can each contribute three verified scores and a major story.
+ return rows.slice(0,36);
 }
 async function fetchJSON(root,url){
  const controller=new AbortController();
