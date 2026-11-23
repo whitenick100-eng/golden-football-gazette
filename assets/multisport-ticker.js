@@ -202,23 +202,25 @@ function newsRows(data,sport,now=Date.now()){
      text:'ESPN · '+new Date(signal.published).toLocaleDateString('en-US',{month:'short',day:'numeric'}),
      href:link,date:signal.published,priority:signal.priority,checked:now});
  }
- // The current fortnight is preferred; if a sport is off-season, allow its
- // latest available (clearly labeled older) ESPN news instead of an empty tab.
- const preferred=rows.some(row=>now-row.date<=REGULAR_NEWS_AGE_MS)?
-   rows.filter(row=>now-row.date<=REGULAR_NEWS_AGE_MS):rows;
- const byPriority=(a,b)=>b.priority-a.priority||b.date-a.date;
- const top=preferred.filter(row=>row.featured).sort(byPriority);
- const routine=preferred.filter(row=>!row.featured).sort(byPriority);
- // A breaking story must not displace all ordinary news. Reserve up to two
- // additional slots for regular headlines, and fill remaining slots from
- // whatever verified and relevant articles the selected sport has.
- const chosen=[...top.slice(0,2),...routine.slice(0,2)];
- const selectedLinks=new Set(chosen.map(row=>row.href));
- for(const row of [...top.slice(2),...routine.slice(2)]){
-   if(chosen.length>=4)break;
-   if(!selectedLinks.has(row.href)){chosen.push(row);selectedLinks.add(row.href);}
+ // Prefer stories actually about this selected league. Cross-listed articles
+ // stay accurately labeled and may appear when this league has fewer than 4.
+ // The off-season fallback is applied per article sport, not across a mixed feed.
+ function pick(pool){
+   const preferred=pool.some(row=>now-row.date<=REGULAR_NEWS_AGE_MS)?
+     pool.filter(row=>now-row.date<=REGULAR_NEWS_AGE_MS):pool;
+   const byPriority=(a,b)=>b.priority-a.priority||b.date-a.date;
+   const top=preferred.filter(row=>row.featured).sort(byPriority);
+   const routine=preferred.filter(row=>!row.featured).sort(byPriority);
+   const chosen=[...top.slice(0,2),...routine.slice(0,2)];
+   for(const row of [...top.slice(2),...routine.slice(2)]){
+     if(chosen.length>=4)break;
+     chosen.push(row);
+   }
+   return chosen.slice(0,4);
  }
- return chosen.slice(0,4);
+ const own=pick(rows.filter(row=>row.sport===sport.id));
+ const cross=pick(rows.filter(row=>row.sport!==sport.id));
+ return [...own,...cross].slice(0,4);
 }
 function mixRows(perSport,selected='ALL'){
  const rows=[],seenNews=new Set(),seenScores=new Set();
