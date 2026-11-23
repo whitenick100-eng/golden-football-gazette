@@ -20,6 +20,7 @@ check('Published snapshot revalidation is throttled, but manual refresh bypasses
   assert.equal(matchups.shouldRefreshPublishedSnapshot(now-fiveMinutes+1,now),false);
   assert.equal(matchups.shouldRefreshPublishedSnapshot(now-fiveMinutes,now),true);
   assert.equal(matchups.shouldRefreshPublishedSnapshot(now-1000,now,true),true);
+  assert.equal(matchups.shouldRefreshPublishedSnapshot(now+1000,now),true);
   assert.equal(matchups.shouldRefreshPublishedSnapshot(NaN,now),true);
 });
 check('Upcoming matchup never fabricates a winning team or live score',()=>{
