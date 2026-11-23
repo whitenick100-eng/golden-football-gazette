@@ -133,19 +133,23 @@ test('invalid game box stats cannot inject unrealistic TD or yardage totals',()=
  assert.equal(t.statEntry(section,athlete(7,'Example',['121','1.5']), 'KC', event),null);
 });
 
-test('ticker scrolls at a balanced consistent reading speed',()=>{
- // About 30px/s, minimum 100 seconds: faster than 25px/s/120s,
+test('ticker scrolls slightly faster but remains readable for long multi-sport headlines',()=>{
+ // About 32px/s, minimum 95 seconds: slightly faster than 30px/s/100s,
  // still slower than the original fixed 65-second marquee.
- assert.equal(t.tickerScrollSeconds(1000),100);
- assert.equal(t.tickerScrollSeconds(3000),100);
- assert.equal(t.tickerScrollSeconds(4000),134);
- assert.equal(t.tickerScrollSeconds(8000),267);
- assert.equal(t.tickerScrollSeconds(0),100);
- assert.equal(t.tickerScrollSeconds(NaN),100);
+ assert.equal(t.tickerScrollSeconds(1000),95);
+ assert.equal(t.tickerScrollSeconds(3000),95);
+ assert.equal(t.tickerScrollSeconds(4000),125);
+ assert.equal(t.tickerScrollSeconds(8000),250);
+ assert.equal(t.tickerScrollSeconds(0),95);
+ assert.equal(t.tickerScrollSeconds(NaN),95);
  assert.ok(t.tickerScrollSeconds(8000)>t.tickerScrollSeconds(4000));
  const fs=require('node:fs');
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
- assert.ok(html.includes('var(--gz-ticker-duration,100s)'));
+ assert.ok(html.includes('var(--gz-ticker-duration,95s)'));
+ assert.ok(html.includes('rgba(2,9,21,.12)'));
+ assert.ok(html.includes('rgba(2,9,20,.04)'));
+ assert.ok(html.includes('filter: contrast(1.07) saturate(1.05) brightness(1.02)'));
+ assert.ok(html.includes("url('assets/stadium-late-fall.webp')"));
  const tickerSource=fs.readFileSync(require.resolve('../assets/nfl-player-ticker.js'),'utf8');
  assert.ok(tickerSource.includes("tickerScrollSeconds(first.scrollWidth)"));
  assert.ok(tickerSource.includes("if(last?.modeKind==='multi')"));

@@ -15,10 +15,10 @@ const CURRENT_BOARD_URL=BASE+'scoreboard?limit=100';
 const REFRESH_GAME_MS=90000,REFRESH_OTHER_MS=600000;
 const WEEK_METADATA_TTL_MS=5*60*1000; // ESPN's current NFL week changes far less often than game stats.
 // Scale the marquee to its content width so 8-sport headlines don't race.
-// ~30px/s with a 100-second minimum is between the previous 25px/s
-// (minimum 120s) and the original much-faster 65-second loop.
+// ~32px/s with a 95-second minimum: a small increase from the
+// 30px/s setting, still slower than the original fixed 65-second loop.
 function tickerScrollSeconds(groupWidth){
- return Math.max(100,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/30));
+ return Math.max(95,Math.ceil((Number.isFinite(groupWidth)&&groupWidth>0?groupWidth:3000)/32));
 }
 const FINAL_BOX_RECHECK_MS=15*60*1000; // Post-game stat corrections can arrive after FINAL.
 

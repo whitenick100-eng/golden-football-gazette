@@ -90,6 +90,54 @@ test('news is dated, article-linked and never automatically miscalled breaking',
  assert.equal(rows[1].team,'BREAKING');
  assert.ok(rows[0].text.includes('Nov 23'));
 });
+test('news keeps its sport badge but corrects cross-listed ESPN article topics',()=>{
+ const article=(href,extra={})=>({
+  headline:'A confirmed sports update',
+  published:'2026-11-23T17:00:00Z',
+  links:{web:{href}},...extra
+ });
+ const nba=sport('NBA');
+ assert.equal(multi.classifyNewsSport(article('https://www.espn.com/nba/story/_/id/1'),nba),'NBA');
+ assert.equal(multi.classifyNewsSport(article('https://www.espn.com/college-football/story/_/id/2'),nba),'NCAA FB');
+ assert.equal(multi.classifyNewsSport(article('https://www.espn.com/wnba/story/_/id/3'),nba),'WNBA');
+ assert.equal(multi.classifyNewsSport(article('https://www.espn.com/espn/story/_/id/4',{
+  categories:[{type:'league',description:'NASCAR'}]
+ }),nba),'NASCAR');
+ assert.equal(multi.classifyNewsSport(article('https://www.espn.com/espn/story/_/id/5',{
+  categories:[{type:'team',description:'NASCAR'}]
+ }),nba),'NBA');
+ assert.equal(multi.classifyNewsSport(article('https://www.espn.com/mlb/story/_/id/6',{
+  categories:[{type:'league',description:'NBA'}]
+ }),nba),'MLB'); // Canonical article route has priority over mismatched metadata.
+ const crossListed=multi.newsRows({articles:[article(
+  'https://www.espn.com/college-football/story/_/id/2'
+ )]},nba,now);
+ assert.equal(crossListed.length,1);
+ assert.equal(crossListed[0].sport,'NCAA FB');
+ assert.equal(crossListed[0].kind,'news');
+ assert.equal(crossListed[0].name,'A confirmed sports update');
+});
+test('off-NFL ticker does not disguise cross-posted NFL stories as NBA',()=>{
+ const rows=multi.newsRows({articles:[
+  {headline:'NFL breaking story',published:'2026-11-23T18:00:00Z',
+   links:{web:{href:'https://www.espn.com/nfl/story/_/id/7'}}},
+  {headline:'Actual basketball story',published:'2026-11-23T17:00:00Z',
+   links:{web:{href:'https://www.espn.com/nba/story/_/id/8'}}}
+ ]},sport('NBA'),now);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].sport,'NBA');
+ assert.equal(rows[0].name,'Actual basketball story');
+});
+test('cross-listed identical articles appear only once in mixed sport rotation',()=>{
+ const href='https://www.espn.com/wnba/story/_/id/12345';
+ const story={sport:'WNBA',kind:'news',href,name:'Verified WNBA news'};
+ const feeds={
+  NBA:{scores:[],news:[story]},
+  WNBA:{scores:[],news:[{...story}]}
+ };
+ const result=multi.mixRows(feeds);
+ assert.equal(result.filter(r=>r.href===href).length,1);
+});
 test('hostile article and game URLs are rejected',()=>{
  for(const bad of ['javascript:alert(1)','https://www.espn.com.evil.test/x',
                    'http://www.espn.com/x','https://evil.test/x']){

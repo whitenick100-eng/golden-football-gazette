@@ -31,6 +31,55 @@ function espnLink(raw){
    return u.href;
  }catch(_){return null}
 }
+// News feeds can cross-list stories from other leagues. Match the sport to
+// the story itself before rendering the badge; never label an NFL/NHL article
+// as NBA simply because it appeared in the NBA feed.
+const ARTICLE_PATH_SPORTS=[
+  [/^\/nba(?:\/|$)/,'NBA'],
+  [/^\/wnba(?:\/|$)/,'WNBA'],
+  [/^\/golf(?:\/|$)/,'PGA'],
+  [/^\/college-football(?:\/|$)/,'NCAA FB'],
+  [/^\/mens-college-basketball(?:\/|$)/,'NCAA MEN'],
+  [/^\/womens-college-basketball(?:\/|$)/,'NCAA WOMEN'],
+  [/^\/mlb(?:\/|$)/,'MLB'],
+  [/^\/(?:racing\/nascar|nascar)(?:\/|$)/,'NASCAR'],
+  [/^\/nfl(?:\/|$)/,'NFL'],
+  [/^\/nhl(?:\/|$)/,'NHL'],
+  [/^\/soccer(?:\/|$)/,'SOCCER']
+];
+const ARTICLE_SPORT_ALIASES=Object.freeze({
+  nba:'NBA',wnba:'WNBA',pga:'PGA',golf:'PGA',
+  collegefootball:'NCAA FB',ncaaf:'NCAA FB',cfb:'NCAA FB',
+  menscollegebasketball:'NCAA MEN',ncaam:'NCAA MEN',
+  womenscollegebasketball:'NCAA WOMEN',ncaaw:'NCAA WOMEN',
+  mlb:'MLB',majorleaguebaseball:'MLB',nascar:'NASCAR',
+  nfl:'NFL',nhl:'NHL',soccer:'SOCCER'
+});
+function classifyNewsSport(article,sport){
+ const href=espnLink(article?.links?.web?.href);
+ if(href){
+   const pathname=new URL(href).pathname.toLowerCase();
+   for(const [pattern,id] of ARTICLE_PATH_SPORTS){
+     if(pattern.test(pathname))return id;
+   }
+ }
+ // Use explicit league/sport metadata only. Team names or generic 'sports'
+ // tags are not a reliable substitute for the article's actual category.
+ const matches=new Set();
+ for(const category of Array.isArray(article?.categories)?article.categories:[]){
+   if(!['league','sport'].includes(String(category?.type||'').toLowerCase()))continue;
+   for(const field of ['leagueId','league','description','name','slug','sport']){
+     const value=category?.[field];
+     if(typeof value!=='string')continue;
+     const key=value.toLowerCase().replace(/[^a-z0-9]/g,'');
+     if(ARTICLE_SPORT_ALIASES[key])matches.add(ARTICLE_SPORT_ALIASES[key]);
+   }
+ }
+ if(matches.size===1)return [...matches][0];
+ // When the article supplies no specific category, retain the known
+ // league-specific ESPN news feed as the last-resort attribution.
+ return sport.id;
+}
 function eventLink(event,sport){
  for(const link of event?.links||[]){
    const url=espnLink(link?.href);
@@ -115,7 +164,11 @@ function newsRows(data,sport,now=Date.now()){
    used.add(link);
    const verifiedBreaking=/breaking/i.test(String(article.type||''))||
      /^breaking[:\s-]/i.test(headline);
-   rows.push({sport:sport.id,kind:'news',name:headline.trim().slice(0,110),
+   const storySport=classifyNewsSport(article,sport);
+   // During NFL idle mode only the requested non-NFL sports belong here.
+   // Cross-listed NFL/NHL/soccer stories must not appear under false tags.
+   if(!SPORTS.some(available=>available.id===storySport))continue;
+   rows.push({sport:storySport,kind:'news',name:headline.trim().slice(0,110),
      team:verifiedBreaking?'BREAKING':'LATEST NEWS',
      text:'ESPN · '+new Date(published).toLocaleDateString('en-US',{month:'short',day:'numeric'}),
      href:link,date:published,checked:now});
@@ -123,17 +176,25 @@ function newsRows(data,sport,now=Date.now()){
  return rows.sort((a,b)=>b.date-a.date).slice(0,2);
 }
 function mixRows(perSport){
- const rows=[];
+ const rows=[],seenNews=new Set();
+ function append(row){
+   if(!row)return;
+   if(row.kind==='news'&&row.href){
+     if(seenNews.has(row.href))return;
+     seenNews.add(row.href);
+   }
+   rows.push(row);
+ }
  // Round-robin prevents NBA/NCAA scores from drowning out golf, NASCAR,
  // WNBA, or genuine breaking news from other sports.
  for(let index=0;index<3;index++){
    for(const sport of SPORTS){
      const feed=perSport[sport.id]||{scores:[],news:[]};
-     if(index===0&&feed.scores[0])rows.push(feed.scores[0]);
-     if(index===0&&feed.news[0])rows.push(feed.news[0]);
-     if(index===1&&feed.scores[1])rows.push(feed.scores[1]);
-     if(index===1&&feed.news[1])rows.push(feed.news[1]);
-     if(index===2&&feed.scores[2])rows.push(feed.scores[2]);
+     if(index===0)append(feed.scores[0]);
+     if(index===0)append(feed.news[0]);
+     if(index===1)append(feed.scores[1]);
+     if(index===1)append(feed.news[1]);
+     if(index===2)append(feed.scores[2]);
    }
  }
  return rows.slice(0,28);
@@ -178,7 +239,7 @@ async function load(rootWindow=root,force=false){
  if(successes){cached=result;cachedAt=Date.now();}
  return result;
 }
-const api={SPORTS,asScore,espnLink,activeOrFinal,scoreRows,newsRows,mixRows,load};
+const api={SPORTS,asScore,espnLink,activeOrFinal,scoreRows,newsRows,mixRows,classifyNewsSport,load};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(root&&root.document)root.GazetteMultiSport=api;
 })(typeof window!=='undefined'?window:null);
