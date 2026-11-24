@@ -7,6 +7,7 @@ import json
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 OUT = Path("data/nfl-week.json")
 OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -23,8 +24,27 @@ def build():
     week = current.get("week", {}).get("number")
     if not isinstance(week, int) or not 1 <= week <= 22:
         raise ValueError("NFL week not available")
-    url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={season}&seasontype=2&week={week}&limit=100"
+    season_type = current.get("season", {}).get("type", 2)
+    url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates={season}&seasontype={season_type}&week={week}&limit=100"
     data = get(url)
+    # ESPN may retain the completed week on Tuesday morning. Advance only
+    # to a verified next regular-season slate, never by guessing game data.
+    local = now.astimezone(ZoneInfo("America/New_York"))
+    events_now = data.get("events") or []
+    if (season_type == 2 and week < 18 and events_now
+            and all(e.get("status", {}).get("type", {}).get("completed") for e in events_now)):
+        last = max(dt.datetime.fromisoformat(e["date"].replace("Z", "+00:00")).astimezone(local.tzinfo) for e in events_now)
+        cutoff = (last + dt.timedelta(days=(1-last.weekday()) % 7)).replace(hour=8, minute=0, second=0, microsecond=0)
+        if cutoff <= last:
+            cutoff += dt.timedelta(days=7)
+        if local >= cutoff:
+            candidate = get(url.replace(f"&week={week}&", f"&week={week+1}&"))
+            if (candidate.get("week", {}).get("number") == week+1
+                    and candidate.get("season", {}).get("year") == season
+                    and candidate.get("events")
+                    and all(dt.datetime.fromisoformat(e["date"].replace("Z", "+00:00")) > now for e in candidate["events"])):
+                week += 1
+                data = candidate
     events = data.get("events") or []
     if not events:
         raise ValueError("No NFL schedule returned")
