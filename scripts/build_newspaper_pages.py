@@ -201,8 +201,8 @@ def build_page_one(league, now, root):
                 players=leaders.get("players")
                 if isinstance(players,list) and players:
                     p=players[0]
-                    if isinstance(p,dict) and as_points(p.get("points")) is not None and
-                       isinstance(p.get("name"),str) and as_int(leaders.get("week"),1,22) is not None:
+                    if (isinstance(p,dict) and as_points(p.get("points")) is not None and
+                        isinstance(p.get("name"),str) and as_int(leaders.get("week"),1,22) is not None):
                         top={"week":leaders["week"],"name":p["name"][:90],
                              "points":as_points(p["points"]),"fantasyTeam":safe_name(p.get("fantasyTeam"))}
         except (ValueError,TypeError):
@@ -223,9 +223,9 @@ def build_page_one(league, now, root):
     }
 
 def valid_prior(page,now):
-    if not isinstance(page,dict) or page.get("status")!="verified" or
-       str(page.get("leagueId"))!=LEAGUE_ID or page.get("season")!=SEASON or
-       len(page.get("standings") or [])!=10 or not isinstance(page.get("finals"),list):
+    if (not isinstance(page,dict) or page.get("status")!="verified" or
+        str(page.get("leagueId"))!=LEAGUE_ID or page.get("season")!=SEASON or
+        len(page.get("standings") or [])!=10 or not isinstance(page.get("finals"),list)):
         return False
     try:
         created=utc_time(page.get("publishedAt"))
