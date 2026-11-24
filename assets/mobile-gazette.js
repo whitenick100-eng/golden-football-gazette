@@ -54,12 +54,14 @@ function activate(view,{push=false,scrollTarget=null}={}){
  }
  if(scrollTarget){
    root.requestAnimationFrame?.(()=>{
-     const target=doc.getElementById(scrollTarget);
+     const target=doc.getElementById(scrollTarget)||
+       (scrollTarget==='standings'?
+         doc.querySelector('article[aria-label="Newspaper page one"] .table-scroll'):null);
      if(target&&target.getClientRects().length)
        target.scrollIntoView({behavior:'smooth',block:'start'});
      else root.scrollTo?.(0,0);
    });
- }else root.scrollTo?.({top:0,behavior:'instant'});
+ }else root.scrollTo?.(0,0);
  return true;
 }
 function refreshPreviews(){
