@@ -16,7 +16,16 @@
     min-width:0;
     padding:0 10px calc(100px + env(safe-area-inset-bottom,0px))!important;
   }
-  body[data-gazette-mobile-view] .wrap > *{min-width:0}
+  body[data-gazette-mobile-view] .wrap > *{min-width:0;order:30}
+  body[data-gazette-mobile-view] .wrap > .gazette-records-feature{order:4}
+  body[data-gazette-mobile-view] .wrap > #playoff-picture{order:7}
+  body[data-gazette-mobile-view] .wrap > #weekly-nfl{order:8}
+  body[data-gazette-mobile-view] .wrap > #weekly-stars{order:9}
+  body[data-gazette-mobile-view] .wrap > #auto-coverage{order:10}
+  body[data-gazette-mobile-view] .wrap > #approved-editorial{order:9}
+  body[data-gazette-mobile-view] .wrap > .nfl-banner{order:11}
+  body[data-gazette-mobile-view] .wrap > details.archive{order:26}
+  body[data-gazette-mobile-view] .wrap > .foot{order:27}
   /* Only view-dependent display and ordering change. Existing desktop
      elements are never cloned, deleted or rethemed. */
   body[data-gazette-mobile-view] .wrap > :is(
@@ -232,7 +241,7 @@
   }
   .gazette-mobile-tile-symbol{font-size:1.7rem;line-height:1}
   body[data-gazette-mobile-view] .wrap > #gazette-mobile-more{
-    order:7;display:block!important;margin:10px 0;
+    order:4;display:block!important;margin:10px 0;
   }
   .gazette-mobile-more-actions{display:grid;grid-template-columns:1fr;gap:9px}
   .gazette-mobile-more-actions button{
