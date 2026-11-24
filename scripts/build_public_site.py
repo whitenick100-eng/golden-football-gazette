@@ -36,6 +36,8 @@ STATIC_ASSETS = (
     "assets/nfl-player-ticker.js",
     "assets/multisport-ticker.js",
     "assets/dynamic-newspaper.js",
+    "assets/mobile-gazette.css",
+    "assets/mobile-gazette.js",
     "assets/espn-matchups.js",
     "assets/espn-team-logos.json",
     # Reviewed, owner-supplied Thanksgiving masthead artwork.
