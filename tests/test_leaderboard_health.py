@@ -81,9 +81,9 @@ class LeaderboardHealthTests(unittest.TestCase):
         self.assertIn(before["fetchedAt"],health.format_report(report))
         self.assertIn("does **not** certify",health.format_report(report))
 
-    def test_tuesday_fallback_schedule_does_not_add_daily_builds(self):
+    def test_four_hour_schedule_preserves_tuesday_fallback(self):
         content=(ROOT / ".github/workflows/refresh-and-deploy.yml").read_text("utf-8")
-        self.assertIn("cron: '17 13 * * *'",content)
+        self.assertIn("cron: '17 1,5,9,13,17,21 * * *'",content)
         self.assertIn("cron: '47 15 * * 2'",content)
         self.assertEqual(content.count("cron:"),2)
         self.assertIn("python scripts/leaderboard_health.py",content)
