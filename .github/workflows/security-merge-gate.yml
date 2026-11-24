@@ -34,12 +34,15 @@ jobs:
           node --check assets/nfl-player-ticker.js
           node --check assets/multisport-ticker.js
           node --check assets/dynamic-newspaper.js
+          node --check assets/mobile-gazette.js
           node --check assets/espn-matchups.js
 
       - name: Validate public-site allowlist, credential scanning and security tests
         run: |
           python -m unittest discover -s tests -p 'test_public_security.py' -v
           python -m unittest discover -s tests -p 'test_newspaper_pages.py' -v
+          python -m unittest discover -s tests -p 'test_mobile_gazette.py' -v
+          node tests/test_mobile_gazette.js
           python -m unittest discover -s tests -p 'test_ci_security.py' -v
           python scripts/qa_gazette.py
           python scripts/build_public_site.py
