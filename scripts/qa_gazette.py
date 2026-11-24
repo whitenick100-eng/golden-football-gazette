@@ -195,6 +195,29 @@ def validate():
             assert bracket.get("type") in ("provisional","espn-listed")
             assert len(bracket.get("contenders",[]))+len(bracket.get("outsideCurrentField",[]))==10
             assert bracket.get("playoffTeamCount")==len(bracket["contenders"])
+    # Automated newspaper: Page One is verified for 48h; Page Two refreshes
+    # daily with explicitly fictional fan interviews (never attributed to real fans).
+    assert '<script src="assets/dynamic-newspaper.js"></script>' in page
+    assert 'data/gazette-pages.json' in (ROOT/"assets/dynamic-newspaper.js").read_text(encoding="utf-8")
+    assert (ROOT/"scripts/build_newspaper_pages.py").is_file()
+    assert 'Archived Week 10 edition' in page and 'Archived Week 11 fixture notes' in page
+    publication=read_json("data/gazette-pages.json")
+    if publication:
+        assert publication.get("schema")==1 and str(publication.get("leagueId"))=="1413446022"
+        assert publication.get("season")==2026
+        assert valid_time(publication.get("builtAt"))
+        one=publication.get("pageOne") or {}
+        if one.get("status")=="verified":
+            assert valid_time(one.get("publishedAt")) and valid_time(one.get("sourceAt"))
+            assert len(one.get("standings") or [])==10
+            names={t.get("name") for t in one["standings"]}
+            assert all(x.get("winner") in names|{"TIE"} for x in one.get("finals",[]))
+        else:
+            assert one.get("status")=="unavailable"
+        two=publication.get("pageTwo") or {}
+        assert two.get("status")=="available" and valid_time(two.get("publishedAt"))
+        assert two.get("fictionNotice") and "invented" in two["fictionNotice"]
+        assert all(x.get("fictional") is True for x in two.get("interviews",[]))
     # Daily source-backed NFL trade/release/waiver desk.
     for marker in ('id="nfl-transactions-desk"','id="transaction-items"',
                    'id="transaction-filter"','id="transaction-freshness"'):
