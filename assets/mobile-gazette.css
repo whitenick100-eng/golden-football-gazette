@@ -28,13 +28,32 @@
   body[data-gazette-mobile-view] .wrap > .foot{order:27}
   /* Only view-dependent display and ordering change. Existing desktop
      elements are never cloned, deleted or rethemed. */
-  body[data-gazette-mobile-view] .wrap > :is(
-    .topline,.gazette-records-feature,.nfl-banner,nav,#headlines,.stamp,
-    #nfl-stat-ticker,#espn-live,#playoff-picture,#auto-coverage,
-    #approved-editorial,#weekly-nfl,#weekly-stars,.paper,details.archive,.foot,
-    #gazette-mobile-top-nav,#gazette-mobile-stories,#gazette-mobile-shortcuts,
-    #gazette-mobile-articlebar,#gazette-mobile-more
-  ){display:none!important}
+  /* Keep existing desktop sections mounted and updating, but show only the
+     relevant ones per mobile navigation view. Individual selectors avoid the
+     higher :is() specificity that could otherwise hide required sections. */
+  body[data-gazette-mobile-view] .wrap > .topline,
+  body[data-gazette-mobile-view] .wrap > .gazette-records-feature,
+  body[data-gazette-mobile-view] .wrap > .nfl-banner,
+  body[data-gazette-mobile-view] .wrap > nav,
+  body[data-gazette-mobile-view] .wrap > #headlines,
+  body[data-gazette-mobile-view] .wrap > .stamp,
+  body[data-gazette-mobile-view] .wrap > #nfl-stat-ticker,
+  body[data-gazette-mobile-view] .wrap > #espn-live,
+  body[data-gazette-mobile-view] .wrap > #playoff-picture,
+  body[data-gazette-mobile-view] .wrap > #auto-coverage,
+  body[data-gazette-mobile-view] .wrap > #approved-editorial,
+  body[data-gazette-mobile-view] .wrap > #weekly-nfl,
+  body[data-gazette-mobile-view] .wrap > #weekly-stars,
+  body[data-gazette-mobile-view] .wrap > .paper,
+  body[data-gazette-mobile-view] .wrap > details.archive,
+  body[data-gazette-mobile-view] .wrap > .foot,
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-top-nav,
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-stories,
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-shortcuts,
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-articlebar,
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-more{
+    display:none!important;
+  }
   body[data-gazette-mobile-view] .wrap > .gazette-masthead{
     display:grid!important;
     order:1;
@@ -86,7 +105,7 @@
     outline:3px solid #fff1af;outline-offset:2px
   }
   body[data-gazette-mobile-view] .wrap > #nfl-stat-ticker{
-    order:3;display:block!important;margin:0 0 13px!important;
+    order:3;margin:0 0 13px!important;
     width:100%;min-width:0;position:static!important;
     top:auto!important;bottom:auto!important;
     z-index:auto!important;
@@ -112,7 +131,7 @@
   /* Reuse the SAME verified ESPN ticker DOM and its existing 44px/s behavior.
      Nothing gets made up or replaced by the visual mockup's dummy scores. */
   body[data-gazette-mobile-view] .wrap > #gazette-mobile-stories{
-    order:4;display:block!important;margin:0 0 10px;
+    order:4;margin:0 0 10px;
   }
   .gazette-mobile-section-heading{
     margin:7px 0 10px;
@@ -177,7 +196,7 @@
   }
   .gazette-mobile-feature-meta{font:.65rem/1.4 system-ui,sans-serif;color:#f6dab2}
   body[data-gazette-mobile-view] .wrap > #espn-live{
-    order:5;display:block!important;
+    order:5;
     margin:5px 0 12px!important;
     min-width:0;
     padding:12px 9px!important;
@@ -222,7 +241,7 @@
   }
   .gazette-mobile-carousel-note{font:.7rem system-ui,sans-serif;color:#edd0a2}
   body[data-gazette-mobile-view] .wrap > #gazette-mobile-shortcuts{
-    order:6;display:block!important;margin:7px 0 15px;
+    order:6;margin:7px 0 15px;
   }
   .gazette-mobile-tile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
   .gazette-mobile-tile{
@@ -241,7 +260,7 @@
   }
   .gazette-mobile-tile-symbol{font-size:1.7rem;line-height:1}
   body[data-gazette-mobile-view] .wrap > #gazette-mobile-more{
-    order:4;display:block!important;margin:10px 0;
+    order:4;margin:10px 0;
   }
   .gazette-mobile-more-actions{display:grid;grid-template-columns:1fr;gap:9px}
   .gazette-mobile-more-actions button{
@@ -250,7 +269,7 @@
     color:#ffe9c2;font:700 .9rem Georgia,serif;cursor:pointer;text-align:left;
   }
   body[data-gazette-mobile-view] .wrap > #gazette-mobile-articlebar{
-    order:2;display:flex!important;
+    order:2;
     align-items:center;justify-content:space-between;
     gap:8px;margin:6px 0 12px;
   }
@@ -265,7 +284,6 @@
   .gazette-mobile-articlelink{font-size:.73rem}
   body[data-gazette-mobile-view] .wrap > .paper{
     order:3;
-    display:block!important;
     margin:0 0 15px!important;
     min-width:0;
     width:100%;
