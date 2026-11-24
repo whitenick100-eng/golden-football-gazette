@@ -2,8 +2,8 @@ name: Refresh ESPN and publish Gazette
 on:
   workflow_dispatch:
   schedule:
-    # Daily 8:17 a.m. EST / 9:17 a.m. EDT (GitHub schedules use UTC).
-    - cron: '17 13 * * *'
+    # Every four hours, retaining the original 13:17 UTC refresh.
+    - cron: '17 1,5,9,13,17,21 * * *'
     # Tuesday second chance if GitHub delayed/dropped its scheduled run or
     # ESPN had not confirmed Monday-night final box scores at first refresh.
     # 10:47 a.m. EST / 11:47 a.m. EDT. No extra run on other days.
