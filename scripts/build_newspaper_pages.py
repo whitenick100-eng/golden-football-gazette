@@ -186,7 +186,7 @@ def safe_waivers(league):
         name=move.get("name")
         if week is not None and added and isinstance(name,str) and name.strip():
             rows.append({"team":safe_name(name),"week":week,"acquisitions":added})
-    return rows[:10], "ESPN-executed free-agent/waiver additions; player identities are not inferred."
+    return rows[:10], "Verified ESPN-executed free-agent/waiver additions; player identities are not inferred."
 
 def build_page_one(league, now, root):
     records=snapshot_standings(league)
