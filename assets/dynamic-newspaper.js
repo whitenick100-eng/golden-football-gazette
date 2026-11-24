@@ -43,6 +43,7 @@ function list(parent,items,map){
 }
 function replaceArchived(page){
  for(const old of [...page.querySelectorAll(':scope > section.section')])old.remove();
+ for(const old of [...page.querySelectorAll(':scope > .edition-archive-warning')])old.remove();
  const previous=page.querySelector('.edition-status');
  if(previous)previous.remove();
 }
@@ -56,7 +57,11 @@ function renderPageOne(data){
  if(data?.status!=='verified'||!Array.isArray(data.standings)||
     data.standings.length!==10)return; // Keep clearly labeled archival fallback.
  replaceArchived(page);
- meta(page,'Verified ESPN League Report · 48-hour edition',
+ const lastUpdated=new Date(data.publishedAt);
+ const delayed=Number.isFinite(lastUpdated.getTime())&&
+   Date.now()-lastUpdated.getTime()>48*60*60*1000;
+ meta(page,delayed?'Earlier verified ESPN league report · refresh delayed':
+   'Verified ESPN League Report · 48-hour edition',
    'Published '+date(data.publishedAt)+' · ESPN checked '+date(data.sourceAt));
  const intro=section(data.headline||'League Report');
  paragraph(intro,'The factual league record below reflects ESPN fantasy league '+data.leagueId+
