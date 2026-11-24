@@ -195,6 +195,16 @@ def validate():
             assert bracket.get("type") in ("provisional","espn-listed")
             assert len(bracket.get("contenders",[]))+len(bracket.get("outsideCurrentField",[]))==10
             assert bracket.get("playoffTeamCount")==len(bracket["contenders"])
+    # Mobile-only reflow: no edits to desktop themes or ESPN sources.
+    assert '<link rel="stylesheet" href="assets/mobile-gazette.css">' in page
+    assert '<script src="assets/mobile-gazette.js"></script>' in page
+    assert page.count('id="gazette-mobile-bottom-nav"')==1
+    assert page.count('id="gazette-mobile-top-nav"')==1
+    assert page.count('id="gazette-mobile-stories"')==1
+    assert page.count('id="gazette-mobile-articlebar"')==1
+    assert page.count('id="espn-games"')==1
+    assert 'assets/stadium-nfl-unbranded.webp' in page
+    assert 'assets/turkey-left.webp' in page and 'assets/turkey-right.webp' in page
     # Automated newspaper: Page One is verified for 48h; Page Two refreshes
     # daily with explicitly fictional fan interviews (never attributed to real fans).
     assert '<script src="assets/dynamic-newspaper.js"></script>' in page
