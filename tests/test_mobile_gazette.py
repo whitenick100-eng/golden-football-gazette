@@ -61,7 +61,9 @@ class GazetteMobileLayoutTests(unittest.TestCase):
 
     def test_same_sport_ticker_is_ordered_below_mobile_masthead(self):
         self.assertIn('.wrap > .gazette-masthead{\n    display:grid!important;\n    order:1;',self.css)
-        self.assertIn('.wrap > #nfl-stat-ticker{\n    order:3;display:block!important;',self.css)
+        self.assertIn('.wrap > #nfl-stat-ticker{\n    order:3;',self.css)
+        self.assertIn('body[data-gazette-mobile-view="home"] .wrap > #nfl-stat-ticker',self.css)
+        self.assertIn('body[data-gazette-mobile-view="scores"] .wrap > #nfl-stat-ticker',self.css)
         self.assertIn('position:static!important',self.css)
         self.assertNotIn('tickerScrollSeconds',self.js)
         self.assertNotIn('fetch(',self.js) # Existing verified ESPN loaders are reused.
