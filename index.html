@@ -865,6 +865,27 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04)
     background-position:center center!important;
   }
 }
+
+/* Automated newspaper pages preserve the existing editorial columns and theme. */
+.page .edition-status{margin:8px 0 15px;font-size:.78rem;color:#ffe0a4;
+  border-bottom:1px solid rgba(236,194,113,.44);padding-bottom:8px}
+.page .edition-archive-warning{font-size:.75rem;color:#f6ddb7}
+.page .edition-list{padding-left:20px;margin:9px 0 14px;line-height:1.55}
+.page .edition-list li{margin-bottom:7px}
+.page .edition-fiction-note{border-left:3px solid #ddb469;padding:10px 12px;
+  background:rgba(11,25,38,.7);font-size:.84rem;color:#fff2cf;line-height:1.5}
+.page .edition-banter{font-family:Georgia,serif;font-size:1.04rem;font-style:italic;
+  color:#fff3d3;line-height:1.55}
+.page .edition-fan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;margin:12px 0}
+.page .edition-fan-quote{padding:12px;border:1px solid rgba(225,186,119,.45);
+  background:rgba(8,26,39,.72);border-radius:7px;min-width:0;line-height:1.48}
+.page .edition-fan-quote strong{display:block;color:#ffe1a5;font-size:.85rem;margin-bottom:6px}
+.page .edition-fan-quote blockquote{margin:4px 0 8px;padding:0;border:0;
+  font-family:Georgia,serif;color:#fff8e8;font-size:.89rem}
+@media(max-width:700px){.page .edition-fan-grid{grid-template-columns:1fr}
+ .page .edition-fan-quote{padding:10px}}
+
 </style>
 </head>
 <body>
@@ -1057,18 +1078,18 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04)
 </section>
 
 <main class="paper">
-<article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · League Report</h2><aside id="gazette-page-one-sidebar" class="gazette-page-one-sidebar" aria-label="Featured first-page picture" hidden><img id="gazette-sidebar-picture" alt="Featured Golden Football Gazette artwork" loading="lazy" decoding="async"></aside>
+<article class="page" aria-label="Newspaper page one"><h2>🏆 Page One · League Report</h2><p class="edition-archive-warning">Archived Week 10 edition shown only if the new 48-hour verified ESPN report cannot be retrieved.</p><aside id="gazette-page-one-sidebar" class="gazette-page-one-sidebar" aria-label="Featured first-page picture" hidden><img id="gazette-sidebar-picture" alt="Featured Golden Football Gazette artwork" loading="lazy" decoding="async"></aside>
 <section class="section"><div class="statgrid"><div class="stat"><strong>10–0</strong><span>4th and 10</span></div><div class="stat"><strong>157.68</strong><span>Panic's Week 10</span></div><div class="stat"><strong>6–4</strong><span>HVAC / Michelle</span></div></div><h3 style="margin-top:17px">Unbeaten Through Ten: 4th and 10 Maintains Command</h3><p><strong>4th and 10</strong> remains undefeated after beating Michelle 133.98–75.00. The result extends the club’s unbeaten start to ten games and strengthens its position atop the league standings.</p><p><strong>Sunday Morning Panic</strong> defeated Fumbly In My Tumbly 157.68–131.12, delivering the league’s highest team score of Week 10 despite remaining at the foot of the standings.</p><p><strong>HVAC guru</strong> improved to 6–4 by beating the Automatons 146.14–128.42. <strong>Jeremy</strong> defeated Football 144.40–129.78, while <strong>Violet</strong> beat Cam 148.36–115.90.</p></section>
 <section class="section" id="standings"><h3>League Standings · Through Week 10</h3><div class="table-scroll"><table><thead><tr><th>Seed</th><th>Team</th><th>W–L</th></tr></thead><tbody id="standings-body"></tbody></table></div><p class="small">Standings through Week 10 from the latest verified snapshot; not a current Week 11 table. The top four are the championship positions in this snapshot.</p></section>
 <section class="section" id="trophies"><h3><span class="trophy">🏆</span> Championship Race</h3><p><strong>4th and 10</strong> controls the race at 10–0. Michelle and HVAC are 6–4; Jeremy, Fumbly and Cam sit in a 5–5 traffic jam.</p><h3><span class="toilet">🚽</span>Last-Place Trophy Outlook</h3><p><strong>Sunday Morning Panic (2–8)</strong> is still last, followed by Football (3–7). The Automatons and Violet are both 4–6. The final weeks will determine which club finishes last and receives the Golden Toilet trophy.</p></section>
 <section class="section"><h3>From the Editor</h3><p>With the regular season approaching its decisive stage, the unbeaten leader faces renewed scrutiny while several clubs remain separated by narrow margins in the playoff race.</p></section></article>
-<article class="page" aria-label="Newspaper page two"><h2>🏈 Page Two · Fixtures and League Notes</h2>
+<article class="page" aria-label="Newspaper page two"><h2>🏈 Page Two · Fixtures and League Notes</h2><p class="edition-archive-warning">Archived Week 11 fixture notes shown only if the daily sideline edition cannot be retrieved.</p>
 <section class="section" id="matchups"><h3>Week 11: Five Fixtures Shape the Playoff Picture</h3><div id="matchups-list"></div><p class="small">All five pairings are from the ESPN snapshot. Picks are editorial opinions; no invented ESPN projected scores.</p></section>
 <section class="section" id="waivers"><h3>Waiver Wire · Week 10 Acquisitions</h3><div class="table-scroll"><table><thead><tr><th>Team</th><th>Week 10</th><th>Season</th></tr></thead><tbody id="waivers-body"></tbody></table></div><p class="small">Acquisitions only — not adds plus drops. Player-specific moves are not attributed without verified transaction records.</p></section>
 <section class="section"><h3>The League’s Annual Honors</h3><div class="awards"><div class="award"><strong>🏆 The Golden Football</strong><span>Presented to the league champion at the conclusion of the season.</span></div><div class="award"><strong>🚽 The Golden Toilet</strong><span>Presented to the team finishing last in the league standings.</span></div></div></section></article>
 </main>
-<details class="archive"><summary>About this edition and future ESPN updates</summary><p>The editorial articles in this edition are archived as published. A separate GitHub Actions workflow attempts to refresh ESPN league statistics daily. The automatic data panel above identifies the latest successful retrieval; its status does not imply that archived articles have been updated.</p><span class="chip">Mobile friendly</span><span class="chip">No paid domain required</span><span class="chip">GitHub Pages ready</span></details>
-<footer class="foot">© 2026 The Golden Football Gazette · Independent fantasy football newspaper · Not affiliated with ESPN or the NFL.<br>Source: league 1413446022 ESPN export, last verified November 18, 2026. <a href="https://fantasy.espn.com/football/league?leagueId=1413446022" target="_blank" rel="noopener noreferrer">View ESPN league</a>.</footer>
+<details class="archive"><summary>About this edition and future ESPN updates</summary><p>Page One is automatically regenerated from verified ESPN league data no more often than every 48 hours; Page Two is published daily with dated ESPN-based facts and explicitly fictional professional fan interviews. Source outages keep older facts labeled as historical. Other independently drafted editorials continue to require owner review through a pull request. The legacy Week 10/11 articles are retained only as clearly marked archive fallbacks.</p><span class="chip">Mobile friendly</span><span class="chip">No paid domain required</span><span class="chip">GitHub Pages ready</span></details>
+<footer class="foot">© 2026 The Golden Football Gazette · Independent fantasy football newspaper · Not affiliated with ESPN or the NFL.<br>Source: ESPN fantasy league 1413446022. Each current page displays its own published and verified source timestamps. <a href="https://fantasy.espn.com/football/league?leagueId=1413446022" target="_blank" rel="noopener noreferrer">View ESPN league</a>.</footer>
 </div>
 <script>
 // Edit these arrays to publish new editions. Do not label historical data as live.
@@ -1487,6 +1508,7 @@ if(nfl.status==='fulfilled'&&Array.isArray(nfl.value.games)){const d=nfl.value;d
 </script>
 <script src="assets/multisport-ticker.js"></script>
 <script src="assets/nfl-player-ticker.js"></script>
+<script src="assets/dynamic-newspaper.js"></script>
 </body>
 </html>
 

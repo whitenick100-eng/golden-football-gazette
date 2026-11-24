@@ -40,6 +40,7 @@ def check(root=ROOT, output=OUT):
               "assets/live-nfl-scores.js",
               "assets/nfl-player-ticker.js",
               "assets/multisport-ticker.js",
+              "assets/dynamic-newspaper.js",
               "assets/espn-matchups.js",
               "assets/espn-team-logos.json",
               "assets/turkey-left.webp",

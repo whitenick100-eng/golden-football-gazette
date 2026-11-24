@@ -70,6 +70,66 @@ def merge_schedule(base, current, week=None):
             old["winner"] = winner
     return games
 
+def verified_roster_acquisitions(current_week, names_by_id):
+    """Optional ESPN mTransactions2 executed additions; no invented player names.
+
+    Requests are scoped to scoring periods because ESPN sometimes silently
+    omits transactions without scoringPeriodId. Non-executed bids are excluded.
+    """
+    counts = {}
+    checked = 0
+    for period in sorted({max(1,current_week-1),current_week}):
+        url = BASE_URL + (f"?view=mTransactions2&scoringPeriodId={period}"
+                          f"&matchupPeriodId={period}")
+        try:
+            feed = get_json(url)
+        except Exception as exc:
+            print("ESPN fantasy waiver view unavailable:",type(exc).__name__)
+            continue
+        if str(feed.get("id")) != LEAGUE or feed.get("seasonId",YEAR) != YEAR:
+            continue
+        transactions = feed.get("transactions")
+        if not isinstance(transactions,list):
+            continue
+        checked += 1
+        for transaction in transactions[:600]:
+            if not isinstance(transaction,dict):
+                continue
+            if str(transaction.get("type","")).upper() not in (
+                "WAIVER","FREEAGENT","FREE_AGENT","BBID_WAIVER"):
+                continue
+            if str(transaction.get("status","")).upper() not in (
+                "EXECUTED","COMPLETED","PROCESSED"):
+                continue
+            week = transaction.get("scoringPeriodId")
+            if type(week) is not int or week != period:
+                continue
+            tid = transaction.get("id")
+            if tid is None:
+                continue
+            for item in transaction.get("items") or []:
+                if not isinstance(item,dict) or item.get("type")!="ADD":
+                    continue
+                to_team=item.get("toTeamId")
+                player_id=item.get("playerId")
+                if to_team not in names_by_id or type(player_id) is not int:
+                    continue
+                key = (str(tid),week,to_team,player_id)
+                counts[key] = (week,to_team)
+    totals={}
+    for week,team_id in counts.values():
+        key=(week,team_id)
+        totals[key] = totals.get(key,0)+1
+    rows=[{"week":week,"name":names_by_id[team_id],
+           "teamId":team_id,"acquisitions":n}
+          for (week,team_id),n in sorted(totals.items(),key=lambda x:(-x[0][0],-x[1]))]
+    return {
+        "status":"verified" if checked else "unavailable",
+        "source":"ESPN fantasy mTransactions2; executed ADD items only",
+        "verifiedScoringPeriods":checked,
+        "teams":rows[:30]
+    }
+
 def refresh():
     first = get_json(BASE_URL + "?view=mTeam&view=mMatchup&view=mMatchupScore")
     if str(first.get("id")) != LEAGUE or int(first.get("seasonId",0)) != YEAR:
@@ -150,7 +210,15 @@ def refresh():
             "winner":game.get("winner","UNDECIDED"),
             "home":side(home),"away":side(away),
         })
+    # Optional and independent: an ESPN data outage here must never block
+    # fresh verified scores, fixtures or standings.
+    try:
+        roster_activity=verified_roster_acquisitions(week,names)
+    except (KeyError,ValueError,TypeError) as exc:
+        print("ESPN fantasy acquisitions unavailable:",type(exc).__name__)
+        roster_activity={"status":"unavailable","teams":[]}
     return {
+        "recentRosterActivity":roster_activity,
         "leagueId":LEAGUE,"season":YEAR,
         "source":"ESPN public fantasy API",
         "fetchedAt":dt.datetime.now(dt.timezone.utc).isoformat(),
