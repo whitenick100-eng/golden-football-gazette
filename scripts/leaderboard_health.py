@@ -49,6 +49,11 @@ def assess(league=None, leaders=None, now=None):
     elif confirmed_week is not None and published_week < confirmed_week:
         state = "RETRY_NEEDED"
         explanation = "ESPN has confirmed a newer completed week, but the published player ranking is still older."
+    elif (confirmed_week is not None and published_week == confirmed_week
+          and current_week is not None and current_week > published_week + 1):
+        state = "WAITING_FOR_ESPN_FINALS"
+        explanation = ("The published ranking matches ESPN's last fully final week, "
+                       "but a later fantasy scoring period is still not marked complete.")
     elif confirmed_week is not None and published_week == confirmed_week:
         state = "VERIFIED_CURRENT_COMPLETED_WEEK"
         explanation = "The published Top Five matches the latest fully final ESPN scoring period."
