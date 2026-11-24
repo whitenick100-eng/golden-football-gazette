@@ -41,6 +41,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_public_security.py' -v
           python -m unittest discover -s tests -p 'test_newspaper_pages.py' -v
+          python -m unittest discover -s tests -p 'test_leaderboard_health.py' -v
           python -m unittest discover -s tests -p 'test_mobile_gazette.py' -v
           node tests/test_mobile_gazette.js
           python -m unittest discover -s tests -p 'test_ci_security.py' -v
