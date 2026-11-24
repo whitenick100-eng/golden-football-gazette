@@ -4,6 +4,8 @@ on:
   schedule:
     # Every four hours, retaining the original 13:17 UTC refresh.
     - cron: '17 1,5,9,13,17,21 * * *'
+    # Tuesday 8 AM Eastern: UTC candidates cover EST and EDT.
+    - cron: '0 12,13 * * 2'
     # Tuesday second chance if GitHub delayed/dropped its scheduled run or
     # ESPN had not confirmed Monday-night final box scores at first refresh.
     # 10:47 a.m. EST / 11:47 a.m. EDT. No extra run on other days.
