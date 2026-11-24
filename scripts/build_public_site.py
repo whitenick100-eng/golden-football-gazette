@@ -27,6 +27,7 @@ PUBLIC_DATA = (
     "nfl-transactions.json",
     "top-performers.json",
     "weekly-features.json",
+    "gazette-pages.json",
 )
 STATIC_ASSETS = (
     "assets/stadium-late-fall.webp",
@@ -34,6 +35,7 @@ STATIC_ASSETS = (
     "assets/live-nfl-scores.js",
     "assets/nfl-player-ticker.js",
     "assets/multisport-ticker.js",
+    "assets/dynamic-newspaper.js",
     "assets/espn-matchups.js",
     "assets/espn-team-logos.json",
     # Reviewed, owner-supplied Thanksgiving masthead artwork.
