@@ -63,6 +63,8 @@
   body[data-gazette-mobile-view] .wrap > #gazette-mobile-top-nav{
     order:2;
     display:flex!important;
+    flex-wrap:nowrap!important;
+    justify-content:flex-start!important;
     overflow-x:auto;
     scrollbar-width:thin;
     overscroll-behavior-x:contain;
