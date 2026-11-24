@@ -1,0 +1,416 @@
+/* Golden Football Gazette — PHONE ONLY layout.
+   This stylesheet intentionally has NO layout/style overrides at desktop
+   widths. Every existing logo, turkey, stadium image, color and type treatment
+   comes from the original Gazette stylesheet. */
+.gazette-mobile-only{display:none!important}
+
+@media screen and (max-width:700px){
+  html{scroll-padding-top:12px}
+  body{overflow-x:hidden}
+  body[data-gazette-mobile-view] .wrap{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:0!important;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    padding:0 10px calc(100px + env(safe-area-inset-bottom,0px))!important;
+  }
+  body[data-gazette-mobile-view] .wrap > *{min-width:0}
+  /* Only view-dependent display and ordering change. Existing desktop
+     elements are never cloned, deleted or rethemed. */
+  body[data-gazette-mobile-view] .wrap > :is(
+    .topline,.gazette-records-feature,.nfl-banner,nav,#headlines,.stamp,
+    #nfl-stat-ticker,#espn-live,#playoff-picture,#auto-coverage,
+    #approved-editorial,#weekly-nfl,#weekly-stars,.paper,details.archive,.foot,
+    #gazette-mobile-top-nav,#gazette-mobile-stories,#gazette-mobile-shortcuts,
+    #gazette-mobile-articlebar,#gazette-mobile-more
+  ){display:none!important}
+  body[data-gazette-mobile-view] .wrap > .gazette-masthead{
+    display:grid!important;
+    order:1;
+    width:100%;
+    margin:10px 0 8px!important;
+  }
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-top-nav{
+    order:2;
+    display:flex!important;
+    overflow-x:auto;
+    scrollbar-width:thin;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+    gap:0;
+    padding:0 1px 5px;
+    margin:0 0 9px;
+    border:0;
+    white-space:nowrap;
+  }
+  .gazette-mobile-top-link{
+    appearance:none;
+    border:1px solid rgba(255,222,157,.7);
+    border-right:0;
+    border-radius:0;
+    background:rgba(3,17,29,.87);
+    color:#ffe3ad;
+    min-height:43px;
+    padding:10px 13px;
+    font:700 .69rem/1.1 Georgia,'Times New Roman',serif;
+    letter-spacing:.035em;
+    text-transform:uppercase;
+    flex:0 0 auto;
+    scroll-snap-align:start;
+    cursor:pointer;
+  }
+  .gazette-mobile-top-link:last-child{border-right:1px solid rgba(255,222,157,.7)}
+  .gazette-mobile-top-link[aria-current="page"]{
+    background:rgba(129,83,25,.86);
+    color:#fff4d2;
+    box-shadow:inset 0 -3px #ffdc92;
+  }
+  .gazette-mobile-top-link:focus-visible,
+  .gazette-mobile-nav-button:focus-visible,
+  .gazette-mobile-feature:focus-visible,
+  .gazette-mobile-tile:focus-visible,
+  .gazette-mobile-back:focus-visible,
+  .gazette-mobile-carousel-button:focus-visible{
+    outline:3px solid #fff1af;outline-offset:2px
+  }
+  body[data-gazette-mobile-view] .wrap > #nfl-stat-ticker{
+    order:3;display:block!important;margin:0 0 13px!important;
+    width:100%;min-width:0;position:static!important;
+    top:auto!important;bottom:auto!important;
+    z-index:auto!important;
+  }
+  #nfl-stat-ticker .sports-ticker-tabs{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+    padding:7px 6px;
+  }
+  #nfl-stat-ticker .sports-ticker-tab{
+    flex:0 0 auto;
+    white-space:nowrap;
+    min-height:39px;
+    scroll-snap-align:start;
+  }
+  #nfl-stat-ticker .nfl-stat-heading{
+    gap:7px;flex-wrap:wrap;
+  }
+  #nfl-stat-ticker .nfl-stat-ticker-window{overflow:hidden!important}
+  /* Reuse the SAME verified ESPN ticker DOM and its existing 44px/s behavior.
+     Nothing gets made up or replaced by the visual mockup's dummy scores. */
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-stories{
+    order:4;display:block!important;margin:0 0 10px;
+  }
+  .gazette-mobile-section-heading{
+    margin:7px 0 10px;
+    color:#ffdfa5;
+    font:700 clamp(1.15rem,5vw,1.42rem)/1.3 Georgia,'Times New Roman',serif;
+    text-align:center;
+    font-variant:small-caps;
+    text-shadow:0 2px 6px #000;
+  }
+  .gazette-mobile-stories-inner{
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .gazette-mobile-feature{
+    appearance:none;
+    width:100%;
+    min-width:0;
+    display:grid;
+    grid-template-columns:54px minmax(0,1fr) 54px;
+    align-items:center;
+    padding:14px 6px;
+    gap:5px;
+    cursor:pointer;
+    text-align:center;
+    border:4px double rgba(239,194,119,.82);
+    border-radius:5px;
+    background:rgba(3,14,24,.52);
+    box-shadow:0 9px 22px rgba(0,0,0,.4);
+    color:#fff4dc;
+    font-family:Georgia,'Times New Roman',serif;
+  }
+  .gazette-mobile-feature-content{min-width:0;display:flex;align-items:center;flex-direction:column;gap:5px}
+  .gazette-mobile-feature-kicker{color:#ffdb9d;font:700 .78rem/1.2 Georgia,serif;text-transform:uppercase;letter-spacing:.07em}
+  .gazette-mobile-feature-title{
+    display:block;color:#fff4dc;
+    font:700 clamp(1rem,4.8vw,1.34rem)/1.15 Georgia,serif;
+    font-variant:small-caps;
+    text-shadow:0 2px 8px #000;
+    overflow-wrap:anywhere;
+  }
+  .gazette-mobile-feature-desc{
+    color:#f2ddbb;
+    font:.75rem/1.45 Georgia,serif;
+  }
+  .gazette-mobile-read{
+    display:inline-block;
+    margin-top:5px;
+    padding:8px 13px;
+    background:rgba(3,26,43,.9);
+    border:1px solid #dfbb79;
+    border-radius:3px;
+    box-shadow:inset 0 0 0 1px rgba(230,194,120,.2);
+    color:#ffe8b7;
+    font:700 .75rem/1 Georgia,serif;
+  }
+  .gazette-mobile-feature-ornament{
+    color:#f5d68a;
+    font-size:clamp(1.4rem,6vw,2.3rem);
+    filter:drop-shadow(0 2px 7px rgba(0,0,0,.7));
+  }
+  .gazette-mobile-feature[data-mobile-target="article-two"]{
+    grid-template-columns:35px minmax(0,1fr) 35px;
+  }
+  .gazette-mobile-feature-meta{font:.65rem/1.4 system-ui,sans-serif;color:#f6dab2}
+  body[data-gazette-mobile-view] .wrap > #espn-live{
+    order:5;display:block!important;
+    margin:5px 0 12px!important;
+    min-width:0;
+    padding:12px 9px!important;
+  }
+  #espn-live .espn-matchup-header{gap:10px;min-width:0}
+  #espn-live .espn-matchup-header h2{
+    font-size:clamp(1.1rem,4.4vw,1.5rem);
+    overflow-wrap:anywhere;
+  }
+  #espn-games{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    gap:10px!important;
+    padding:3px 3px 13px;
+    min-width:0!important;
+  }
+  #espn-games > *{
+    flex:0 0 calc(100% - 8px)!important;
+    min-width:0!important;
+    max-width:calc(100% - 8px)!important;
+    scroll-snap-align:center;
+    scroll-snap-stop:always;
+  }
+  .gazette-mobile-carousel-controls{
+    display:flex!important;justify-content:center;align-items:center;
+    gap:13px;padding:8px 0;
+  }
+  .gazette-mobile-carousel-button{
+    appearance:none;
+    border:1px solid #dfba76;
+    border-radius:4px;
+    background:rgba(3,17,29,.86);
+    color:#ffe5b0;
+    width:44px;height:38px;
+    font:700 1.2rem Georgia,serif;
+    cursor:pointer;
+  }
+  .gazette-mobile-carousel-note{font:.7rem system-ui,sans-serif;color:#edd0a2}
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-shortcuts{
+    order:6;display:block!important;margin:7px 0 15px;
+  }
+  .gazette-mobile-tile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .gazette-mobile-tile{
+    appearance:none;display:flex;flex-direction:column;gap:7px;
+    align-items:center;justify-content:center;
+    border:3px double rgba(239,194,119,.8);
+    border-radius:4px;
+    padding:15px 5px;
+    min-height:92px;
+    background:rgba(2,19,35,.77);
+    color:#ffe6ae;
+    font:700 clamp(.73rem,3.15vw,.9rem)/1.25 Georgia,serif;
+    font-variant:small-caps;
+    text-align:center;
+    cursor:pointer;
+  }
+  .gazette-mobile-tile-symbol{font-size:1.7rem;line-height:1}
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-more{
+    order:7;display:block!important;margin:10px 0;
+  }
+  .gazette-mobile-more-actions{display:grid;grid-template-columns:1fr;gap:9px}
+  .gazette-mobile-more-actions button{
+    display:block;width:100%;min-height:44px;padding:11px 14px;
+    background:rgba(3,17,29,.8);border:2px double #dfba76;
+    color:#ffe9c2;font:700 .9rem Georgia,serif;cursor:pointer;text-align:left;
+  }
+  body[data-gazette-mobile-view] .wrap > #gazette-mobile-articlebar{
+    order:2;display:flex!important;
+    align-items:center;justify-content:space-between;
+    gap:8px;margin:6px 0 12px;
+  }
+  .gazette-mobile-back{
+    appearance:none;min-height:44px;cursor:pointer;
+    padding:10px 13px;
+    border:2px double #e3c387;
+    background:rgba(3,17,29,.86);
+    color:#ffe5b0;
+    font:700 .83rem Georgia,serif;
+  }
+  .gazette-mobile-articlelink{font-size:.73rem}
+  body[data-gazette-mobile-view] .wrap > .paper{
+    order:3;
+    display:block!important;
+    margin:0 0 15px!important;
+    min-width:0;
+    width:100%;
+  }
+  body[data-gazette-mobile-view] .paper > .page{
+    display:none!important;
+    width:100%;max-width:100%;min-width:0;
+    margin:0!important;
+    padding:clamp(10px,3.4vw,18px)!important;
+    overflow-wrap:anywhere;
+  }
+  body[data-gazette-mobile-view] .paper .table-scroll{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  body[data-gazette-mobile-view] .paper table{
+    width:100%;min-width:0;
+    font-size:clamp(.68rem,3vw,.88rem);
+  }
+  body[data-gazette-mobile-view] .paper th,
+  body[data-gazette-mobile-view] .paper td{
+    padding:6px 5px;
+    overflow-wrap:anywhere;
+  }
+  body[data-gazette-mobile-view] .paper .edition-fan-grid{grid-template-columns:1fr!important}
+  body[data-gazette-mobile-view] .paper .page h2{font-size:clamp(1.3rem,6vw,1.9rem);line-height:1.3}
+  body[data-gazette-mobile-view] .paper .page p{line-height:1.6}
+  /* Preserved original artwork; only fit/reposition it on narrow screens. */
+  .gazette-masthead.thanksgiving-masthead{
+    grid-template-columns:minmax(44px,17%) minmax(0,1fr) minmax(44px,17%)!important;
+    align-items:center!important;
+    padding:11px 5px!important;
+    gap:3px!important;
+    min-width:0;
+  }
+  .gazette-masthead .masthead-center{min-width:0}
+  .gazette-masthead .dancing-turkey{
+    width:100%!important;
+    max-width:66px!important;
+    max-height:102px!important;
+    object-fit:contain;
+  }
+  .gazette-masthead .masthead-trophy{
+    width:100%!important;max-width:65px;height:auto!important;max-height:77px;
+  }
+  .gazette-masthead h1{
+    font-size:clamp(1.13rem,5.1vw,1.93rem)!important;
+    line-height:1.07!important;
+    overflow-wrap:normal;
+  }
+  .gazette-masthead .eyebrow{font-size:clamp(.5rem,2.1vw,.7rem)!important}
+  .gazette-masthead .sub{padding:6px 3px!important;min-width:0;max-width:100%}
+  .gazette-masthead .thanksgiving-tagline{font-size:clamp(.55rem,2.3vw,.83rem)!important}
+  .gazette-masthead .masthead-side span{font-size:.53rem}
+  .gazette-masthead .masthead-live-date{overflow-wrap:anywhere}
+  .gazette-masthead #gazette-current-datetime{font-size:clamp(.59rem,2.2vw,.79rem)}
+  body{background-position:center center!important;background-size:cover!important}
+  /* HOME — only hero, ticker, story cards, real ESPN matchups and navigation. */
+  body[data-gazette-mobile-view="home"] .wrap > #gazette-mobile-stories,
+  body[data-gazette-mobile-view="home"] .wrap > #gazette-mobile-shortcuts,
+  body[data-gazette-mobile-view="home"] .wrap > #espn-live,
+  body[data-gazette-mobile-view="home"] .wrap > #nfl-stat-ticker{display:block!important}
+  /* SCORES — keep the existing live scoreboard/NFL news, no imitated data. */
+  body[data-gazette-mobile-view="scores"] .wrap > #nfl-stat-ticker,
+  body[data-gazette-mobile-view="scores"] .wrap > #weekly-nfl,
+  body[data-gazette-mobile-view="scores"] .wrap > #weekly-stars,
+  body[data-gazette-mobile-view="scores"] .wrap > #auto-coverage{display:block!important}
+  /* LEAGUE — real ESPN team records, matchup center, bracket and top five. */
+  body[data-gazette-mobile-view="league"] .wrap > .gazette-records-feature,
+  body[data-gazette-mobile-view="league"] .wrap > #espn-live,
+  body[data-gazette-mobile-view="league"] .wrap > #playoff-picture,
+  body[data-gazette-mobile-view="league"] .wrap > #weekly-stars,
+  body[data-gazette-mobile-view="league"] .wrap > #gazette-mobile-shortcuts{display:block!important}
+  /* GAZETTE — article previews with optional approved editorial below. */
+  body[data-gazette-mobile-view="gazette"] .wrap > #gazette-mobile-stories,
+  body[data-gazette-mobile-view="gazette"] .wrap > #approved-editorial{display:block!important}
+  body[data-gazette-mobile-view="gazette"] .wrap > #approved-editorial[hidden]{display:none!important}
+  /* MORE — keep all supplementary site functionality accessible. */
+  body[data-gazette-mobile-view="more"] .wrap > #gazette-mobile-more,
+  body[data-gazette-mobile-view="more"] .wrap > .nfl-banner,
+  body[data-gazette-mobile-view="more"] .wrap > #auto-coverage,
+  body[data-gazette-mobile-view="more"] .wrap > #weekly-nfl,
+  body[data-gazette-mobile-view="more"] .wrap > details.archive,
+  body[data-gazette-mobile-view="more"] .wrap > .foot{display:block!important}
+  /* ARTICLE VIEW — full-width original Page One or Page Two, not a duplicate. */
+  body[data-gazette-mobile-view="article-one"] .wrap > .gazette-masthead,
+  body[data-gazette-mobile-view="article-two"] .wrap > .gazette-masthead,
+  body[data-gazette-mobile-view="article-one"] .wrap > #gazette-mobile-top-nav,
+  body[data-gazette-mobile-view="article-two"] .wrap > #gazette-mobile-top-nav,
+  body[data-gazette-mobile-view="article-one"] #gazette-mobile-bottom-nav,
+  body[data-gazette-mobile-view="article-two"] #gazette-mobile-bottom-nav{display:none!important}
+  body[data-gazette-mobile-view="article-one"] .wrap > #gazette-mobile-articlebar,
+  body[data-gazette-mobile-view="article-two"] .wrap > #gazette-mobile-articlebar{display:flex!important}
+  body[data-gazette-mobile-view="article-one"] .wrap > .paper,
+  body[data-gazette-mobile-view="article-two"] .wrap > .paper{display:block!important}
+  body[data-gazette-mobile-view="article-one"] .paper > .page:first-child,
+  body[data-gazette-mobile-view="article-two"] .paper > .page:nth-child(2){display:block!important}
+  body[data-gazette-mobile-view="article-one"] .wrap,
+  body[data-gazette-mobile-view="article-two"] .wrap{
+    padding-bottom:calc(25px + env(safe-area-inset-bottom,0px))!important;
+  }
+  body[data-gazette-mobile-view] #gazette-mobile-bottom-nav{
+    position:fixed!important;
+    left:0;right:0;bottom:0;z-index:10000;
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    align-items:stretch;
+    width:100%;
+    min-height:59px;
+    padding:5px 5px calc(6px + env(safe-area-inset-bottom,0px));
+    border-top:2px solid #e5bd78;
+    box-shadow:0 -6px 18px #0009;
+    background:rgba(3,16,31,.97);
+  }
+  .gazette-mobile-nav-button{
+    appearance:none;
+    border:0;
+    background:transparent;
+    color:#ffe0a4;
+    min-width:0;
+    min-height:48px;
+    padding:5px 2px 3px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    font:700 .62rem/1.25 Georgia,serif;
+    cursor:pointer;
+  }
+  .gazette-mobile-nav-button[aria-current="page"]{
+    background:rgba(128,84,30,.36);
+    box-shadow:inset 0 2px #ffdb9a;
+    color:#fff6dd;
+  }
+  .gazette-mobile-nav-icon{font-size:1.15rem;line-height:1.1}
+  body[data-gazette-mobile-view="article-one"] #gazette-mobile-bottom-nav,
+  body[data-gazette-mobile-view="article-two"] #gazette-mobile-bottom-nav{display:none!important}
+  /* Existing cards can wrap without producing horizontal body overflow. */
+  #espn-live,.espn-matchup-center,.espn-scoreboard-grid,
+  #playoff-picture,.brackets,.bracket-card,.hub-section,
+  .league-logos-feature,#weekly-nfl,#weekly-stars{
+    max-width:100%;min-width:0;
+  }
+  #espn-live .espn-scoreboard-toolbar{flex-wrap:wrap;gap:8px}
+  .brackets{grid-template-columns:1fr!important}
+  .gazette-records-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .logo-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media screen and (max-width:370px){
+  .gazette-mobile-feature{grid-template-columns:31px minmax(0,1fr) 31px}
+  .gazette-mobile-feature-ornament{font-size:1.35rem}
+  .gazette-mobile-feature-title{font-size:1.02rem}
+  .gazette-mobile-top-link{padding:10px 9px}
+  .gazette-mobile-nav-button{font-size:.55rem}
+  .gazette-masthead .masthead-side span{font-size:.49rem}
+}
