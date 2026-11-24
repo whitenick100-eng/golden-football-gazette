@@ -119,3 +119,23 @@ does not own ESPN's scoring data or operate a real-time server.
 - **Scores remain first:** ESPN-verified live and final scores/results appear ahead of news. Extend final-score freshness from 72 hours to eight days so weekly leagues (NFL, NCAA football, PGA and NASCAR) continue displaying the preceding weekend’s verified scores, with the actual result date attached. Unverified/scheduled scores never appear as finals.
 - **NFL-only rule remains:** The active NFL scoreboard is always checked before off-game content, and any in-progress game overrides all tabs with NFL player statistics only. No news, regular scores, or non-NFL content can appear during a live NFL game.
 - **No design changes:** The blue tabs, sharp unbranded stadium, Thanksgiving details, league heading and ESPN Fantasy Matchup Center remain as merged.
+
+## 2026-11-24 — automatic Page One every two days and Page Two every day
+
+The owner requested separate editorial standards and publishing cadences for the two traditional newspaper pages.
+
+**Page One · League Report (verified fact only; at most one new edition per 48 hours)**
+
+- The scheduled `Refresh ESPN and publish Gazette` workflow now runs `scripts/build_newspaper_pages.py` after ESPN refresh and data-health recovery. It reads the *sanitized* `data/league.json` and, when fresh and structurally verified, writes a factual report to `data/gazette-pages.json`. Page One contains ESPN standings, current scoring period, confirmed winner-and-score fantasy matchups, current standings leader/last-place teams, and an optional recently verified rostered-player performance.
+- An HTTPS fetch of the previous public `data/gazette-pages.json` is used to **retain Page One byte-for-byte** until 48 hours have elapsed since publication. A GitHub push or another daily run within that window must not rewrite factual Page One with new scores. After 48 hours, regenerate only from verified ESPN data. If ESPN cannot be verified, keep the last fact-checked page explicitly timestamped rather than inventing results.
+- The 'positions' numbers are ESPN's sanitized standings order and not necessarily official playoff seeds or mathematically clinched berths. Finals are shown only when ESPN explicitly reports `HOME`/`AWAY`/`TIE`, the two side scores exist, and points agree with the winner status.
+- Both publication and source timestamps appear in the reader's view. When the edition JSON is unavailable, old static Week 10 copy remains marked as **an archive**, not a live report.
+
+**Page Two · Fixtures and League Notes (daily; clean, professional fictional satire)**
+
+- Daily editions use the fictional professional columnist **Adrian Mercer**, introduced as a fictional pen name. Each edition rotates professionally playful banter and **ten explicitly invented fan interviews**, one imaginary fan for each ESPN-verified fantasy league team. They are neither recordings nor actual statements or endorsements from real participants.
+- Upcoming ESPN-listed fantasy fixtures, standings-based championship/Golden Toilet commentary, and optional executed ESPN weekly waiver/free-agent acquisition **counts** remain factual and clearly distinguished from invented quotes. The waiver reader accepts only `mTransactions2` entries explicitly executed with an `ADD` item assigned to a known fantasy team. We never invent player identities, actual fan identities, team owner statements, outcomes, roster transactions, or closeness to playoff clinching.
+- The daily edition updates its banter by Eastern calendar day. It uses no external generative API, secret, subscription, external scraping vendor, or AI-written purported news. It is deterministic satire with user-approved automatic publishing, not the separately review-gated `editorial/latest.json` writer.
+- Publication is still governed by the existing strict Pages allowlist, CSP hashes, and checks. A failed GitHub Actions run or unavailable ESPN data can delay an update; timestamps make that limitation visible.
+
+**Presentation and security:** `assets/dynamic-newspaper.js` renders `data/gazette-pages.json` using DOM `textContent` (no `innerHTML`). It preserves the stadium artwork, typography, fantasy matchup center and playoff brackets, and keeps historical static page fallback if a verified edition cannot be retrieved. The updated workflow adds the generator to the existing daily scheduled site deployment, not an additional background process.
