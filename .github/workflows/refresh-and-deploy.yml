@@ -67,6 +67,8 @@ jobs:
           path: monitor/backup-artifact/
           if-no-files-found: ignore
           retention-days: 90
+      - name: Produce factual 48-hour Page One and fictional daily Page Two
+        run: python scripts/build_newspaper_pages.py
       - name: Validate refreshed data and report freshness
         run: |
           python scripts/qa_gazette.py
