@@ -139,3 +139,13 @@ The owner requested separate editorial standards and publishing cadences for the
 - Publication is still governed by the existing strict Pages allowlist, CSP hashes, and checks. A failed GitHub Actions run or unavailable ESPN data can delay an update; timestamps make that limitation visible.
 
 **Presentation and security:** `assets/dynamic-newspaper.js` renders `data/gazette-pages.json` using DOM `textContent` (no `innerHTML`). It preserves the stadium artwork, typography, fantasy matchup center and playoff brackets, and keeps historical static page fallback if a verified edition cannot be retrieved. The updated workflow adds the generator to the existing daily scheduled site deployment, not an additional background process.
+
+## 2026-11-24 — Tuesday Top Five publication fallback and transparent status
+
+The Five Leading Fantasy Performers section is a **weekly**, not a continuously live, award. Its source is ESPN's league-specific completed-week mBoxscore, including players on the ten fantasy teams' rosters and their benches. Unfinished matchup periods never replace confirmed actual scores.
+
+The site's scheduled deployment at 6:43 a.m. EST on November 24 explicitly retained the previous confirmed ranking: that was the correct result because the code's Tuesday verification window opens at **8 a.m. Eastern**. The original daily GitHub cron runs at 13:17 UTC, or **8:17 a.m. EST / 9:17 a.m. EDT**, but GitHub can delay or omit scheduled workflow executions.
+
+To make the weekly refresh more reliable, the same reviewed publishing workflow now also schedules a **Tuesday-only second attempt at 15:47 UTC (10:47 a.m. EST / 11:47 a.m. EDT)**. All other days remain on the existing once-daily cadence. Both attempts contact ESPN from the same script, use the same verified snapshot backup/recovery and security gate, and publish Pages only when existing critical data requirements pass. No stale scores are relabeled as fresh. The second run may still retain the previous verified ranking when ESPN has not finalized all matchups or mBoxscore data remains unavailable.
+
+A new read-only check, `scripts/leaderboard_health.py`, writes the latest league matchup period, latest fully final ESPN week, published Top Five week, original source timestamp, and one of four explicit publication states to GitHub Actions output and its Job Summary. `RETRY_NEEDED` warns when the leaderboard is actually behind a fully completed ESPN week. `WAITING_FOR_ESPN_FINALS` means ESPN has not yet marked a newer week fully final. This monitor does **not** block a valid deploy, guess fantasy scores, call external services, or change site styling. Offline tests cover both states and the Tuesday-only retry.

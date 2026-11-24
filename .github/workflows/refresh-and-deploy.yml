@@ -2,7 +2,12 @@ name: Refresh ESPN and publish Gazette
 on:
   workflow_dispatch:
   schedule:
+    # Daily 8:17 a.m. EST / 9:17 a.m. EDT (GitHub schedules use UTC).
     - cron: '17 13 * * *'
+    # Tuesday second chance if GitHub delayed/dropped its scheduled run or
+    # ESPN had not confirmed Monday-night final box scores at first refresh.
+    # 10:47 a.m. EST / 11:47 a.m. EDT. No extra run on other days.
+    - cron: '47 15 * * 2'
   push:
     branches: [main]
 permissions:
@@ -36,6 +41,9 @@ jobs:
         run: python scripts/refresh_nfl_injuries.py
       - name: Preserve weekly Top Five and refresh after Tuesday morning ESPN confirmation
         run: python scripts/refresh_player_leaders.py
+      - name: Report Top Five actual week, ESPN finals, and publication status
+        if: always()
+        run: python scripts/leaderboard_health.py
       - name: Fetch verified NFL trades, waivers and releases
         run: python scripts/refresh_nfl_transactions.py
       - name: Generate daily verified football stories and playoff picture

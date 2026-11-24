@@ -5,6 +5,8 @@ on:
       - 'index.html'
       - 'scripts/refresh_espn.py'
       - 'scripts/refresh_player_leaders.py'
+      - 'scripts/leaderboard_health.py'
+      - 'tests/test_leaderboard_health.py'
       - 'scripts/build_weekly_features.py'
       - 'scripts/qa_gazette.py'
       - 'tests/test_weekly_features.py'
@@ -27,6 +29,7 @@ jobs:
         run: |
           python -m py_compile scripts/refresh_espn.py scripts/refresh_player_leaders.py scripts/build_weekly_features.py scripts/qa_gazette.py
           python -m unittest discover -s tests -p "test_weekly_features.py" -v
+          python -m unittest discover -s tests -p "test_leaderboard_health.py" -v
       - name: Fetch verified ESPN standings and player boxscore
         run: |
           python scripts/refresh_espn.py
