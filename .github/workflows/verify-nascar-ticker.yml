@@ -28,68 +28,27 @@ jobs:
           node tests/test_multisport_ticker.js
           python -m py_compile scripts/refresh_nascar.py
           python -m unittest discover -s tests -p 'test_nascar_com_ticker.py' -v
-      - name: Diagnose official NASCAR-owned source availability from GitHub Actions
-        run: |
-          python - <<'PY'
-          import urllib.request, urllib.error
-          urls=[
-            'https://www.nascar.com/',
-            'https://cf.nascar.com/live/feeds/live-feed.json',
-            'https://cf.nascar.com/cacher/2026/1/race_list_basic.json',
-            'https://cf.nascar.com/cacher/2026/1/schedule-combined-feed.json',
-            'https://feed.nascar.com/live-feed.json',
-          ]
-          for url in urls:
-              try:
-                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json,text/html'})
-                  with urllib.request.urlopen(req,timeout=8) as response:
-                      sample=response.read(500)
-                      print(url,'HTTP',response.status,'content-type',response.headers.get('Content-Type'),'sample',sample[:250])
-              except Exception as exc:
-                  print(url,'UNAVAILABLE',type(exc).__name__,str(exc)[:170])
-          PY
-      - name: Inspect NASCAR official CDN race data fields
-        run: |
-          python - <<'PY'
-          import urllib.request,json
-          for path in [
-            'cacher/2026/1/race_list_basic.json',
-            'cacher/2026/1/schedule-combined-feed.json',
-            'cacher/2026/1/5601/weekend-feed.json',
-            'cacher/2027/1/race_list_basic.json',
-          ]:
-            try:
-              with urllib.request.urlopen('https://cf.nascar.com/'+path,timeout=12) as r:
-                raw=r.read(1800000)
-              data=json.loads(raw)
-              print('OFFICIAL:',path,'top type',type(data).__name__)
-              if isinstance(data,list):
-                print('  count',len(data),'first',data[:1],'last',data[-1:])
-              elif isinstance(data,dict):
-                print('  keys',list(data)[:40])
-                if path.endswith('schedule-combined-feed.json'):
-                  rows=data.get('response',[])
-                  print('  responses',len(rows),'first',rows[:1],'last',rows[-1:])
-                else:
-                  for key,val in data.items():
-                    if isinstance(val,list):
-                      print('  array',key,'len',len(val),'first',val[:1])
-            except Exception as exc:
-              print('OFFICIAL ERROR:',path,type(exc).__name__,str(exc)[:100])
-          PY
-      - name: Verify official NASCAR.com live homepage can supply dated news links
+      - name: Verify official NASCAR.com Cup race results and schedule
         run: |
           python scripts/refresh_nascar.py
           python - <<'PY'
           import json
           from pathlib import Path
           doc=json.loads(Path('data/nascar-ticker.json').read_text())
-          print('NASCAR source:',doc['source'],'status:',doc['status'],
-                'headlines:',len(doc['articles']))
+          print('NASCAR official source:',doc['source'],'status:',doc['status'],
+                'headlines:',len(doc.get('articles',[])),
+                'verified race results:',len(doc.get('results',[])),
+                'upcoming:',len(doc.get('upcoming',[])))
           assert doc['source']=='NASCAR.com'
-          assert doc['status']=='available', 'Official NASCAR.com website was not retrievable; inspect log'
-          assert doc['articles'], 'Official NASCAR.com page returned no verified news links'
-          assert all(row['url'].startswith('https://www.nascar.com/news-media/')
-                     for row in doc['articles'])
-          assert doc['results']==[], 'No guessed race scores or positions permitted'
+          assert doc['status']=='available', 'NASCAR-owned official Cup feeds unavailable'
+          assert doc['results'] or doc['upcoming'] or doc['articles'], 'No official NASCAR.com items found'
+          assert all(row['url'].startswith('https://www.nascar.com/')
+                     for group in ('articles','results','upcoming')
+                     for row in doc[group])
+          assert all(row['verification']=='NASCAR.com official Cup weekend race results'
+                     and row['status']=='final' and row['winner']
+                     for row in doc['results'])
+          assert all(row['status']=='scheduled' and
+                     row['verification']=='NASCAR.com official Cup race schedule'
+                     for row in doc['upcoming'])
           PY
