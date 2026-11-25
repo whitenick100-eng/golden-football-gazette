@@ -86,7 +86,8 @@ class LeaderboardHealthTests(unittest.TestCase):
         self.assertIn("cron: '17 1,5,9,13,17,21 * * *'",content)
         self.assertIn("cron: '47 15 * * 2'",content)
         self.assertIn("cron: '0 12,13 * * 2'",content)
-        self.assertEqual(content.count("cron:"),3)
+        self.assertIn("cron: '5 10 * * *'",content)
+        self.assertEqual(content.count("cron:"),4)
         self.assertIn("python scripts/leaderboard_health.py",content)
         self.assertLess(content.index("python scripts/refresh_player_leaders.py"),
                         content.index("python scripts/leaderboard_health.py"))
