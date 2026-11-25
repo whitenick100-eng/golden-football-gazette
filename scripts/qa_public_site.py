@@ -53,6 +53,8 @@ def check(root=ROOT, output=OUT):
     # the source generator has actually produced it; full deploy does so.
     if (root/"data/daily-update-report.json").is_file():
         required.add("data/daily-update-report.json")
+    if (root/"data/nascar-ticker.json").is_file():
+        required.add("data/nascar-ticker.json")
     assert required.issubset(public_files), "Missing required web assets"
     allowed=required | {"editorial/latest.json"} | {"assets/fantasy-logos/manifest.json"}
     allowed.update("data/"+name for name in PUBLIC_DATA)
