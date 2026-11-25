@@ -47,8 +47,12 @@ def check(root=ROOT, output=OUT):
               "assets/espn-matchups.js",
               "assets/espn-team-logos.json",
               "assets/turkey-left.webp",
-              "assets/turkey-right.webp",
-              "data/daily-update-report.json"}
+              "assets/turkey-right.webp"}
+    # Independent CI workflows test the static builder without running the
+    # full live feed refresh. Require the audit in a published artifact when
+    # the source generator has actually produced it; full deploy does so.
+    if (root/"data/daily-update-report.json").is_file():
+        required.add("data/daily-update-report.json")
     assert required.issubset(public_files), "Missing required web assets"
     allowed=required | {"editorial/latest.json"} | {"assets/fantasy-logos/manifest.json"}
     allowed.update("data/"+name for name in PUBLIC_DATA)
