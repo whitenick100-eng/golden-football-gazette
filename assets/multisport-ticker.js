@@ -235,17 +235,34 @@ function nascarLink(raw){
    return 'https://www.nascar.com'+u.pathname;
  }catch(_){return null}
 }
-// Official NASCAR.com headlines are bundled at publish time to avoid relying
-// on browser CORS exceptions or allowing a hidden ESPN NASCAR fallback.
+function nascarScheduleLink(raw){
+ if(typeof raw!=='string')return null;
+ try{
+   const u=new URL(raw);
+   if(u.protocol!=='https:'||u.hostname!=='www.nascar.com'||u.port||
+     !/^\/nascar-cup-series\/20\d{2}\/schedule\/$/.test(u.pathname))
+     return null;
+   return 'https://www.nascar.com'+u.pathname;
+ }catch(_){return null}
+}
+function nascarRaceDate(raw){
+ if(typeof raw!=='string'||!/^20\d{2}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/.test(raw))return null;
+ const timestamp=Date.parse(raw+'T12:00:00Z');
+ return Number.isFinite(timestamp)&&new Date(timestamp).toISOString().slice(0,10)===raw?
+   timestamp:null;
+}
+// NASCAR information is from official NASCAR.com articles and the NASCAR-owned
+// cf.nascar.com Cup schedule / weekend-race results. Never touch ESPN racing.
 function nascarRows(feed,now=Date.now()){
  if(feed?.schema!==1||feed.source!=='NASCAR.com'||
-   feed.status!=='available'||!Array.isArray(feed.articles))
-   throw Error('Verified official NASCAR.com news snapshot unavailable');
+   feed.status!=='available'||!Array.isArray(feed.articles)||
+   !Array.isArray(feed.results)||!Array.isArray(feed.upcoming))
+   throw Error('Verified official NASCAR.com data snapshot unavailable');
  const fetched=Date.parse(feed.fetchedAt||'');
  if(!Number.isFinite(fetched)||fetched>now+10*60*1000||
     now-fetched>7*24*60*60*1000)
    throw Error('NASCAR.com snapshot is not recently verified');
- const rows=[],seen=new Set();
+ const news=[],scores=[],seen=new Set();
  for(const article of feed.articles.slice(0,30)){
    const link=nascarLink(article?.url);
    const title=typeof article?.title==='string'?article.title.trim():'';
@@ -255,12 +272,12 @@ function nascarRows(feed,now=Date.now()){
    const canonicalDay=pathDate[1]+'-'+pathDate[2]+'-'+pathDate[3];
    if(article.date!==canonicalDay||
       article.dateBasis!=='official NASCAR.com dated article permalink')continue;
-   const published=Date.parse(canonicalDay+'T12:00:00Z');
-   if(!Number.isFinite(published)||published>now+24*60*60*1000||
+   const published=nascarRaceDate(canonicalDay);
+   if(published===null||published>now+24*60*60*1000||
       now-published>MAX_NEWS_AGE_MS)continue;
    seen.add(link);
    const age=now-published;
-   rows.push({sport:'NASCAR',kind:'news',name:title.slice(0,110),
+   news.push({sport:'NASCAR',kind:'news',name:title.slice(0,110),
      team:age<=3*24*60*60*1000?'LATEST NEWS':
        age<=REGULAR_NEWS_AGE_MS?'RECENT NEWS':'OLDER NEWS',
      text:'NASCAR.com · '+new Date(published).toLocaleDateString('en-US',
@@ -268,8 +285,36 @@ function nascarRows(feed,now=Date.now()){
      href:link,date:published,priority:100-Math.floor(age/3600000),
      checked:fetched});
  }
- rows.sort((a,b)=>b.date-a.date);
- return {scores:[],news:rows.slice(0,4)};
+ news.sort((a,b)=>b.date-a.date);
+ for(const result of feed.results.slice(0,8)){
+   const href=nascarScheduleLink(result?.url);
+   const date=nascarRaceDate(result?.date);
+   const race=typeof result?.race==='string'?result.race.trim():'';
+   const winner=typeof result?.winner==='string'?result.winner.trim():'';
+   if(!href||date===null||date>now+24*60*60*1000||
+      now-date>46*24*60*60*1000||result?.status!=='final'||
+      result?.verification!=='NASCAR.com official Cup weekend race results'||
+      race.length<6||winner.length<3)continue;
+   scores.push({sport:'NASCAR',kind:'score',name:race.slice(0,90),
+     team:'FINAL',text:'Winner: '+winner.slice(0,65)+' · NASCAR.com',
+     href,date,checked:fetched});
+ }
+ scores.sort((a,b)=>b.date-a.date);
+ for(const upcoming of feed.upcoming.slice(0,8)){
+   const href=nascarScheduleLink(upcoming?.url);
+   const date=nascarRaceDate(upcoming?.date);
+   const race=typeof upcoming?.race==='string'?upcoming.race.trim():'';
+   const track=typeof upcoming?.track==='string'?upcoming.track.trim():'';
+   if(!href||date===null||date<now-2*24*60*60*1000||
+     date>now+400*24*60*60*1000||upcoming?.status!=='scheduled'||
+     upcoming?.verification!=='NASCAR.com official Cup race schedule'||race.length<6)continue;
+   news.push({sport:'NASCAR',kind:'news',name:race.slice(0,90),
+     team:'UPCOMING RACE',text:'NASCAR.com · '+new Date(date).toLocaleDateString(
+       'en-US',{month:'short',day:'numeric',timeZone:'UTC'})+
+       (track?' · '+track.slice(0,50):''),
+     href,date,priority:50,checked:fetched});
+ }
+ return {scores:scores.slice(0,3),news:news.slice(0,4)};
 }
 
 function mixRows(perSport,selected='ALL'){
@@ -370,8 +415,8 @@ async function load(rootWindow=root,force=false,selected='ALL'){
  const rows=mixRows(perSport,selected);
  return {rows,checked:new Date(),partial:failures>0,sourcesAvailable:successes,
    selectedSport:selected,
-   mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR NEWS':
-     selected==='NASCAR'?'NASCAR · OFFICIAL NASCAR.COM NEWS':selected+' · VERIFIED SCORES + NEWS',
+   mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR OFFICIAL RESULTS + NEWS':
+     selected==='NASCAR'?'NASCAR · OFFICIAL NASCAR.COM RESULTS + SCHEDULE':selected+' · VERIFIED SCORES + NEWS',
    notes:failures?'Some sports feeds unavailable · Showing only verified source-backed items':
      'ESPN scores and news for other sports · NASCAR headlines exclusively from NASCAR.com'};
 }
