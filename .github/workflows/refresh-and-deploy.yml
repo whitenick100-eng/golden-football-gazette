@@ -40,6 +40,8 @@ jobs:
         run: python scripts/verified_data_guard.py preload
       - name: Refresh sanitized ESPN snapshot
         run: python scripts/refresh_espn.py
+      - name: Refresh NASCAR.com-only official ticker headlines
+        run: python scripts/refresh_nascar.py
       - name: Refresh weekly NFL schedule and weather
         run: python scripts/refresh_nfl.py
       - name: Refresh league-wide ESPN NFL injury report
