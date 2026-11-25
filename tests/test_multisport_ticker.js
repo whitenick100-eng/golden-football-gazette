@@ -360,8 +360,18 @@ async function nascarSourceIsolation(){
  assert.equal(data.sourcesAvailable,1);
  assert.equal(data.selectedSport,'NASCAR');
  assert.equal(data.rows.length,1);
- assert.ok(data.rows.every(r=>r.sport==='NASCAR'&&r.href.startsWith('https://www.nascar.com/')));
- assert.ok(!urls.some(url=>url.includes('site.api.espn.com')||url.includes('racing/nascar')));
+ assert.ok(data.rows.every(r=>{
+   const link=new URL(r.href);
+   return r.sport==='NASCAR'&&link.protocol==='https:'&&
+     link.hostname==='www.nascar.com';
+ }));
+ // The NASCAR tab can fetch only its same-origin JSON: parse URL origin and
+ // pathname instead of searching arbitrary strings for prohibited domains.
+ assert.ok(urls.every(raw=>{
+   const u=new URL(raw,'https://whitenick100-eng.github.io/');
+   return u.protocol==='https:'&&u.hostname==='whitenick100-eng.github.io'&&
+     u.pathname==='/data/nascar-ticker.json'&&u.searchParams.has('ts');
+ }));
  console.log('PASS NASCAR-only official source is isolated from all ESPN sports');
 }
 
