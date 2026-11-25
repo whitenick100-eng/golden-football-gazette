@@ -48,6 +48,35 @@ jobs:
               except Exception as exc:
                   print(url,'UNAVAILABLE',type(exc).__name__,str(exc)[:170])
           PY
+      - name: Inspect NASCAR official CDN race data fields
+        run: |
+          python - <<'PY'
+          import urllib.request,json
+          for path in [
+            'cacher/2026/1/race_list_basic.json',
+            'cacher/2026/1/schedule-combined-feed.json',
+            'cacher/2026/1/5601/weekend-feed.json',
+            'cacher/2027/1/race_list_basic.json',
+          ]:
+            try:
+              with urllib.request.urlopen('https://cf.nascar.com/'+path,timeout=12) as r:
+                raw=r.read(1800000)
+              data=json.loads(raw)
+              print('OFFICIAL:',path,'top type',type(data).__name__)
+              if isinstance(data,list):
+                print('  count',len(data),'first',data[:1],'last',data[-1:])
+              elif isinstance(data,dict):
+                print('  keys',list(data)[:40])
+                if path.endswith('schedule-combined-feed.json'):
+                  rows=data.get('response',[])
+                  print('  responses',len(rows),'first',rows[:1],'last',rows[-1:])
+                else:
+                  for key,val in data.items():
+                    if isinstance(val,list):
+                      print('  array',key,'len',len(val),'first',val[:1])
+            except Exception as exc:
+              print('OFFICIAL ERROR:',path,type(exc).__name__,str(exc)[:100])
+          PY
       - name: Verify official NASCAR.com live homepage can supply dated news links
         run: |
           python scripts/refresh_nascar.py
