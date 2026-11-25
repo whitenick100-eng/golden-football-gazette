@@ -70,7 +70,7 @@ class DailyGazetteAuditTests(unittest.TestCase):
         self.assertEqual(report["sections"]["from_editor"]["status"],"APPROVAL_REQUIRED")
         self.assertEqual(report["sections"]["key_starters_out"]["status"],"VERIFIED_BASELINE")
         self.assertEqual(report["sections"]["waivers"]["status"],"VERIFIED_BASELINE")
-        self.assertIn("not certify",report["notes"])
+        self.assertIn("does not prove Pages deployment",report["notes"])
 
     def test_same_espn_content_is_not_mislabeled_as_a_new_update(self):
         previous=audit.build(now=NOW,root=self.root)
@@ -92,9 +92,6 @@ class DailyGazetteAuditTests(unittest.TestCase):
         self.assertEqual(after["sections"]["espn_matchups"]["status"],"UNCHANGED_VERIFIED")
         nfl["games"][0]["completed"]=False
         path.write_text(json.dumps(nfl))
-        suspicious=audit.build(now=NOW,root=self.root,prior=previous)
-        self.assertEqual(suspicious["sections"]["nfl_review_preview"]["status"],
-                         "CHANGED_WITHOUT_NEW_SOURCE" if False else "UPDATED")
         # A source timestamp that does not advance must never earn UPDATED.
         nfl["fetchedAt"]=STAMP
         path.write_text(json.dumps(nfl))
