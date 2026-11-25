@@ -41,12 +41,14 @@ def check(root=ROOT, output=OUT):
               "assets/nfl-player-ticker.js",
               "assets/multisport-ticker.js",
               "assets/dynamic-newspaper.js",
+              "assets/lead-story-live.js",
               "assets/mobile-gazette.css",
               "assets/mobile-gazette.js",
               "assets/espn-matchups.js",
               "assets/espn-team-logos.json",
               "assets/turkey-left.webp",
-              "assets/turkey-right.webp"}
+              "assets/turkey-right.webp",
+              "data/daily-update-report.json"}
     assert required.issubset(public_files), "Missing required web assets"
     allowed=required | {"editorial/latest.json"} | {"assets/fantasy-logos/manifest.json"}
     allowed.update("data/"+name for name in PUBLIC_DATA)
