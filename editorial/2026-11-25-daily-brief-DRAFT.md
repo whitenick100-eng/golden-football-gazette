@@ -1,0 +1,49 @@
+<!-- UNPUBLISHED: OWNER APPROVAL REQUIRED -->
+
+# The Golden Football Gazette — Daily Brief
+
+*Wednesday, November 25, 2026 · Independent fantasy football league newspaper*
+
+
+
+## Today's Verified Football Report
+
+
+
+ESPN league 1413446022 lists **4th and 10** at the top of its latest supplied standings (11–0). These standings were retrieved 2026-11-25T22:35:31.153881+00:00. Standings position is not, by itself, proof of a clinched playoff berth.
+
+ESPN lists these fantasy matchups for period 12: 4th and 10 against Sunday Morning Panic; The Automatons against Jeremy's Scary Team; Fumbly In My Tumbly  against Cam, Bam Thank you Ma'am.; HVAC guru against Violet and Daxs mom!; Michelle's Magnificent Team against Football Bi@##!. No winner or final result is declared unless the supplied feed confirms it.
+
+The verified NFL Week 12 schedule includes Green Bay Packers at Los Angeles Rams (Wed Nov 25, 8:00 PM ET; SoFi Stadium); Chicago Bears at Detroit Lions (Thu Nov 26, 1:00 PM ET; Ford Field); Philadelphia Eagles at Dallas Cowboys (Thu Nov 26, 4:30 PM ET; AT&T Stadium); Kansas City Chiefs at Buffalo Bills (Thu Nov 26, 8:20 PM ET; Highmark Stadium); Denver Broncos at Pittsburgh Steelers (Fri Nov 27, 3:00 PM ET; Acrisure Stadium). Outdoor weather forecasts are subject to change.
+
+ESPN reports the five highest-scoring rostered players for completed Week 11: Dak Prescott (56.90); Patrick Mahomes (44.96); Brock Purdy (37.20); Joe Burrow (34.90); Jonah Coleman (34.90). This list includes bench players and excludes NFL free agents not rostered in this league.
+
+The current standings-based championship field contains 4th and 10, Jeremy's Scary Team, Michelle's Magnificent Team, HVAC guru. These are provisional positions, not confirmed clinches or eliminations.
+
+
+
+## Editor's Verification Checklist
+
+
+
+- Check each ESPN snapshot timestamp and confirm it is current.
+
+- Verify any projected scores, individual player awards and playoff claims separately.
+
+- Confirm team logos, injuries, and forecasts before publishing additional claims.
+
+
+
+### Sources and editorial status
+
+
+
+This is an **automated verified-data bulletin**, not an AI-generated article. It is a draft and requires the owner's review and GitHub merge before publication.
+
+- ESPN fantasy league: retrieved 2026-11-25T22:35:31.153881+00:00 UTC timestamp.
+
+- ESPN NFL schedule and optional Open-Meteo forecasts: retrieved 2026-11-25T22:35:31.228057+00:00 UTC timestamp.
+
+- Gazette fact-based briefing from ESPN source snapshots: retrieved 2026-11-25T22:35:38.978698+00:00 UTC timestamp.
+
+- ESPN actual fantasy mBoxscore for rostered athletes: retrieved 2026-11-24T14:49:11.272018+00:00 UTC timestamp.
