@@ -33,6 +33,7 @@ jobs:
           node --check assets/live-nfl-scores.js
           node --check assets/nfl-player-ticker.js
           node --check assets/multisport-ticker.js
+          python -m unittest discover -s tests -p 'test_nascar_com_ticker.py' -v
           node --check assets/dynamic-newspaper.js
           node --check assets/lead-story-live.js
           node --check assets/mobile-gazette.js

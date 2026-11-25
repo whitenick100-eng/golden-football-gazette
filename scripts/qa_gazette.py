@@ -298,6 +298,18 @@ def validate():
     assert '<script src="assets/multisport-ticker.js"></script>' in page
     assert page.index('<script src="assets/multisport-ticker.js"></script>') < page.index('<script src="assets/nfl-player-ticker.js"></script>')
     multi=ROOT/"assets/multisport-ticker.js"
+    official=multi.read_text(encoding="utf-8")
+    assert "data/nascar-ticker.json" in official
+    # Avoid URL-substring assertions; validated URL hostnames and paths are
+    # checked in dedicated Python/JS regression tests instead.
+    assert "function nascarLink(" in official
+    assert "function nascarScheduleLink(" in official
+    assert "racing/nascar-premier" not in official
+    source_file=ROOT/"scripts/refresh_nascar.py"
+    assert source_file.is_file()
+    source_code=source_file.read_text(encoding="utf-8")
+    assert "def official_article_url(" in source_code
+    assert "def official_cup_results(" in source_code
     assert multi.is_file() and "GazetteMultiSport" in multi.read_text(encoding="utf-8")
     assert "nflGameInProgress" in (ROOT/"assets/nfl-player-ticker.js").read_text(encoding="utf-8")
     # A short selected sport must move at the same px/sec as the long All Sports
