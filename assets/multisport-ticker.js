@@ -146,6 +146,8 @@ function individualResult(event,sport,state,now){
    text:result,href:eventLink(event,sport),date:Date.parse(event.date),checked:now};
 }
 function scoreRows(data,sport,now=Date.now()){
+ // NASCAR never accepts the ESPN-shaped racing scoreboard path.
+ if(sport?.id==='NASCAR')return [];
  if(!data||!Array.isArray(data.events))return [];
  const rows=[];
  for(const event of data.events.slice(0,65)){
@@ -368,8 +370,8 @@ async function load(rootWindow=root,force=false,selected='ALL'){
  const rows=mixRows(perSport,selected);
  return {rows,checked:new Date(),partial:failures>0,sourcesAvailable:successes,
    selectedSport:selected,
-   mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR SCORES + NEWS':
-     selected+' · VERIFIED SCORES + NEWS',
+   mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR NEWS':
+     selected==='NASCAR'?'NASCAR · OFFICIAL NASCAR.COM NEWS':selected+' · VERIFIED SCORES + NEWS',
    notes:failures?'Some sports feeds unavailable · Showing only verified source-backed items':
      'ESPN scores and news for other sports · NASCAR headlines exclusively from NASCAR.com'};
 }
