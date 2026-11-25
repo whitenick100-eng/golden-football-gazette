@@ -1,19 +1,17 @@
 # Golden Football Gazette — NASCAR.com-only top ticker source
 
-## Source isolation
+The original top ticker, tabs, scroll speed, stadium background, desktop styling, phone layout and NFL live-game priority are unchanged. Only the NASCAR data source is different.
 
-The top sports ticker keeps its existing graphics, colors, moving animation, sport tabs, speed, caching, and live-NFL override. **Only NASCAR has changed its data source.**
+## Sources by sport
 
-- NFL, NBA, WNBA, PGA, NCAA Football, NCAA Men's Basketball, NCAA Women's Basketball and MLB: **unchanged ESPN news + scoreboard endpoints**.
-- NASCAR: **NASCAR.com only**. The scheduled GitHub Pages publisher fetches dated news permalinks from `https://www.nascar.com/` and `https://www.nascar.com/news-media/` and creates a small, sanitized `data/nascar-ticker.json` on the same website. No ESPN racing feed is contacted or used for NASCAR, even when other ESPN news feeds cross-list a NASCAR article.
-- Both **All Sports** and **NASCAR** tabs read exactly the same NASCAR.com JSON source. The NASCAR articles link directly to their original NASCAR.com stories.
+- **NASCAR**: NASCAR-owned `https://cf.nascar.com/cacher/{year}/1/race_list_basic.json` for Cup Series schedule, and verified `https://cf.nascar.com/cacher/{year}/1/{race_id}/weekend-feed.json` for official race winners. Optional current NASCAR.com article links are collected from `https://www.nascar.com/` and `https://www.nascar.com/news-media/` only when those sites permit GitHub Actions access. In November 2026, the public NASCAR.com article pages return 403 to the GitHub runner; the official CDN feeds respond successfully.
+- **All eight other sports** (NFL, NBA, WNBA, PGA, NCAA Football, NCAA Men's and Women's Basketball, MLB): unchanged **ESPN scoreboard and news feeds**.
+- An ESPN NASCAR racing query is **never used**, even as a fallback. ESPN cross-listed NASCAR headlines cannot slip into All Sports.
 
-### Official results and honesty
+The publisher generates `data/nascar-ticker.json` from NASCAR.com-operated sources, which the ticker reads from the same website without cross-origin browser permissions. The NASCAR tab shows up to three recently completed, **officially confirmed Cup race winners** and up to three scheduled Cup races, with direct NASCAR.com links and dates; it also displays up to four dated NASCAR.com headlines when reachable. A winner is published only when NASCAR's own season race-list winner driver ID matches the sole first-place, non-disqualified driver in the official race weekend result feed. No race times or positions are inferred when NASCAR doesn't confirm them.
 
-The official NASCAR.com homepage provides verifiable dated NASCAR.com news links. The ticker does not infer live positions, race leaders or winners from a headline. **NASCAR headlines are published; racing score rows remain empty until a separately verifiable NASCAR.com race-result feed can be integrated.** An official story describing a race finish can appear as news, but will not be relabeled as a live race score. No ESPN racing fallback is allowed.
+The next official Cup races can appear during the offseason when there are no live races. If NASCAR's feeds become unreachable, earlier officially confirmed NASCAR data can remain with its **original** source timestamp; stale or unverified entries are suppressed. An unavailable NASCAR.com source is never filled with ESPN racing data.
 
-For each story, the calendar date is parsed from the date embedded in its official NASCAR.com article URL (not an invented hour of publication). Items older than 30 days are suppressed. The news fetch is refreshed by the site's existing 4-hour and early-morning GitHub Actions workflows. When NASCAR.com is temporarily unavailable, an older NASCAR.com-only verified snapshot may be retained with its original `fetchedAt` timestamp. If no verifiable NASCAR.com headlines remain, the NASCAR tab shows the existing unavailable/empty ticker state rather than fake stories or ESPN racing content.
+## Activation and checks
 
-### Activating
-
-Review and merge the pull request after checks pass. The existing website build then publishes the new NASCAR JSON file, and the mobile/desktop sports ticker uses it automatically. Site visuals and all eight other sports are unaffected. GitHub Actions logs say how many NASCAR.com headlines were verified; upstream availability can cause partial results.
+Review and merge the pull request after CI, including the live NASCAR-owned official-source smoke test, is green. The normal every-four-hour and pre-7 Eastern GitHub Pages builds automatically refresh the official NASCAR ticker JSON. No theme changes, external browser CORS allowances, API keys or paid services were added.
