@@ -28,6 +28,26 @@ jobs:
           node tests/test_multisport_ticker.js
           python -m py_compile scripts/refresh_nascar.py
           python -m unittest discover -s tests -p 'test_nascar_com_ticker.py' -v
+      - name: Diagnose official NASCAR-owned source availability from GitHub Actions
+        run: |
+          python - <<'PY'
+          import urllib.request, urllib.error
+          urls=[
+            'https://www.nascar.com/',
+            'https://cf.nascar.com/live/feeds/live-feed.json',
+            'https://cf.nascar.com/cacher/2026/1/race_list_basic.json',
+            'https://cf.nascar.com/cacher/2026/1/schedule-combined-feed.json',
+            'https://feed.nascar.com/live-feed.json',
+          ]
+          for url in urls:
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json,text/html'})
+                  with urllib.request.urlopen(req,timeout=8) as response:
+                      sample=response.read(500)
+                      print(url,'HTTP',response.status,'content-type',response.headers.get('Content-Type'),'sample',sample[:250])
+              except Exception as exc:
+                  print(url,'UNAVAILABLE',type(exc).__name__,str(exc)[:170])
+          PY
       - name: Verify official NASCAR.com live homepage can supply dated news links
         run: |
           python scripts/refresh_nascar.py
