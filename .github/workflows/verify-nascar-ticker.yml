@@ -1,0 +1,46 @@
+name: Verify Official NASCAR.com Ticker
+on:
+  pull_request:
+    paths:
+      - 'assets/multisport-ticker.js'
+      - 'scripts/refresh_nascar.py'
+      - 'tests/test_nascar_com_ticker.py'
+      - 'tests/test_multisport_ticker.js'
+      - 'scripts/build_public_site.py'
+      - '.github/workflows/refresh-and-deploy.yml'
+      - '.github/workflows/verify-nascar-ticker.yml'
+permissions:
+  contents: read
+jobs:
+  verify-nascar-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate all ticker JavaScript and NASCAR.com-only parsing tests
+        run: |
+          node --check assets/multisport-ticker.js
+          node tests/test_multisport_ticker.js
+          python -m py_compile scripts/refresh_nascar.py
+          python -m unittest discover -s tests -p 'test_nascar_com_ticker.py' -v
+      - name: Verify official NASCAR.com live homepage can supply dated news links
+        run: |
+          python scripts/refresh_nascar.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc=json.loads(Path('data/nascar-ticker.json').read_text())
+          print('NASCAR source:',doc['source'],'status:',doc['status'],
+                'headlines:',len(doc['articles']))
+          assert doc['source']=='NASCAR.com'
+          assert doc['status']=='available', 'Official NASCAR.com website was not retrievable; inspect log'
+          assert doc['articles'], 'Official NASCAR.com page returned no verified news links'
+          assert all(row['url'].startswith('https://www.nascar.com/news-media/')
+                     for row in doc['articles'])
+          assert doc['results']==[], 'No guessed race scores or positions permitted'
+          PY
