@@ -90,7 +90,7 @@ test('NASCAR.com news accepts only exact official dated news permalinks',()=>{
     {title:'Spoofed NASCAR.com hostname is rejected',
      url:'https://www.nascar.com.evil.test/news-media/'+parts.join('/')+'/official-story/',
      date:day,dateBasis:'official NASCAR.com dated article permalink',type:'news'}
-   ],results:[]};
+   ],results:[],upcoming:[]};
  const rows=multi.nascarRows(feed);
  assert.equal(rows.scores.length,0);
  assert.equal(rows.news.length,1);
@@ -102,6 +102,33 @@ test('NASCAR.com news accepts only exact official dated news permalinks',()=>{
  assert.throws(()=>multi.nascarRows({...feed,source:'ESPN'}));
  assert.throws(()=>multi.nascarRows({...feed,status:'unavailable'}));
 });
+test('official NASCAR Cup results require verified winner and official schedule URL',()=>{
+ const now=Date.now();
+ const today=new Date(now-8*24*60*60*1000).toISOString().slice(0,10);
+ const soon=new Date(now+40*24*60*60*1000).toISOString().slice(0,10);
+ const race='NASCAR Cup Series Championship Race';
+ const href='https://www.nascar.com/nascar-cup-series/'+today.slice(0,4)+'/schedule/';
+ const nextHref='https://www.nascar.com/nascar-cup-series/'+soon.slice(0,4)+'/schedule/';
+ const feed={schema:1,source:'NASCAR.com',status:'available',fetchedAt:new Date().toISOString(),
+   articles:[],results:[
+    {race,winner:'Verified Driver',date:today,status:'final',url:href,
+      verification:'NASCAR.com official Cup weekend race results'},
+    {race:'Fake race title',winner:'Guessed Driver',date:today,status:'final',
+      url:'https://www.espn.com/racing/nascar/',
+      verification:'NASCAR.com official Cup weekend race results'}
+   ],upcoming:[{race:'NASCAR Cup next season race',date:soon,status:'scheduled',
+     track:'Daytona International Speedway',url:nextHref,
+     verification:'NASCAR.com official Cup race schedule'}]};
+ const rows=multi.nascarRows(feed,now);
+ assert.equal(rows.scores.length,1);
+ assert.equal(rows.scores[0].text,'Winner: Verified Driver · NASCAR.com');
+ assert.equal(rows.scores[0].team,'FINAL');
+ assert.equal(rows.news.length,1);
+ assert.equal(rows.news[0].team,'UPCOMING RACE');
+ assert.equal(rows.news[0].href,nextHref);
+ assert.ok(rows.scores.concat(rows.news).every(x=>x.href.startsWith('https://www.nascar.com/')));
+});
+
 test('ESPN cross-listed racing stories never appear as NASCAR ticker news',()=>{
  const row=multi.newsRows({articles:[{
   headline:'NASCAR Cup Series championship article',
@@ -325,7 +352,7 @@ async function nascarSourceIsolation(){
      schema:1,source:'NASCAR.com',status:'available',fetchedAt:new Date().toISOString(),
      articles:[{title:'NASCAR announces verified Cup Series developments',url:link,date:day,
        dateBasis:'official NASCAR.com dated article permalink',type:'news'}],
-     results:[]})};
+     results:[],upcoming:[]})};
    throw Error('NASCAR-only selection fetched another sport: '+url);
  },setTimeout,clearTimeout};
  const data=await multi.load(mock,true,'NASCAR');
