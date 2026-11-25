@@ -40,6 +40,8 @@ class PublicSiteSecurityTests(unittest.TestCase):
             "editorialStatus":"owner-approved-on-merge","body":"publicly approved edition"}))
         (self.root/"data").mkdir()
         (self.root/"data/league.json").write_text(json.dumps({"standings":[],"source":"ESPN"}))
+        (self.root/"data/nascar-ticker.json").write_text(json.dumps({
+            "schema":1,"status":"available","source":"NASCAR.com","articles":[],"results":[]}))
         (self.root/"data/daily-update-report.json").write_text(json.dumps({"schema":1,"sections":{}}))
         (self.root/"private-notes.txt").write_text("Notes not for visitors")
         scripts="\n".join(f"<script>const item{i}={i};</script>" for i in range(6))
@@ -58,6 +60,7 @@ class PublicSiteSecurityTests(unittest.TestCase):
         self.assertIn("assets/turkey-left.webp",published)
         self.assertIn("assets/turkey-right.webp",published)
         self.assertIn("data/league.json",published)
+        self.assertIn("data/nascar-ticker.json",published)
         self.assertIn("editorial/latest.json",published)
         for excluded in [".github/workflows/publish.yml","scripts/private-helper.py",
                          "editorial/2026-11-20-DRAFT.md","private-notes.txt"]:
