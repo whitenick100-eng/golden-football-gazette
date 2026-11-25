@@ -1,7 +1,8 @@
 /* Golden Football Gazette — source-verified off-live-NFL scores and news.
  * Loaded only when the official NFL scoreboard confirms no games in progress.
- * Every sport uses an ESPN scoreboard and news feed; no estimates or fabricated
- * headlines, winners, scores, or racing/golf positions are allowed.
+ * NASCAR is sourced EXCLUSIVELY from verified NASCAR.com article links through
+ * a sanitized same-origin JSON snapshot. All other eight sports keep their
+ * existing ESPN scoreboards and news feeds. Never invent race positions.
  */
 (function(root){
 'use strict';
@@ -15,7 +16,7 @@ const SPORTS=Object.freeze([
   {id:'NCAA MEN',path:'basketball/mens-college-basketball',kind:'team',page:'https://www.espn.com/mens-college-basketball/'},
   {id:'NCAA WOMEN',path:'basketball/womens-college-basketball',kind:'team',page:'https://www.espn.com/womens-college-basketball/'},
   {id:'MLB',path:'baseball/mlb',kind:'team',page:'https://www.espn.com/mlb/'},
-  {id:'NASCAR',path:'racing/nascar-premier',kind:'racing',page:'https://www.espn.com/racing/nascar/'}
+  {id:'NASCAR',path:'official/nascar-com',kind:'nascar-official',page:'https://www.nascar.com/'}
 ]);
 const MAX_SCORE_AGE_MS=8*24*60*60*1000; // Weekly leagues still show last weekend's final.
 const MAX_NEWS_AGE_MS=30*24*60*60*1000; // Clearly date older, offseason headlines.
@@ -193,9 +194,9 @@ function newsRows(data,sport,now=Date.now()){
    const link=espnLink(article?.links?.web?.href);
    if(!signal||!link||used.has(link))continue;
    const storySport=classifyNewsSport(article,sport);
-   // News retains its canonical ESPN sport badge; never borrow another
-   // sport's story to fill the current tab.
-   if(!SPORTS.some(available=>available.id===storySport))continue;
+   // NASCAR may ONLY appear through the independent NASCAR.com snapshot.
+   // ESPN cross-listed NASCAR articles must not leak into All Sports either.
+   if(storySport==='NASCAR'||!SPORTS.some(available=>available.id===storySport))continue;
    used.add(link);
    rows.push({sport:storySport,kind:'news',name:article.headline.trim().slice(0,110),
      team:signal.label,featured:signal.featured,
@@ -222,6 +223,53 @@ function newsRows(data,sport,now=Date.now()){
  const cross=pick(rows.filter(row=>row.sport!==sport.id));
  return [...own,...cross].slice(0,4);
 }
+function nascarLink(raw){
+ if(typeof raw!=='string')return null;
+ try{
+   const u=new URL(raw);
+   if(u.protocol!=='https:'||u.hostname!=='www.nascar.com'||u.port||
+     !/^\/news-media\/20\d{2}\/(?:0[1-9]|1[0-2])\/(?:[0-2]\d|3[01])\/[a-z0-9-]+\/?$/i.test(u.pathname))
+     return null;
+   return 'https://www.nascar.com'+u.pathname;
+ }catch(_){return null}
+}
+// Official NASCAR.com headlines are bundled at publish time to avoid relying
+// on browser CORS exceptions or allowing a hidden ESPN NASCAR fallback.
+function nascarRows(feed,now=Date.now()){
+ if(feed?.schema!==1||feed.source!=='NASCAR.com'||
+   feed.status!=='available'||!Array.isArray(feed.articles))
+   throw Error('Verified official NASCAR.com news snapshot unavailable');
+ const fetched=Date.parse(feed.fetchedAt||'');
+ if(!Number.isFinite(fetched)||fetched>now+10*60*1000||
+    now-fetched>7*24*60*60*1000)
+   throw Error('NASCAR.com snapshot is not recently verified');
+ const rows=[],seen=new Set();
+ for(const article of feed.articles.slice(0,30)){
+   const link=nascarLink(article?.url);
+   const title=typeof article?.title==='string'?article.title.trim():'';
+   const pathDate=link&&link.match(/\/news-media\/(\d{4})\/(\d{2})\/(\d{2})\//);
+   if(!link||!pathDate||!title||title.length<14||title.length>160||
+     article?.type!=='news'||seen.has(link))continue;
+   const canonicalDay=pathDate[1]+'-'+pathDate[2]+'-'+pathDate[3];
+   if(article.date!==canonicalDay||
+      article.dateBasis!=='official NASCAR.com dated article permalink')continue;
+   const published=Date.parse(canonicalDay+'T12:00:00Z');
+   if(!Number.isFinite(published)||published>now+24*60*60*1000||
+      now-published>MAX_NEWS_AGE_MS)continue;
+   seen.add(link);
+   const age=now-published;
+   rows.push({sport:'NASCAR',kind:'news',name:title.slice(0,110),
+     team:age<=3*24*60*60*1000?'LATEST NEWS':
+       age<=REGULAR_NEWS_AGE_MS?'RECENT NEWS':'OLDER NEWS',
+     text:'NASCAR.com · '+new Date(published).toLocaleDateString('en-US',
+       {month:'short',day:'numeric',timeZone:'UTC'}),
+     href:link,date:published,priority:100-Math.floor(age/3600000),
+     checked:fetched});
+ }
+ rows.sort((a,b)=>b.date-a.date);
+ return {scores:[],news:rows.slice(0,4)};
+}
+
 function mixRows(perSport,selected='ALL'){
  const rows=[],seenNews=new Set(),seenScores=new Set();
  function append(row){
@@ -261,7 +309,7 @@ async function fetchJSON(root,url){
  try{
    const response=await root.fetch(url,{mode:'cors',credentials:'omit',
      cache:'no-store',signal:controller.signal});
-   if(!response.ok)throw Error('ESPN response HTTP '+response.status);
+   if(!response.ok)throw Error('Sports feed HTTP '+response.status);
    return await response.json();
  }finally{root.clearTimeout(timeout)}
 }
@@ -283,19 +331,23 @@ async function load(rootWindow=root,force=false,selected='ALL'){
    }else{
      perSport[sport.id]={scores:[],news:[]};
      checks[sport.id]={failures:0,successes:0};
-     tasks.push({sport,kind:'score'},{sport,kind:'news'});
+     if(sport.id==='NASCAR')tasks.push({sport,kind:'nascar'});
+     else tasks.push({sport,kind:'score'},{sport,kind:'news'});
    }
  }
  let cursor=0;
  async function worker(){
    while(cursor<tasks.length){
      const task=tasks[cursor++];
+     const official=task.kind==='nascar';
      const endpoint=task.kind==='score'?
        (task.sport.scoreboardQuery||'scoreboard?limit=35'):'news?limit=20';
-     const url=BASE+task.sport.path+'/'+endpoint;
+     const url=official?'data/nascar-ticker.json?ts='+now:
+       BASE+task.sport.path+'/'+endpoint;
      try{
        const data=await fetchJSON(rootWindow,url);
-       if(task.kind==='score')perSport[task.sport.id].scores=scoreRows(data,task.sport,now);
+       if(official)perSport[task.sport.id]=nascarRows(data,now);
+       else if(task.kind==='score')perSport[task.sport.id].scores=scoreRows(data,task.sport,now);
        else perSport[task.sport.id].news=newsRows(data,task.sport,now);
        checks[task.sport.id].successes++;successes++;
      }catch(_){
@@ -318,10 +370,10 @@ async function load(rootWindow=root,force=false,selected='ALL'){
    selectedSport:selected,
    mode:selected==='ALL'?'NFL · NBA · WNBA · PGA · NCAA FB + BASKETBALL · MLB · NASCAR SCORES + NEWS':
      selected+' · VERIFIED SCORES + NEWS',
-   notes:failures?'Some ESPN feeds unavailable · Showing confirmed scores and available ESPN news':
-     'Scores from the past 8 days · breaking, major and regular dated ESPN headlines'};
+   notes:failures?'Some sports feeds unavailable · Showing only verified source-backed items':
+     'ESPN scores and news for other sports · NASCAR headlines exclusively from NASCAR.com'};
 }
-const api={SPORTS,SPORT_IDS,validSportSelection,asScore,espnLink,activeOrFinal,scoreRows,newsRows,mixRows,classifyNewsSport,newsImportance,load};
+const api={SPORTS,SPORT_IDS,validSportSelection,asScore,espnLink,nascarLink,nascarRows,activeOrFinal,scoreRows,newsRows,mixRows,classifyNewsSport,newsImportance,load};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(root&&root.document)root.GazetteMultiSport=api;
 })(typeof window!=='undefined'?window:null);
