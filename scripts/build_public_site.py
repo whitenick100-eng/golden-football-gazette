@@ -29,6 +29,7 @@ PUBLIC_DATA = (
     "weekly-features.json",
     "gazette-pages.json",
     "daily-update-report.json",
+    "nascar-ticker.json",
 )
 STATIC_ASSETS = (
     "assets/stadium-late-fall.webp",
