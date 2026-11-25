@@ -205,6 +205,11 @@ def validate():
     assert page.count('id="espn-games"')==1
     assert 'assets/stadium-nfl-unbranded.webp' in page
     assert 'assets/turkey-left.webp' in page and 'assets/turkey-right.webp' in page
+    # The lead story is sourced by verified ESPN standings only; every covered
+    # section gets an inspectable timestamp/semantic-change audit.
+    assert '<script src="assets/lead-story-live.js"></script>' in page
+    assert (ROOT/"scripts/gazette_section_audit.py").is_file()
+    assert "The lead story · Historical Week 11 archive" in page
     # Automated newspaper: Page One is verified for 48h; Page Two refreshes
     # daily with explicitly fictional fan interviews (never attributed to real fans).
     assert '<script src="assets/dynamic-newspaper.js"></script>' in page

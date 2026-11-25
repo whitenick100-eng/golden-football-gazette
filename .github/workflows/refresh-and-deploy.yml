@@ -4,6 +4,9 @@ on:
   schedule:
     # Every four hours, retaining the original 13:17 UTC refresh.
     - cron: '17 1,5,9,13,17,21 * * *'
+    # Dedicated pre-7 AM Eastern publishing attempt: 5:05 AM EST / 6:05 AM EDT.
+    # GitHub schedules are best effort; the 7 AM verification task reports delays.
+    - cron: '5 10 * * *'
     # Tuesday 8 AM Eastern: UTC candidates cover EST and EDT.
     - cron: '0 12,13 * * 2'
     # Tuesday second chance if GitHub delayed/dropped its scheduled run or
@@ -79,6 +82,8 @@ jobs:
           retention-days: 90
       - name: Produce factual 48-hour Page One and fictional daily Page Two
         run: python scripts/build_newspaper_pages.py
+      - name: Generate per-section daily verification with source comparisons
+        run: python scripts/gazette_section_audit.py
       - name: Validate refreshed data and report freshness
         run: |
           python scripts/qa_gazette.py

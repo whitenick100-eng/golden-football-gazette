@@ -28,6 +28,7 @@ PUBLIC_DATA = (
     "top-performers.json",
     "weekly-features.json",
     "gazette-pages.json",
+    "daily-update-report.json",
 )
 STATIC_ASSETS = (
     "assets/stadium-late-fall.webp",
@@ -36,6 +37,7 @@ STATIC_ASSETS = (
     "assets/nfl-player-ticker.js",
     "assets/multisport-ticker.js",
     "assets/dynamic-newspaper.js",
+    "assets/lead-story-live.js",
     "assets/mobile-gazette.css",
     "assets/mobile-gazette.js",
     "assets/espn-matchups.js",
