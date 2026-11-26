@@ -292,6 +292,40 @@ def page_two(league,prior_one,now):
         "source":"ESPN fantasy league data" if league else "Historical team names only; current ESPN data unavailable"
     }
 
+def apply_approved_fan_insights(page, root):
+    """Only today's owner-merged editorial may replace fictional fan text."""
+    try:
+        path = Path(root) / "editorial" / "latest.json"
+        if path.stat().st_size > MAX_PUBLIC_BYTES:
+            return
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        if (doc.get("editorialStatus") != "owner-approved-on-merge"
+            or doc.get("date") != page["editionDateEastern"]
+            or doc.get("generationMethod") != "chatgpt-draft-owner-review"
+            or not page.get("teamNamesFromVerifiedSource")):
+            return
+        items = doc.get("fanInsights")
+        existing = page["interviews"]
+        if not isinstance(items, list) or len(items) != len(existing) or len(items) != 10:
+            return
+        by_team = {}
+        for item in items:
+            if not isinstance(item, dict) or item.get("fictional") is not True:
+                return
+            team, quote = item.get("team"), item.get("quote")
+            if (not isinstance(team, str) or team in by_team
+                or not isinstance(quote, str) or not 20 <= len(quote.strip()) <= 500
+                or any(ord(ch) < 32 for ch in quote)):
+                return
+            by_team[team] = quote.strip()
+        if set(by_team) != {fan["team"] for fan in existing}:
+            return
+        for fan in existing:
+            fan["quote"] = by_team[fan["team"]]
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return
+
+
 def generate(now=None,root=ROOT,previous=None):
     now=(now or dt.datetime.now(dt.timezone.utc)).astimezone(dt.timezone.utc)
     league=validated_league(read_source(root,"league.json"),now)
@@ -309,6 +343,7 @@ def generate(now=None,root=ROOT,previous=None):
     else:
         one={"status":"unavailable","notice":"ESPN league data not verified. Historical edition remains available."}
     two=page_two(league,prior_one if prior_one else one,now)
+    apply_approved_fan_insights(two, root)
     return {"schema":1,"leagueId":LEAGUE_ID,"season":SEASON,
             "builtAt":now.isoformat(),"pageOne":one,"pageTwo":two}
 

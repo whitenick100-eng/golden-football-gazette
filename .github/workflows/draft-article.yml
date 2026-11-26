@@ -1,8 +1,5 @@
-name: Daily Gazette Writer (approval required)
+name: Gazette verified bulletin (manual fallback)
 on:
-  schedule:
-    - cron: '17 8 * * *'
-      timezone: "America/New_York"
   workflow_dispatch:
     inputs:
       article_type:
@@ -46,8 +43,7 @@ jobs:
           python scripts/data_status.py
       - name: Write daily review-only edition
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GAZETTE_OPENAI_MODEL: gpt-4.1-mini
+          OPENAI_API_KEY: ''
           ARTICLE_TYPE: ${{ github.event.inputs.article_type || 'auto' }}
         run: python scripts/draft_article.py --type "$ARTICLE_TYPE"
       - name: Prepare newspaper article for owner's approval
@@ -72,7 +68,7 @@ jobs:
           echo "Creating a PR for the owner's approval; no automatic publishing."
           if ! gh pr create --base main --head "$BRANCH" \
             --title "EDITOR REVIEW: Golden Football Gazette — $DATE_ET" \
-            --body "Daily draft produced from timestamped, verified ESPN/NFL data. The article may be AI-written or a clearly labeled verified-data fallback if API credits/rate limits prevent AI writing. **Not published.** Review scores, dates, quotes, and editorial tone. Merge this PR only after approval; the live Gazette displays editorial/latest.json after merge."; then
+            --body "Daily draft produced from timestamped, verified ESPN/NFL data. This manual fallback is a verified-data bulletin and makes no paid AI API calls. **Not published.** Review scores, dates, quotes, and editorial tone. Merge this PR only after approval; the live Gazette displays editorial/latest.json after merge."; then
             echo "::error::GitHub couldn't open the editorial PR. Under Settings > Actions > General, enable 'Allow GitHub Actions to create and approve pull requests' and ensure Workflow permissions permit write access. Branch: $BRANCH"
             exit 1
           fi
