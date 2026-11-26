@@ -134,6 +134,27 @@ class NewspaperPagesTests(unittest.TestCase):
         self.assertIn("official playoff seedings",two["championship"].lower())
         self.assertIn("Golden Toilet",two["consolation"])
 
+    def test_chatgpt_fan_insights_require_today_and_all_verified_teams(self):
+        baseline=self.generate()
+        folder=self.root/"editorial"
+        folder.mkdir()
+        doc={"date":baseline["pageTwo"]["editionDateEastern"],
+             "editorialStatus":"owner-approved-on-merge",
+             "generationMethod":"chatgpt-draft-owner-review",
+             "fanInsights":[{"team":t["name"],"quote":"A fresh fictional comment for "+t["name"],"fictional":True} for t in self.teams]}
+        path=folder/"latest.json"
+        path.write_text(json.dumps(doc),encoding="utf-8")
+        result=self.generate()
+        self.assertEqual(result["pageOne"],baseline["pageOne"])
+        self.assertEqual(result["pageTwo"]["interviews"][0]["quote"],doc["fanInsights"][0]["quote"])
+        self.assertEqual(result["pageTwo"]["interviews"][0]["fan"],baseline["pageTwo"]["interviews"][0]["fan"])
+        for change in ({"date":"2026-01-01"},{"editorialStatus":"draft"},{"fanInsights":doc["fanInsights"][:-1]}):
+            path.write_text(json.dumps({**doc,**change}),encoding="utf-8")
+            self.assertEqual(self.generate()["pageTwo"]["interviews"],baseline["pageTwo"]["interviews"])
+        doc["fanInsights"][0]["fictional"]=False
+        path.write_text(json.dumps(doc),encoding="utf-8")
+        self.assertEqual(self.generate()["pageTwo"]["interviews"],baseline["pageTwo"]["interviews"])
+
     def test_disclosure_and_factual_only_page_one_survive_serialization(self):
         data=self.generate()
         raw=json.dumps(data,allow_nan=False)
