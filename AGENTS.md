@@ -1,8 +1,8 @@
 # Golden Football Gazette — Hybrid Agent Operations
 
-## Publishing policy (Option C)
-- **Automatically publish only verified structured data:** ESPN league standings, matchup totals and projections **when supplied by ESPN**, NFL schedule/venues/team records, and weather forecasts with source and timestamp.
-- **Never automatically publish AI-written articles or redesigns.** Drafts and design changes must be reviewed and merged by the repository owner via a pull request.
+## Publishing policy (automatic routine editorial)
+- **Automatically publish verified structured data:** ESPN league standings, matchup totals and projections **when supplied by ESPN**, NFL schedule/venues/team records, and weather forecasts with source and timestamp.
+- **Automatically publish routine AI-written articles and fictional Fan Insights** after fact-checking and required GitHub checks. The owner has granted standing permission for editorial-only daily PRs. Design, structural, security and workflow changes still require individual owner approval. Never bypass branch protection.
 - Missing data is marked unavailable or left at its last verified timestamp; **do not fabricate** scores, weather, fantasy logos, brackets, player rankings, or quotes.
 - The static website is hosted with GitHub Pages. The workflow requires no paid AI API for data refreshes.
 - ESPN fantasy API access may be limited by league privacy. Never add ESPN cookies, API keys, or personally identifying member data to the public site.
@@ -13,18 +13,18 @@
 3. **Website QA Agent**: `scripts/qa_gazette.py` — checks required website sections and validates available data. `scripts/data_status.py` reports whether each feed is fresh, stale, unavailable, or invalid.
 4. **Publisher**: `.github/workflows/refresh-and-deploy.yml` — runs the agents, QA, and then publishes to Pages. No editorial or design files are modified by the data agents.
 
-## Daily ChatGPT newsroom agent — owner approval required
+## Daily ChatGPT newsroom agent — automatic editorial publication
 
 ChatGPT is the editorial writer, using the connected GitHub repository and standard web search. No separately billed API, TinyFish, or new paid service is authorized. The existing GitHub writer is a manually dispatched, data-only fallback with an empty API key.
 
-Target: prepare a review PR before 7 AM Eastern; verified structured data continues on the existing Pages workflow. Publication of AI copy depends on the owner's merge and successful deployment. GitHub schedules are best effort.
+Target: publish before 7 AM Eastern; verified structured data continues on the existing Pages workflow. Publication depends on required checks and successful deployment. GitHub schedules are best effort.
 
 For each daily ChatGPT run:
 1. Read this file and the current main-branch editorial/latest.json. Inspect the live site's timestamped sanitized data/league.json, data/nfl-week.json, data/top-performers.json and other available verified feeds. Cross-check important claims against ESPN/NFL sources. If a feed is absent, stale, inconsistent or inaccessible, omit its claims; do not invent timestamps or statistics.
 2. Write a new article as Adrian Mercer (fictional columnist), with headline, dateline, concise competitive commentary, source timestamps and an explicit distinction between facts, opinions and predictions. Never present invented quotes as real interviews.
-3. Prepare editorial/latest.json with the existing date, articleType, body, sourceTimes and editorialStatus fields. Set generationMethod to chatgpt-draft-owner-review and editorialStatus to owner-approved-on-merge. Add fanInsights as an array of exactly ten objects, each containing team (exact current verified ESPN team name), quote (20–500 characters, single line), fictional (true). Use fresh, distinct, clearly fictional satire; omit the entire array if all ten current team names cannot be verified. Preserve the existing stable fictional supporter names.
-4. On a separate date-specific branch, update only editorial/latest.json and create the matching editorial/YYYY-MM-DD-ARTICLE-TYPE-DRAFT.md with an unpublished approval notice. Check for an existing same-day review PR first; do not create duplicates or overwrite owner edits. Open a PR to main and send the owner its link. Never merge it automatically.
-5. After owner merge, the existing Pages build incorporates today's valid fanInsights into the existing supporters' corner. Invalid, missing or stale drafts retain the deterministic fictional fallback. No HTML, CSS, JavaScript or security settings need to change.
+3. Prepare editorial/latest.json with the existing date, articleType, body, sourceTimes and editorialStatus fields. Set generationMethod to chatgpt-draft-owner-review and editorialStatus to owner-approved-on-merge (legacy compatibility fields; the owner has given standing approval, not a separate review of each article). Add fanInsights as an array of exactly ten objects, each containing team (exact current verified ESPN team name), quote (20–500 characters, single line), fictional (true). Use fresh, distinct, clearly fictional satire; omit the entire array if all ten current team names cannot be verified. Preserve the existing stable fictional supporter names.
+4. On a separate date-specific branch, update only editorial/latest.json and create the matching editorial/YYYY-MM-DD-ARTICLE-TYPE-DRAFT.md with a notice that the editorial is pending automated checks. Check for an existing same-day review PR first; do not create duplicates or overwrite owner edits. Open a PR to main. Verify the actual changed paths consist exclusively of editorial/latest.json and the matching dated Markdown draft; inspect the diff and confirm source timestamps, article accuracy, fictional disclosures and no secrets. Enable GitHub auto-merge on that PR only, without bypassing required checks. If auto-merge is unavailable, merge only after confirming the required Gazette security gate and all other applicable checks passed for the exact PR head, using expected_head_sha; if checks are pending or unavailable, leave the PR open and report the blocker. Never enable auto-merge on structural or unrelated PRs.
+5. After the editorial-only PR merges, the existing Pages build incorporates today's valid fanInsights into the existing supporters' corner. Invalid, missing or stale editions retain the deterministic fictional fallback. No HTML, CSS, JavaScript or security settings need to change.
 6. Report what was verified, drafted, submitted and actually deployed separately. Never claim a draft was published merely because a PR exists. Structural changes require separate owner approval.
 
 ## Design agent — owner-approved only
