@@ -86,4 +86,4 @@ jobs:
     steps:
       - name: Deploy the operator-selected verified historical snapshot
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -118,7 +118,7 @@ jobs:
         run: sleep 20
       - name: Deploy website to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages
           timeout: 600000
