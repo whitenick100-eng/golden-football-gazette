@@ -119,7 +119,7 @@ class DailyGazetteAuditTests(unittest.TestCase):
         report=audit.build(now=NOW,root=self.root)
         self.assertEqual(report["sections"]["nfl_review_preview"]["status"],"STALE")
 
-    def test_early_morning_schedule_and_unchanged_theme(self):
+    def test_early_morning_schedule_and_rivalry_theme(self):
         workflow=(ROOT/".github/workflows/refresh-and-deploy.yml").read_text()
         self.assertIn("cron: '5 10 * * *'",workflow)
         self.assertIn("python scripts/gazette_section_audit.py",workflow)
@@ -129,7 +129,7 @@ class DailyGazetteAuditTests(unittest.TestCase):
         self.assertIn("Historical Week 11 archive",html)
         self.assertIn('src="assets/lead-story-live.js"',html)
         for image in ("assets/stadium-nfl-unbranded.webp",
-                      "assets/turkey-left.webp","assets/turkey-right.webp"):
+                      "assets/rivalry-masthead.webp"):
             self.assertIn(image,html)
         js=(ROOT/"assets/lead-story-live.js").read_text()
         self.assertIn("headline.textContent",js)
