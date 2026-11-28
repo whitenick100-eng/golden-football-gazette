@@ -70,6 +70,20 @@ class GazetteMobileLayoutTests(unittest.TestCase):
         self.assertNotIn('fetch(',self.js) # Existing verified ESPN loaders are reused.
         self.assertIn('scroll-snap-type:x proximity',self.css)
 
+    def test_rivalry_helmets_are_small_and_only_replace_page_one_emblems_temporarily(self):
+        card=re.search(r'<button[^>]*class="gazette-mobile-feature"[^>]*data-mobile-target="article-one"[^>]*>.*?</button>',self.html,re.S)
+        self.assertIsNotNone(card)
+        markup=card.group(0)
+        self.assertEqual(markup.count('class="gazette-feature-rivalry-helmet"'),2)
+        self.assertEqual(self.html.count('class="gazette-feature-rivalry-helmet"'),2)
+        self.assertLess(markup.index('cupLouShell'),markup.index('gazette-mobile-feature-content'))
+        self.assertLess(markup.index('gazette-mobile-feature-content'),markup.index('cupUkShell'))
+        self.assertEqual(markup.count('class="gazette-feature-fantasy-emblem"'),2)
+        self.assertIn('.gazette-mobile-feature .gazette-feature-rivalry-helmet{display:none}',self.html)
+        self.assertIn('.gazette-mobile-feature.governors-cup-feature .gazette-feature-fantasy-emblem{display:none}',self.html)
+        self.assertIn('width:clamp(32px,11vw,48px)',self.html)
+        self.assertIn("card.classList.toggle('governors-cup-feature',special)",self.js)
+
     def test_phone_articles_use_original_article_elements(self):
         self.assertEqual(self.html.count('id="gazette-mobile-stories"'),1)
         self.assertEqual(self.html.count('data-mobile-target="article-one" aria-label="Read Page One'),1)
