@@ -7,6 +7,14 @@ const src=fs.readFileSync(require('node:path').join(__dirname,'../assets/mobile-
 
 function boot(initialHash='',mobile=true){
  const docHandlers={},rootHandlers={};
+ let rivalryActive=false;
+ const featureTitle={textContent:''},featureDesc={textContent:''},featureStatus={textContent:''};
+ const featureCard={
+   attributes:{},classList:{toggle(name,active){this[name]=active}},
+   setAttribute(name,value){this.attributes[name]=value},
+   querySelector(selector){return selector==='.gazette-mobile-feature-title'?featureTitle:
+     selector==='.gazette-mobile-feature-desc'?featureDesc:null;}
+ };
  const navButtons=['home','scores','league','gazette','more'].map(view=>({
    dataset:{mobileNav:view},
    attributes:{},
@@ -24,10 +32,14 @@ function boot(initialHash='',mobile=true){
    body:{dataset:{}},
    readyState:'complete',
    addEventListener(name,fn){docHandlers[name]=fn},
-   querySelector(selector){return selector==='main.paper'?null:null},
+   querySelector(selector){
+     if(selector==='.gazette-mobile-feature[data-mobile-target="article-one"]')return featureCard;
+     if(selector==='article.governors-cup-active #governors-cup-special:not([hidden])')return rivalryActive?{}:null;
+     return null;
+   },
    querySelectorAll(selector){return selector==='[data-mobile-nav]'?navButtons:[]},
    getElementById(id){return id==='gazette-mobile-next-article'?forward:
-     id==='espn-games'?holder:null}
+     id==='espn-games'?holder:id==='gazette-mobile-feature-one-status'?featureStatus:null}
  };
  const screen={
    matches:mobile,
@@ -52,7 +64,8 @@ function boot(initialHash='',mobile=true){
    };
    docHandlers.click({target:{closest(){return button}}});
  }
- return {doc,root,screen,forward,holder,navButtons,buttonClick,rootHandlers,
+ return {doc,root,screen,forward,holder,navButtons,buttonClick,rootHandlers,featureTitle,featureDesc,featureStatus,featureCard,
+   setRivalry(active){rivalryActive=active;docHandlers['gazette:editionchange']();},
    getDelta(){return scrollDelta},getScroll(){return scrolledTo}};
 }
 function test(name,fn){fn();console.log('PASS',name);}
@@ -106,4 +119,19 @@ test('desktop viewport leaves the existing site entirely unmodified',()=>{
  x.screen.matches=false;
  x.screen.change();
  assert.equal(x.doc.body.dataset.gazetteMobileView,undefined);
+});
+
+test('Page One featured card follows the special edition and restores the fantasy preview',()=>{
+ const x=boot();
+ assert.equal(x.featureTitle.textContent,'The League Report');
+ x.setRivalry(true);
+ assert.equal(x.featureTitle.textContent,'Kentucky Tradition, The Governors Cup');
+ assert.match(x.featureDesc.textContent,/Louisville Cardinals and Kentucky Wildcats/);
+ assert.equal(x.featureCard.classList['governors-cup-feature'],true);
+ assert.match(x.featureStatus.textContent,/One-time special edition/);
+ x.setRivalry(false);
+ assert.equal(x.featureTitle.textContent,'The League Report');
+ assert.match(x.featureDesc.textContent,/Verified Gridiron Giggles/);
+ assert.equal(x.featureCard.classList['governors-cup-feature'],false);
+ assert.match(x.featureStatus.textContent,/ESPN-verified/);
 });
