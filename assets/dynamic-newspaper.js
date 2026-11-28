@@ -194,7 +194,7 @@ function syncRivalryEdition(){
  page.classList.toggle('governors-cup-active',active);
  special.hidden=!active;
  if(heading&&active!==wasActive)heading.textContent=active?
-   '🏈 Page One · Governor’s Cup Special Edition':'🏆 Page One · League Report';
+   'Kentucky Tradition, The Governors Cup':'🏆 Page One · League Report';
  if(cupTimer!==null){root.clearTimeout(cupTimer);cupTimer=null;}
  if(active)cupTimer=root.setTimeout(syncRivalryEdition,Math.max(1,CUP_END-Date.now()));
  if(wasActive&&!active)refresh(); // Restore the latest available ESPN report, or retain the labeled fallback.
