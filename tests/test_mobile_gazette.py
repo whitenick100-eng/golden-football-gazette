@@ -26,12 +26,11 @@ class GazetteMobileLayoutTests(unittest.TestCase):
         self.assertIn('data-gazette-mobile-view="article-one"',rest)
         self.assertIn('data-gazette-mobile-view="article-two"',rest)
 
-    def test_existing_desktop_header_stadium_turkeys_and_trophies_remain(self):
+    def test_rivalry_header_stadium_and_trophies_remain(self):
         for marker in (
             'assets/stadium-nfl-unbranded.webp',
-            'assets/turkey-left.webp',
-            'assets/turkey-right.webp',
-            'class="gazette-masthead thanksgiving-masthead"',
+            'assets/rivalry-masthead.webp',
+            'class="gazette-masthead rivalry-masthead"',
             'aria-label="Golden Football championship trophy"',
             'aria-label="Golden Toilet last-place trophy"',
             'class="paper"',
