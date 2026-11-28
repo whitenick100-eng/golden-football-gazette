@@ -658,6 +658,22 @@ body:before{background:linear-gradient(180deg,rgba(2,7,13,.05),rgba(2,17,15,.04)
 article.page > #governors-cup-special[hidden]{display:none!important}
 article.page.governors-cup-active > :not(h2):not(#governors-cup-special){display:none!important}
 article.page.governors-cup-active > #governors-cup-special:not([hidden]){display:block!important}
+/* Special-edition headline only; standard Page One styling returns on expiry. */
+article.page.governors-cup-active > h2{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(1.65rem,3.5vw,3.25rem)!important;
+  font-weight:900!important;line-height:1.16!important;
+  color:#ffe8ad!important;text-align:center;
+  text-shadow:0 2px 5px #000,0 0 16px rgba(228,184,102,.25);
+  background:linear-gradient(105deg,#660f1c,#111827 48%,#103b83);
+  border-top:2px solid #e4b866;border-bottom:3px double #e4b866;
+  padding:18px 10px!important;margin:0 0 16px!important;
+  overflow-wrap:break-word;
+}
+@media(max-width:700px){
+  article.page.governors-cup-active > h2{font-size:clamp(1.55rem,6.5vw,2.1rem)!important;padding:13px 8px!important}
+}
+
 </style>
 <link rel="stylesheet" href="assets/mobile-gazette.css">
 </head>
