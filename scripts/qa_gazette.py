@@ -42,28 +42,18 @@ def validate():
 
     assert "40 — 50 — 40" not in page, "Old yard-number strip returned"
     assert 'id="gazette-current-datetime"' in page, "Live Gazette date/time missing from masthead"
-    # Seasonal design is restricted to the masthead: the original turkeys,
-    # accessible live clock and tournament branding must remain visible.
-    assert '<header class="gazette-masthead thanksgiving-masthead">' in page
-    assert page.count('class="dancing-turkey"') == 2
-    assert 'src="assets/turkey-left.webp"' in page
-    assert 'src="assets/turkey-right.webp"' in page
-    assert 'The Golden Football Gazette</h1>' in page
-    assert 'Thanksgiving Week · 2026 NFL Season' in page
-    assert 'A Gridiron Thanksgiving Special' in page
-    # The former flat illustrated pumpkins/bales are removed; the replacement
-    # is a realistic fall harvest photo restricted to the title masthead.
-    masthead=page.split('<header class="gazette-masthead thanksgiving-masthead">',1)[1].split('</header>',1)[0]
-    assert 'thanksgiving-harvest-art' not in masthead
-    assert 'id="harvest-pumpkin"' not in page and 'id="harvest-bale"' not in page
-    assert 'images.unsplash.com/photo-1541480333465-b09786ad8ac6' in page
-    assert "background-size:cover!important" in page
-    assert 'content:none!important' in page
-    assert 'background:linear-gradient(165deg,rgba(26,10,8,.96)' in page
-    assert '.gazette-masthead.thanksgiving-masthead h1' in page
-    assert 'color:#fff7e5!important' in page
-    assert '.gazette-masthead.thanksgiving-masthead .masthead-live-date' in page
-    assert 'animation:turkey-mascot-left' in page, "Dancing turkeys unexpectedly disabled"
+    # Rivalry artwork is local, uncropped, and restricted to the masthead.
+    assert '<header class="gazette-masthead rivalry-masthead">' in page
+    masthead=page.split('<header class="gazette-masthead rivalry-masthead">',1)[1].split('</header>',1)[0]
+    assert 'src="assets/rivalry-masthead.webp"' in masthead
+    assert page.count('src="assets/rivalry-masthead.webp"') == 1
+    assert (ROOT/"assets/rivalry-masthead.webp").is_file(), "Rivalry banner asset must be uploaded before merge"
+    assert 'The Golden Football Gazette</h1>' in masthead
+    assert 'College Football Rivalry Week · 2026' in masthead
+    assert 'dancing-turkey' not in masthead and 'Thanksgiving' not in masthead
+    assert 'Golden Football championship trophy' in masthead
+    assert 'Golden Toilet last-place trophy' in masthead
+    assert 'aspect-ratio:3/1;object-fit:contain' in page
     assert '@media(prefers-reduced-motion:reduce)' in page
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
     assert "setInterval(refreshMastheadTime,60000)" in page, "Masthead clock must refresh every minute"
@@ -204,7 +194,7 @@ def validate():
     assert page.count('id="gazette-mobile-articlebar"')==1
     assert page.count('id="espn-games"')==1
     assert 'assets/stadium-nfl-unbranded.webp' in page
-    assert 'assets/turkey-left.webp' in page and 'assets/turkey-right.webp' in page
+    assert 'assets/rivalry-masthead.webp' in page
     # The lead story is sourced by verified ESPN standings only; every covered
     # section gets an inspectable timestamp/semantic-change audit.
     assert '<script src="assets/lead-story-live.js"></script>' in page
