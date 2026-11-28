@@ -65,6 +65,18 @@ function activate(view,{push=false,scrollTarget=null}={}){
  return true;
 }
 function refreshPreviews(){
+ const special=!!doc.querySelector('article.governors-cup-active #governors-cup-special:not([hidden])');
+ const card=doc.querySelector('.gazette-mobile-feature[data-mobile-target="article-one"]');
+ if(card){
+   const title=card.querySelector('.gazette-mobile-feature-title');
+   const desc=card.querySelector('.gazette-mobile-feature-desc');
+   if(title)title.textContent=special?'Kentucky Tradition, The Governors Cup':'The League Report';
+   if(desc)desc.textContent=special?
+     'A special look at the history of the Louisville Cardinals and Kentucky Wildcats football rivalry':
+     'Verified Gridiron Giggles standings, results and the championship race';
+   card.setAttribute('aria-label',special?'Read Page One: Kentucky Tradition, The Governors Cup':'Read Page One: Verified League Report');
+   card.classList.toggle('governors-cup-feature',special);
+ }
  const slots=[
    ['Newspaper page one','gazette-mobile-feature-one-status','ESPN-verified · every 48 hours'],
    ['Newspaper page two','gazette-mobile-feature-two-status','Daily fictional fan column']
@@ -72,9 +84,7 @@ function refreshPreviews(){
  for(const [name,id,fallback] of slots){
    const status=doc.querySelector('article[aria-label="'+name+'"] .edition-status');
    const target=doc.getElementById(id);
-   const special=name==='Newspaper page one'&&
-     doc.querySelector('article.governors-cup-active #governors-cup-special:not([hidden])');
-   if(target)target.textContent=special?
+   if(target)target.textContent=name==='Newspaper page one'&&special?
      'Governor’s Cup history · One-time special edition':status?.textContent?.trim()||fallback;
  }
 }
@@ -111,6 +121,7 @@ function applyLayout(){
 }
 function setup(){
  doc.addEventListener('click',handleClick);
+ doc.addEventListener('gazette:editionchange',refreshPreviews);
  root.addEventListener('popstate',applyLayout);
  root.addEventListener('hashchange',applyLayout);
  if(typeof small.addEventListener==='function')small.addEventListener('change',applyLayout);
