@@ -4,6 +4,7 @@ import datetime as dt
 import importlib.util
 import json
 import tempfile
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -118,6 +119,27 @@ class DailyGazetteAuditTests(unittest.TestCase):
         nfl.write_text(json.dumps(content))
         report=audit.build(now=NOW,root=self.root)
         self.assertEqual(report["sections"]["nfl_review_preview"]["status"],"STALE")
+
+    def test_one_time_governors_cup_window_and_preserved_fantasy_report(self):
+        html=(ROOT/"index.html").read_text(encoding="utf-8")
+        self.assertIn('id="governors-cup-special" class="governors-cup-special" hidden',html)
+        self.assertEqual(html.count('id="governors-cup-special"'),1)
+        self.assertIn('id="standings-body"',html)
+        self.assertIn('id="trophies"',html)
+        self.assertIn('article.page > #governors-cup-special[hidden]{display:none!important}',html)
+        subprocess.run(["node","-e", """
+const assert=require('node:assert/strict');
+const {isRivalryEdition}=require('./assets/dynamic-newspaper.js');
+for(const [time,expected] of [
+ ['2026-11-27T23:59:59-05:00',false],
+ ['2026-11-28T00:00:00-05:00',true],
+ ['2026-11-29T06:59:59-05:00',true],
+ ['2026-11-29T07:00:00-05:00',false],
+ ['2026-11-30T07:00:00-05:00',false],
+ ['2027-11-28T12:00:00-05:00',false]
+])assert.equal(isRivalryEdition(Date.parse(time)),expected,time);
+assert.equal(isRivalryEdition(NaN),false);
+"""],cwd=ROOT,check=True)
 
     def test_early_morning_schedule_and_rivalry_theme(self):
         workflow=(ROOT/".github/workflows/refresh-and-deploy.yml").read_text()
