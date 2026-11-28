@@ -45,6 +45,8 @@ STATIC_ASSETS = (
     "assets/espn-team-logos.json",
     # Owner-reviewed rivalry masthead artwork.
     "assets/rivalry-masthead.webp",
+    "assets/golden-football-trophy.webp",
+    "assets/golden-toilet-trophy.webp",
 )
 IMAGE_EXTENSIONS = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg"}
 MAX_IMAGE_BYTES = 2_000_000

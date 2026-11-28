@@ -30,6 +30,8 @@ class GazetteMobileLayoutTests(unittest.TestCase):
         for marker in (
             'assets/stadium-nfl-unbranded.webp',
             'assets/rivalry-masthead.webp',
+            'assets/golden-football-trophy.webp',
+            'assets/golden-toilet-trophy.webp',
             'class="gazette-masthead rivalry-masthead"',
             'aria-label="Golden Football championship trophy"',
             'aria-label="Golden Toilet last-place trophy"',
