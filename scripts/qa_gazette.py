@@ -53,6 +53,10 @@ def validate():
     assert 'dancing-turkey' not in masthead and 'Thanksgiving' not in masthead
     assert 'Golden Football championship trophy' in masthead
     assert 'Golden Toilet last-place trophy' in masthead
+    assert '<svg class="masthead-trophy"' not in masthead
+    assert masthead.index('src="assets/golden-football-trophy.webp"') < masthead.index('class="masthead-center"') < masthead.index('src="assets/golden-toilet-trophy.webp"')
+    for trophy in ('golden-football-trophy.webp', 'golden-toilet-trophy.webp'):
+        assert (ROOT/'assets'/trophy).is_file(), f'Missing required trophy artwork: {trophy}'
     assert 'aspect-ratio:3/1;object-fit:contain' in page
     assert '@media(prefers-reduced-motion:reduce)' in page
     assert "new Intl.DateTimeFormat('en-US'" in page and "timeZone:'America/New_York'" in page
