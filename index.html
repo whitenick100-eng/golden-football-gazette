@@ -678,6 +678,11 @@ article.page.governors-cup-active > h2{
 @media(max-width:700px){
  .gazette-mobile-feature.governors-cup-feature .gazette-mobile-feature-title{color:#ffe8ad!important;font-size:clamp(1.35rem,5.9vw,2rem)!important;font-weight:900;line-height:1.15;text-shadow:0 2px 6px #000;background:linear-gradient(105deg,#660f1c,#111827 48%,#103b83);border-top:1px solid #e4b866;border-bottom:2px solid #e4b866;padding:8px 3px;overflow-wrap:break-word}
 }
+
+/* Page One rivalry ornaments: only active while the one-time feature is shown. */
+.gazette-mobile-feature .gazette-feature-rivalry-helmet{display:none}
+.gazette-mobile-feature.governors-cup-feature .gazette-feature-fantasy-emblem{display:none}
+.gazette-mobile-feature.governors-cup-feature .gazette-feature-rivalry-helmet{display:block;width:clamp(32px,11vw,48px);height:auto;max-width:100%;margin-inline:auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.65))}
 </style>
 <link rel="stylesheet" href="assets/mobile-gazette.css">
 </head>
@@ -728,7 +733,7 @@ article.page.governors-cup-active > h2{
   <h2 class="gazette-mobile-section-heading">Featured Gazette Stories</h2>
   <div class="gazette-mobile-stories-inner">
     <button type="button" class="gazette-mobile-feature" data-mobile-target="article-one" aria-label="Read Page One: Verified League Report">
-      <span class="gazette-mobile-feature-ornament" aria-hidden="true">🏆</span>
+      <span class="gazette-mobile-feature-ornament" aria-hidden="true"><span class="gazette-feature-fantasy-emblem">🏆</span><svg class="gazette-feature-rivalry-helmet" viewBox="0 0 72 58" width="48" height="39" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><defs><linearGradient id="cupLouShell" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff"/><stop offset=".6" stop-color="#f7f7f7"/><stop offset="1" stop-color="#a3aab2"/></linearGradient></defs><path d="M8 43C2 34 4 18 15 10C25 2 43 2 52 13C58 19 59 26 55 31L46 36L43 49H22C15 49 11 47 8 43Z" fill="url(#cupLouShell)" stroke="#292c32" stroke-width="2"/><path d="M26 5Q43 2 52 14" fill="none" stroke="#c8102e" stroke-width="4"/><path d="M55 29L65 33L67 43L58 51H43M47 36L64 40L64 46H45M56 32L53 49" fill="none" stroke="#c8102e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 20L24 13L25 19Q34 14 43 21L48 27L41 30L32 31L27 40L22 33L14 31L20 27Z" fill="#c8102e" stroke="#17191d" stroke-width="1.5" stroke-linejoin="round"/><path d="M39 23L48 27L41 31L35 29Z" fill="#ffce43" stroke="#17191d" stroke-width="1.1"/><path d="M29 21L37 22L33 25Z" fill="#17191d"/><path d="M30 21.7L34 22.2L32 23.5Z" fill="#fff"/><circle cx="44" cy="39" r="3" fill="#fff" stroke="#555"/><path d="M11 40Q18 46 29 46" fill="none" stroke="#fff" stroke-width="1.8" opacity=".7"/></svg></span>
       <span class="gazette-mobile-feature-content">
         <span class="gazette-mobile-feature-kicker">Page One</span>
         <span class="gazette-mobile-feature-title">The League Report</span>
@@ -736,7 +741,7 @@ article.page.governors-cup-active > h2{
         <span class="gazette-mobile-read">Read Page One »</span>
         <span id="gazette-mobile-feature-one-status" class="gazette-mobile-feature-meta">ESPN-verified · every 48 hours</span>
       </span>
-      <span class="gazette-mobile-feature-ornament" aria-hidden="true">🚽</span>
+      <span class="gazette-mobile-feature-ornament" aria-hidden="true"><span class="gazette-feature-fantasy-emblem">🚽</span><svg class="gazette-feature-rivalry-helmet" viewBox="0 0 72 58" width="48" height="39" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true"><defs><linearGradient id="cupUkShell" x1="0" y1="0" x2=".65" y2="1"><stop stop-color="#5284dc"/><stop offset=".45" stop-color="#0033a0"/><stop offset="1" stop-color="#071945"/></linearGradient></defs><g transform="translate(72 0) scale(-1 1)"><path d="M8 43C2 34 4 18 15 10C25 2 43 2 52 13C58 19 59 26 55 31L46 36L43 49H22C15 49 11 47 8 43Z" fill="url(#cupUkShell)" stroke="#0b1731" stroke-width="2"/><path d="M26 5Q43 2 52 14" fill="none" stroke="#fff" stroke-width="3"/><path d="M55 29L65 33L67 43L58 51H43M47 36L64 40L64 46H45M56 32L53 49" fill="none" stroke="#f7f7f7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="44" cy="39" r="3" fill="#fff" stroke="#7181a1"/><path d="M11 40Q18 46 29 46" fill="none" stroke="#6999e8" stroke-width="1.8"/></g><text x="40" y="31" text-anchor="middle" font-family="Georgia,serif" font-weight="900" font-size="17" fill="#fff" stroke="#fff" stroke-width=".3">UK</text></svg></span>
     </button>
     <button type="button" class="gazette-mobile-feature" data-mobile-target="article-two" aria-label="Read Page Two: Fixtures and League Notes">
       <span class="gazette-mobile-feature-ornament" aria-hidden="true">🍂</span>
