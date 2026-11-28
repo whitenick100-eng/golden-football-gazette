@@ -191,7 +191,7 @@ def validate():
             assert bracket.get("playoffTeamCount")==len(bracket["contenders"])
     # Mobile-only reflow: no edits to desktop themes or ESPN sources.
     assert '<link rel="stylesheet" href="assets/mobile-gazette.css">' in page
-    assert '<script src="assets/mobile-gazette.js"></script>' in page
+    assert '<script src="assets/mobile-gazette.js?v=20261128-rivalry"></script>' in page
     assert page.count('id="gazette-mobile-bottom-nav"')==1
     assert page.count('id="gazette-mobile-top-nav"')==1
     assert page.count('id="gazette-mobile-stories"')==1
@@ -206,7 +206,7 @@ def validate():
     assert "The lead story · Historical Week 11 archive" in page
     # Automated newspaper: Page One is verified for 48h; Page Two refreshes
     # daily with explicitly fictional fan interviews (never attributed to real fans).
-    assert '<script src="assets/dynamic-newspaper.js"></script>' in page
+    assert '<script src="assets/dynamic-newspaper.js?v=20261128-rivalry"></script>' in page
     assert 'data/gazette-pages.json' in (ROOT/"assets/dynamic-newspaper.js").read_text(encoding="utf-8")
     assert (ROOT/"scripts/build_newspaper_pages.py").is_file()
     assert 'Archived Week 10 edition' in page and 'Archived Week 11 fixture notes' in page

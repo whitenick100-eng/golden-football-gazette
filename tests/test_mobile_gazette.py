@@ -48,7 +48,7 @@ class GazetteMobileLayoutTests(unittest.TestCase):
         self.assertEqual(self.html.count('id="nfl-stat-ticker"'),1)
         self.assertEqual(self.html.count('id="playoff-picture"'),1)
         self.assertIn('<link rel="stylesheet" href="assets/mobile-gazette.css">',self.html)
-        self.assertIn('<script src="assets/mobile-gazette.js"></script>',self.html)
+        self.assertIn('<script src="assets/mobile-gazette.js?v=20261128-rivalry"></script>',self.html)
 
     def test_phone_only_has_five_navigation_destinations(self):
         nav=re.search(r'<nav id="gazette-mobile-bottom-nav".*?</nav>',self.html,re.S)
