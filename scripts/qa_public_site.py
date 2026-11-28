@@ -46,8 +46,7 @@ def check(root=ROOT, output=OUT):
               "assets/mobile-gazette.js",
               "assets/espn-matchups.js",
               "assets/espn-team-logos.json",
-              "assets/turkey-left.webp",
-              "assets/turkey-right.webp"}
+              "assets/rivalry-masthead.webp"}
     # Independent CI workflows test the static builder without running the
     # full live feed refresh. Require the audit in a published artifact when
     # the source generator has actually produced it; full deploy does so.
