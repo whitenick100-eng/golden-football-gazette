@@ -176,7 +176,35 @@ async function refresh(){
    }
  }
 }
-const api={date,record,renderPageOne,renderPageTwo,refresh};
+// One-time owner-requested historical feature. Absolute timestamps use EST.
+const CUP_START=Date.parse('2026-11-28T00:00:00-05:00');
+const CUP_END=Date.parse('2026-11-29T07:00:00-05:00');
+function isRivalryEdition(now=Date.now()){
+ return Number.isFinite(now)&&now>=CUP_START&&now<CUP_END;
+}
+let cupTimer=null;
+function syncRivalryEdition(){
+ if(!DOC)return;
+ const special=DOC.getElementById('governors-cup-special');
+ const page=DOC.querySelector('article[aria-label="Newspaper page one"]');
+ if(!special||!page)return;
+ const active=isRivalryEdition();
+ const wasActive=page.classList.contains('governors-cup-active');
+ const heading=page.querySelector('h2');
+ page.classList.toggle('governors-cup-active',active);
+ special.hidden=!active;
+ if(heading&&active!==wasActive)heading.textContent=active?
+   '🏈 Page One · Governor’s Cup Special Edition':'🏆 Page One · League Report';
+ if(cupTimer!==null){root.clearTimeout(cupTimer);cupTimer=null;}
+ if(active)cupTimer=root.setTimeout(syncRivalryEdition,Math.max(1,CUP_END-Date.now()));
+ if(wasActive&&!active)refresh(); // Restore the latest available ESPN report, or retain the labeled fallback.
+}
+const api={date,record,renderPageOne,renderPageTwo,refresh,isRivalryEdition};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
-if(DOC)refresh();
+if(DOC){
+ syncRivalryEdition();
+ refresh();
+ DOC.addEventListener('visibilitychange',()=>{if(!DOC.hidden)syncRivalryEdition();});
+ root.addEventListener('pageshow',syncRivalryEdition);
+}
 })(typeof window!=='undefined'?window:null);

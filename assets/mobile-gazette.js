@@ -72,7 +72,10 @@ function refreshPreviews(){
  for(const [name,id,fallback] of slots){
    const status=doc.querySelector('article[aria-label="'+name+'"] .edition-status');
    const target=doc.getElementById(id);
-   if(target)target.textContent=status?.textContent?.trim()||fallback;
+   const special=name==='Newspaper page one'&&
+     doc.querySelector('article.governors-cup-active #governors-cup-special:not([hidden])');
+   if(target)target.textContent=special?
+     'Governor’s Cup history · One-time special edition':status?.textContent?.trim()||fallback;
  }
 }
 function moveMatchups(direction){
