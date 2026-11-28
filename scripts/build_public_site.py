@@ -47,6 +47,8 @@ STATIC_ASSETS = (
     "assets/rivalry-masthead.webp",
     "assets/golden-football-trophy.webp",
     "assets/golden-toilet-trophy.webp",
+    "assets/louisville-helmet.webp",
+    "assets/kentucky-helmet.webp",
 )
 IMAGE_EXTENSIONS = {".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg"}
 MAX_IMAGE_BYTES = 2_000_000

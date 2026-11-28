@@ -76,9 +76,11 @@ class GazetteMobileLayoutTests(unittest.TestCase):
         markup=card.group(0)
         self.assertEqual(markup.count('class="gazette-feature-rivalry-helmet"'),2)
         self.assertEqual(self.html.count('class="gazette-feature-rivalry-helmet"'),2)
-        self.assertLess(markup.index('cupLouShell'),markup.index('gazette-mobile-feature-content'))
-        self.assertLess(markup.index('gazette-mobile-feature-content'),markup.index('cupUkShell'))
+        self.assertLess(markup.index('assets/louisville-helmet.webp'),markup.index('gazette-mobile-feature-content'))
+        self.assertLess(markup.index('gazette-mobile-feature-content'),markup.index('assets/kentucky-helmet.webp'))
         self.assertEqual(markup.count('class="gazette-feature-fantasy-emblem"'),2)
+        for asset in ('louisville-helmet.webp','kentucky-helmet.webp'):
+            self.assertTrue((ROOT/'assets'/asset).is_file())
         self.assertIn('.gazette-mobile-feature .gazette-feature-rivalry-helmet{display:none}',self.html)
         self.assertIn('.gazette-mobile-feature.governors-cup-feature .gazette-feature-fantasy-emblem{display:none}',self.html)
         self.assertIn('width:clamp(32px,11vw,48px)',self.html)
